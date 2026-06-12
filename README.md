@@ -75,6 +75,12 @@ Or run directly: `python -m childsight.server` (stdio transport).
    → `generate_situation_brief` returns the full sourced evidence pack
 3. The LLM formats it as a UN-style brief — every number traceable, gaps declared.
 
+## Demo-day resilience
+
+- **In-memory cache** (10 min TTL) — repeated tool calls during a demo are instant
+- **Automatic retry** — one retry with backoff on any API hiccup
+- **Offline snapshot fallback** — run `python scripts/capture_demo_snapshots.py` on demo morning; if venue wifi dies, the server serves the snapshots and provenance honestly reports `"served": "snapshot (captured ...)"` instead of pretending it's live
+
 ## Data sources
 
 - [GDACS](https://www.gdacs.org) — UN OCHA / EC JRC disaster alerts

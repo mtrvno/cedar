@@ -225,7 +225,7 @@ async def generate_situation_brief(gdacs_event_id: str) -> str:
     baselines = []
     series_map = {"1.5.1": "VC_DSR_MTMP", "3.2.1": "SH_DYN_MORT", "2.2.1": "SH_STA_STNT",
                   "6.1.1": "SP_ACS_BSRVH2O", "2.1.2": "AG_PRD_FIESMS"}
-    area = _M49.get((match.get("iso3") or "").strip().upper())
+    area = clients.ISO3_TO_M49.get((match.get("iso3") or "").strip().upper())
     if area:
         for t in impact.get("threatened_sdg_indicators", [])[:3]:
             series = series_map.get(t["indicator"])
@@ -257,19 +257,6 @@ async def generate_situation_brief(gdacs_event_id: str) -> str:
         ],
         "sources": [s for s in sources if s],
     })
-
-
-# Minimal ISO3 -> UN M49 map for demo countries (extend as needed)
-_M49 = {
-    "KEN": "404", "PHL": "608", "BGD": "050", "MOZ": "508", "HTI": "332",
-    "IDN": "360", "IND": "356", "PAK": "586", "SOM": "706", "ETH": "231",
-    "MDG": "450", "MWI": "454", "NGA": "566", "SDN": "729", "AFG": "004",
-    "MMR": "104", "VNM": "704", "NPL": "524", "YEM": "887", "TCD": "148",
-    "NER": "562", "MLI": "466", "BFA": "854", "COD": "180", "USA": "840",
-    "MEX": "484", "GTM": "320", "HND": "340", "CUB": "192", "ECU": "218",
-    "PER": "604", "COL": "170", "BRA": "076", "CHN": "156", "JPN": "392",
-    "TUR": "792", "IRN": "364", "IRQ": "368", "SYR": "760", "LBN": "422",
-}
 
 
 def main() -> None:

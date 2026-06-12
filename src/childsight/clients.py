@@ -8,9 +8,15 @@ if an API returns nothing, the tool says so explicitly.
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import csv
+import hashlib
 import io
+import json
+import os
+import time
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 import requests
@@ -28,17 +34,76 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+# Tracks how the most recent response in this async task was served
+# ("live" or "snapshot (<timestamp>)") so provenance never lies.
+_served: contextvars.ContextVar[str] = contextvars.ContextVar("served", default="live")
+
+
 def _stamp(source: str, url: str) -> dict[str, str]:
-    return {"source": source, "url": url, "retrieved_at": _now()}
+    return {"source": source, "url": url, "retrieved_at": _now(), "served": _served.get()}
 
 
-def _get_sync(url: str, params: dict | None = None) -> requests.Response:
-    resp = requests.get(url, params=params, headers=HEADERS, timeout=TIMEOUT)
-    resp.raise_for_status()
-    return resp
+# ---- demo-day resilience: in-memory TTL cache + on-disk snapshot fallback ----
+CACHE_TTL_SECONDS = int(os.environ.get("CHILDSIGHT_CACHE_TTL", "600"))
+SNAPSHOT_DIR = Path(os.environ.get("CHILDSIGHT_SNAPSHOT_DIR", Path(__file__).parent / "snapshots"))
+CAPTURE = os.environ.get("CHILDSIGHT_CAPTURE") == "1"
+
+_mem_cache: dict[str, tuple[float, "_Resp"]] = {}
 
 
-async def _get(url: str, params: dict | None = None) -> requests.Response:
+class _Resp:
+    """Minimal response object (text/json), used for cached and snapshot data."""
+
+    def __init__(self, text: str):
+        self.text = text
+
+    def json(self) -> Any:
+        return json.loads(self.text)
+
+
+def _cache_key(url: str, params: dict | None) -> str:
+    raw = url + "|" + json.dumps(params or {}, sort_keys=True)
+    return hashlib.sha256(raw.encode()).hexdigest()[:24]
+
+
+def _snapshot_path(key: str) -> Path:
+    return SNAPSHOT_DIR / f"{key}.json"
+
+
+def _get_sync(url: str, params: dict | None = None) -> _Resp:
+    key = _cache_key(url, params)
+
+    cached = _mem_cache.get(key)
+    if cached and time.time() - cached[0] < CACHE_TTL_SECONDS:
+        return cached[1]
+
+    last_err: Exception | None = None
+    for attempt in range(2):  # one retry
+        try:
+            r = requests.get(url, params=params, headers=HEADERS, timeout=TIMEOUT)
+            r.raise_for_status()
+            resp = _Resp(r.text)
+            _mem_cache[key] = (time.time(), resp)
+            _served.set("live")
+            if CAPTURE:
+                SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
+                _snapshot_path(key).write_text(json.dumps(
+                    {"url": url, "params": params, "captured_at": _now(), "text": r.text}))
+            return resp
+        except Exception as e:  # noqa: BLE001
+            last_err = e
+            time.sleep(0.5 * (attempt + 1))
+
+    snap = _snapshot_path(key)
+    if snap.exists():
+        data = json.loads(snap.read_text())
+        _served.set(f"snapshot (captured {data.get('captured_at', 'unknown')}) — live API unreachable")
+        return _Resp(data["text"])
+
+    raise last_err  # type: ignore[misc]
+
+
+async def _get(url: str, params: dict | None = None) -> _Resp:
     """Async wrapper: run blocking request in a thread (keeps deps to stdlib + requests)."""
     return await asyncio.to_thread(_get_sync, url, params)
 
@@ -225,6 +290,46 @@ async def sdg_series_data(series_code: str, area_code: str, page_size: int = 5) 
     ]
     return {"series": series_code, "total_available": raw.get("totalElements"), "data": data,
             "provenance": _stamp("UN DESA Global SDG Indicators Database", url)}
+
+
+# ISO3 -> UN M49 numeric area codes (M49 equals ISO 3166-1 numeric for countries).
+# Used to join GDACS (ISO3) with the DESA SDG API (M49). Missing codes degrade
+# gracefully: SDG baselines are skipped, the rest of the brief still works.
+ISO3_TO_M49: dict[str, str] = {
+    "AFG": "004", "ALB": "008", "DZA": "012", "AND": "020", "AGO": "024", "ATG": "028",
+    "AZE": "031", "ARG": "032", "AUS": "036", "AUT": "040", "BHS": "044", "BHR": "048",
+    "BGD": "050", "ARM": "051", "BRB": "052", "BEL": "056", "BTN": "064", "BOL": "068",
+    "BIH": "070", "BWA": "072", "BRA": "076", "BLZ": "084", "SLB": "090", "BRN": "096",
+    "BGR": "100", "MMR": "104", "BDI": "108", "BLR": "112", "KHM": "116", "CMR": "120",
+    "CAN": "124", "CPV": "132", "CAF": "140", "LKA": "144", "TCD": "148", "CHL": "152",
+    "CHN": "156", "COL": "170", "COM": "174", "COG": "178", "COD": "180", "CRI": "188",
+    "HRV": "191", "CUB": "192", "CYP": "196", "CZE": "203", "BEN": "204", "DNK": "208",
+    "DMA": "212", "DOM": "214", "ECU": "218", "SLV": "222", "GNQ": "226", "ETH": "231",
+    "ERI": "232", "EST": "233", "FJI": "242", "FIN": "246", "FRA": "250", "DJI": "262",
+    "GAB": "266", "GEO": "268", "GMB": "270", "PSE": "275", "DEU": "276", "GHA": "288",
+    "GRC": "300", "GRD": "308", "GTM": "320", "GIN": "324", "GUY": "328", "HTI": "332",
+    "HND": "340", "HUN": "348", "ISL": "352", "IND": "356", "IDN": "360", "IRN": "364",
+    "IRQ": "368", "IRL": "372", "ISR": "376", "ITA": "380", "CIV": "384", "JAM": "388",
+    "JPN": "392", "KAZ": "398", "JOR": "400", "KEN": "404", "PRK": "408", "KOR": "410",
+    "KWT": "414", "KGZ": "417", "LAO": "418", "LBN": "422", "LSO": "426", "LVA": "428",
+    "LBR": "430", "LBY": "434", "LTU": "440", "LUX": "442", "MDG": "450", "MWI": "454",
+    "MYS": "458", "MDV": "462", "MLI": "466", "MLT": "470", "MRT": "478", "MUS": "480",
+    "MEX": "484", "MNG": "496", "MDA": "498", "MNE": "499", "MAR": "504", "MOZ": "508",
+    "OMN": "512", "NAM": "516", "NRU": "520", "NPL": "524", "NLD": "528", "VUT": "548",
+    "NZL": "554", "NIC": "558", "NER": "562", "NGA": "566", "NOR": "578", "FSM": "583",
+    "MHL": "584", "PLW": "585", "PAK": "586", "PAN": "591", "PNG": "598", "PRY": "600",
+    "PER": "604", "PHL": "608", "POL": "616", "PRT": "620", "GNB": "624", "TLS": "626",
+    "QAT": "634", "ROU": "642", "RUS": "643", "RWA": "646", "KNA": "659", "LCA": "662",
+    "VCT": "670", "SMR": "674", "STP": "678", "SAU": "682", "SEN": "686", "SRB": "688",
+    "SYC": "690", "SLE": "694", "SGP": "702", "SVK": "703", "VNM": "704", "SVN": "705",
+    "SOM": "706", "ZAF": "710", "ZWE": "716", "ESP": "724", "SSD": "728", "SDN": "729",
+    "SUR": "740", "SWZ": "748", "SWE": "752", "CHE": "756", "SYR": "760", "TJK": "762",
+    "THA": "764", "TGO": "768", "TON": "776", "TTO": "780", "ARE": "784", "TUN": "788",
+    "TUR": "792", "TKM": "795", "TUV": "798", "UGA": "800", "UKR": "804", "MKD": "807",
+    "EGY": "818", "GBR": "826", "TZA": "834", "USA": "840", "BFA": "854", "URY": "858",
+    "UZB": "860", "VEN": "862", "WSM": "882", "YEM": "887", "ZMB": "894", "KIR": "296",
+    "MCO": "492", "LIE": "438",
+}
 
 
 async def sdg_goal_list() -> dict[str, Any]:
