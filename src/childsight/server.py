@@ -37,6 +37,21 @@ def _j(obj: Any) -> str:
     return json.dumps(obj, indent=2, default=str)
 
 
+def _aslist(value: Any) -> list[str] | None:
+    """Some MCP clients send list params as JSON strings ('[\"Green\"]'). Coerce."""
+    if value is None or isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, list):
+                return [str(x) for x in parsed]
+        except ValueError:
+            pass
+        return [v.strip() for v in value.split(",") if v.strip()]
+    return [str(value)]
+
+
 # ------------------------------------------------------------------ 1. events
 
 @mcp.tool()
@@ -52,7 +67,7 @@ async def get_active_crises(
         event_types: Filter by type: EQ, TC (cyclone), FL (flood), VO, DR (drought), WF (wildfire).
         include_eonet: Also include NASA EONET satellite-observed events (wildfires, storms, volcanoes).
     """
-    gdacs = await clients.gdacs_events(alert_levels, event_types)
+    gdacs = await clients.gdacs_events(_aslist(alert_levels), _aslist(event_types))
     result: dict[str, Any] = {"gdacs": gdacs}
     if include_eonet:
         try:
@@ -168,7 +183,7 @@ async def compare_active_crises(alert_levels: list[str] | None = None, top_n: in
         alert_levels: e.g. ["Orange", "Red"]. Default: ["Orange", "Red"].
         top_n: How many top-ranked crises to assess in detail.
     """
-    levels = alert_levels or ["Orange", "Red"]
+    levels = _aslist(alert_levels) or ["Orange", "Red"]
     gdacs = await clients.gdacs_events(alert_levels=levels)
     events = [e for e in gdacs["events"] if e.get("iso3") and len(e["iso3"].strip()) == 3]
 

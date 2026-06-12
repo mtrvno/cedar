@@ -225,14 +225,38 @@ async def eonet_events(category: str | None = None, status: str = "open", limit:
 
 # ---------------------------------------------------------------- UNICEF SDMX
 
+# CCRI is static reference data (2020-21 release). A bundled copy (built by
+# scripts/fetch_ccri_bundle.py) makes lookups instant and immune to SDMX
+# slowness/throttling. Set CHILDSIGHT_CCRI_LIVE=1 to force live queries.
+CCRI_BUNDLE = Path(__file__).parent / "data" / "ccri_all.csv"
+_ccri_bundle_cache: dict[str, list[dict]] | None = None
+
+
+def _ccri_from_bundle(iso3: str) -> list[dict] | None:
+    global _ccri_bundle_cache
+    if os.environ.get("CHILDSIGHT_CCRI_LIVE") == "1" or not CCRI_BUNDLE.exists():
+        return None
+    if _ccri_bundle_cache is None:
+        _ccri_bundle_cache = {}
+        with CCRI_BUNDLE.open() as f:
+            for row in csv.DictReader(f):
+                _ccri_bundle_cache.setdefault(row["REF_AREA"].strip().upper(), []).append(row)
+    return _ccri_bundle_cache.get(iso3.upper())
+
+
 async def unicef_ccri(iso3: str) -> dict[str, Any]:
     """Children's Climate Risk Index for a country — per-hazard scores + sources.
 
-    Verified live: returns ~27 indicators (hazard exposure + child vulnerability pillars).
+    Served from the bundled UNICEF reference dataset when available (instant,
+    offline-safe); falls back to a live SDMX query otherwise.
     """
     url = f"{UNICEF_SDMX}/data/UNICEF,CCRI,1.0/{iso3.upper()}.?format=csv&lastNObservations=1"
-    resp = await _get(url)
-    rows = list(csv.DictReader(io.StringIO(resp.text)))
+    rows = _ccri_from_bundle(iso3)
+    if rows is not None:
+        _served.set("bundled UNICEF CCRI reference dataset (static 2020-21 release)")
+    else:
+        resp = await _get(url)
+        rows = list(csv.DictReader(io.StringIO(resp.text)))
     if not rows:
         return {"iso3": iso3, "indicators": [], "note": "No CCRI data for this country", "provenance": _stamp("UNICEF CCRI", url)}
     indicators = [
