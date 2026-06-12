@@ -27,7 +27,12 @@ UNICEF_SDMX = "https://sdmx.data.unicef.org/ws/public/sdmxapi/rest"
 SDG_API = "https://unstats.un.org/sdgapi/v1/sdg"
 
 HEADERS = {"User-Agent": "childsight-mcp/0.1 (UN Hackathon 2026)"}
-TIMEOUT = 30.0
+# Fail fast: a slow upstream must not blow past the MCP client's tool timeout.
+TIMEOUT = float(os.environ.get("CHILDSIGHT_HTTP_TIMEOUT", "10"))
+
+# Reuse connections (kinder to upstream APIs, faster for bursts of queries)
+_session = requests.Session()
+_session.headers.update(HEADERS)
 
 
 def _now() -> str:
@@ -80,7 +85,7 @@ def _get_sync(url: str, params: dict | None = None) -> _Resp:
     last_err: Exception | None = None
     for attempt in range(2):  # one retry
         try:
-            r = requests.get(url, params=params, headers=HEADERS, timeout=TIMEOUT)
+            r = _session.get(url, params=params, timeout=TIMEOUT)
             r.raise_for_status()
             resp = _Resp(r.text)
             _mem_cache[key] = (time.time(), resp)
@@ -106,6 +111,22 @@ def _get_sync(url: str, params: dict | None = None) -> _Resp:
 async def _get(url: str, params: dict | None = None) -> _Resp:
     """Async wrapper: run blocking request in a thread (keeps deps to stdlib + requests)."""
     return await asyncio.to_thread(_get_sync, url, params)
+
+
+async def gather_limited(coros, limit: int = 4, per_task_timeout: float = 18.0) -> list:
+    """Run coroutines with bounded concurrency and a per-task timeout.
+
+    Prevents bursts of parallel queries from overwhelming upstream APIs
+    (UNICEF SDMX throttles aggressively). Failures and timeouts come back
+    as exceptions, never raised — callers degrade gracefully.
+    """
+    sem = asyncio.Semaphore(limit)
+
+    async def run(c):
+        async with sem:
+            return await asyncio.wait_for(c, timeout=per_task_timeout)
+
+    return await asyncio.gather(*(run(c) for c in coros), return_exceptions=True)
 
 
 # ---------------------------------------------------------------- GDACS

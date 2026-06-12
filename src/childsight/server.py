@@ -172,13 +172,21 @@ async def compare_active_crises(alert_levels: list[str] | None = None, top_n: in
     gdacs = await clients.gdacs_events(alert_levels=levels)
     events = [e for e in gdacs["events"] if e.get("iso3") and len(e["iso3"].strip()) == 3]
 
-    # Fetch CCRI composite for each candidate country (dedup, parallel)
+    # Fetch CCRI composite per candidate country: deduped, concurrency-capped
+    # (UNICEF SDMX throttles bursts), capped at 15 countries per call so the
+    # tool always returns within the MCP client's timeout.
+    MAX_COUNTRIES = 15
     iso3s = sorted({e["iso3"].strip() for e in events})
-    profiles = await asyncio.gather(*(clients.unicef_ccri(i) for i in iso3s), return_exceptions=True)
+    skipped_countries = iso3s[MAX_COUNTRIES:]
+    iso3s = iso3s[:MAX_COUNTRIES]
+    profiles = await clients.gather_limited(
+        (clients.unicef_ccri(i) for i in iso3s), limit=4, per_task_timeout=15.0)
     composite: dict[str, float | None] = {}
+    unresolved: list[str] = []
     for iso3, prof in zip(iso3s, profiles):
-        if isinstance(prof, Exception):
+        if isinstance(prof, BaseException):
             composite[iso3] = None
+            unresolved.append(iso3)
             continue
         score = next((i.get("score") for i in prof.get("indicators", [])
                       if i["code"] == "CCRI_CHLD_CLIMATE_ENV_RISK_INDEX"), None)
@@ -193,12 +201,23 @@ async def compare_active_crises(alert_levels: list[str] | None = None, top_n: in
                        "scoring": "GDACS alert weight (1-3) x CCRI composite (0-10); CCRI missing -> neutral 5.0"})
     ranked.sort(key=lambda x: x["child_priority_score"], reverse=True)
 
-    return _j({
+    result: dict[str, Any] = {
         "ranked_crises": ranked[:top_n],
         "total_considered": len(ranked),
         "method": "Transparent heuristic, not an official severity metric. All inputs sourced.",
         "provenance": [gdacs["provenance"], {"source": "UNICEF CCRI", "note": "composite per country"}],
-    })
+    }
+    if unresolved:
+        result["ccri_unresolved"] = {
+            "countries": unresolved,
+            "note": "CCRI lookup failed/timed out for these; their events were ranked with a neutral 5.0. Retry, or call get_child_risk_profile individually.",
+        }
+    if skipped_countries:
+        result["countries_not_assessed"] = {
+            "countries": skipped_countries,
+            "note": f"More than {MAX_COUNTRIES} countries in scope; these were skipped to stay within time budget. Narrow with alert_levels or event filters.",
+        }
+    return _j(result)
 
 
 # ------------------------------------------------------------ 6. brief
