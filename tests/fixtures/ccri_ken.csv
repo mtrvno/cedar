@@ -1,0 +1,13 @@
+REF_AREA,Geographic area,INDICATOR,Indicator,UNIT_MULTIPLIER,Unit multiplier,UNIT_MEASURE,Unit of measure,TIME_PERIOD,OBS_VALUE,OBS_FOOTNOTE,DATA_SOURCE,OBS_STATUS,Observation Status
+KEN,Kenya,CCRI_WATER_SCARCITY,Water scarcity,,,IDX,Index,2020,Extremely High,Value: 8.4,"World Resources Institute (WRI) Aqueduct 3.0, UNEP/GRID-Europe, CIESIN | Gridded Population of the World (UN-Adjusted), UN World Population Prospects",,
+KEN,Kenya,CCRI_FLOODS_RIVERINE,Riverine floods,,,IDX,Index,2020,High,Value: 6.4,"UNDRR, CIESIN | Gridded Population of the World (UN-Adjusted), UN World Population Prospects",,
+KEN,Kenya,CCRI_FLOODS_COASTAL,Coastal floods,,,IDX,Index,2020,Medium-High,Value: 4.2,"World Resources Institute (WRI) Aqueduct 3.0, CIESIN | Gridded Population of the World (UN-Adjusted), UN World Population Prospects",,
+KEN,Kenya,CCRI_TROPICAL_CYCLONES,Tropical cyclones,,,IDX,Index,2020,Low,Value: 0.0,"UNDRR, CIESIN | Gridded Population of the World, UN World Population Prospects",,
+KEN,Kenya,CCRI_HEATWAVES,Heatwaves,,,IDX,Index,2020,Extremely High,Value: 8.2,"Data for Children Collaborative, CIESIN | Gridded Population of the World, UN World Population Prospects",,
+KEN,Kenya,CCRI_VECTOR_BORNE_DISEASE,Vector borne diseases,,,IDX,Index,2020,Extremely High,Value: 8.0,"The Malaria Atlas Project, CIESIN, UN World Population Prospects",,
+KEN,Kenya,CCRI_WASH,"Water, sanitation, and hygiene",,,IDX,Index,2020,Extremely High,Value: 9.7,"World Health Organization, Global Health Observatory Data Repository, redistributed by the World Bank WDI database.",,
+KEN,Kenya,CCRI_CHLD_NUTRITION,Child nutrition,,,IDX,Index,2020,High,Value: 6.6,"UNICEF, WHO, World Bank: Joint child malnutrition estimates (JME)",,
+KEN,Kenya,CCRI_EDUCATION,Education,,,IDX,Index,2020,Low-Medium,Value: 2.7,"UNESCO Institute for Statistics",,
+KEN,Kenya,CCRI_POV_INEQUITY,Poverty and Inequality,,,IDX,Index,2020,High,Value: 6.8,,,
+KEN,Kenya,CCRI_CHLD_VULNERABILITY,Child vulnerability,,,IDX,Index,2020,High,Value: 6.4,,,
+KEN,Kenya,CCRI_CHLD_CLIMATE_ENV_RISK_INDEX,Children's Climate and Environment Risk Index,,,IDX,Index,2020,High,Value: 6.3,,,

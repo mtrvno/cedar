@@ -1,0 +1,19 @@
+[project]
+name = "childsight-mcp"
+version = "0.1.0"
+description = "MCP server fusing live crisis signals (GDACS, EONET) with UNICEF CCRI child vulnerability and DESA SDG indicators into decision-ready, sourced evidence"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]>=1.2.0",
+    "requests>=2.31",
+]
+
+[project.scripts]
+childsight-mcp = "childsight.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/childsight"]

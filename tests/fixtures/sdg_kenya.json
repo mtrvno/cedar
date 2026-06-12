@@ -1,0 +1,27 @@
+{
+  "size": 1,
+  "totalElements": 43,
+  "totalPages": 43,
+  "pageNumber": 1,
+  "data": [
+    {
+      "goal": ["1"],
+      "target": ["1.1"],
+      "indicator": ["1.1.1"],
+      "series": "SI_POV_DAY1",
+      "seriesDescription": "Proportion of population below international poverty line (%)",
+      "geoAreaCode": "404",
+      "geoAreaName": "Kenya",
+      "timePeriodStart": 1992.0,
+      "value": "32",
+      "valueType": "Float",
+      "upperBound": null,
+      "lowerBound": null,
+      "basePeriod": "2021",
+      "source": "Poverty and Inequality Portal, World Bank",
+      "footnotes": ["Accessed March 24, 2026. Based on data from WMS-I. Estimated from grouped consumption data."],
+      "attributes": {"Nature": "G", "Units": "PERCENT"},
+      "dimensions": {"Age": "ALLAGE", "Location": "ALLAREA", "Sex": "BOTHSEX", "Reporting Type": "G"}
+    }
+  ]
+}
