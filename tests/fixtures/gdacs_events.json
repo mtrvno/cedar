@@ -22,6 +22,25 @@
     },
     {
       "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [37.9, 0.02]},
+      "properties": {
+        "eventid": 1102983,
+        "eventtype": "FL",
+        "eventname": "Kenya Floods Test (older episode, must be deduped)",
+        "name": "Flood in Kenya",
+        "alertlevel": "Red",
+        "alertscore": 3,
+        "episodealertlevel": "Orange",
+        "country": "Kenya",
+        "iso3": "KEN",
+        "fromdate": "2026-06-05T00:00:00",
+        "todate": "2026-06-07T00:00:00",
+        "severitydata": {"severity": 1, "severitytext": "Magnitude 0 ", "severityunit": ""},
+        "url": {"report": "https://www.gdacs.org/report.aspx?eventid=1102983&eventtype=FL"}
+      }
+    },
+    {
+      "type": "Feature",
       "geometry": {"type": "Point", "coordinates": [121.0, 14.6]},
       "properties": {
         "eventid": 1001556,

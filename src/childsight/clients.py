@@ -54,8 +54,16 @@ async def gdacs_events(alert_levels: list[str] | None = None, event_types: list[
     resp = await _get(GDACS_EVENTS)
     raw = resp.json()
     features = raw.get("features", [])
-    events = []
+    # GDACS returns one feature per EPISODE; dedup to one per event (keep latest todate)
+    by_event: dict[Any, dict] = {}
     for f in features:
+        p = f.get("properties", {})
+        eid = p.get("eventid")
+        prev = by_event.get(eid)
+        if prev is None or (p.get("todate") or "") > (prev.get("properties", {}).get("todate") or ""):
+            by_event[eid] = f
+    events = []
+    for f in by_event.values():
         p = f.get("properties", {})
         level = p.get("alertlevel", "")
         etype = p.get("eventtype", "")

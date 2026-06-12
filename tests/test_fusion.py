@@ -70,13 +70,15 @@ def main():
     failures = 0
     with mock.patch.object(clients, "_get_sync", side_effect=fake_get):
 
-        # 1. GDACS parsing
+        # 1. GDACS parsing — fixture contains TWO episodes of event 1102983;
+        # dedup must keep only the latest one
         g = run(clients.gdacs_events(alert_levels=["Red"]))
-        assert g["count"] == 1, g["count"]
+        assert g["count"] == 1, f"episode dedup failed: {g['count']}"
         ev = g["events"][0]
         assert ev["type"] == "FL" and ev["iso3"] == "KEN" and ev["alert_level"] == "Red"
+        assert ev["to_date"] == "2026-06-12T00:00:00", "kept wrong episode"
         assert g["provenance"]["source"].startswith("GDACS")
-        print("PASS gdacs_events: parsing, filtering, provenance")
+        print("PASS gdacs_events: parsing, filtering, episode dedup, provenance")
 
         # 2. CCRI parsing — real Kenya CSV
         c = run(clients.unicef_ccri("KEN"))
