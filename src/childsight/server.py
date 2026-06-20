@@ -293,6 +293,22 @@ async def generate_situation_brief(gdacs_event_id: str) -> str:
     })
 
 
+# ------------------------------------------------------------ 7. SDG context
+
+@mcp.tool()
+async def get_sdg_context(iso3: str) -> str:
+    """Macro SDG country context: latest official value for 17 key indicators
+    across 8 SDG goals (poverty, hunger, health, education, gender, water,
+    cities, climate). Data from UN DESA Global SDG Indicators Database.
+    Use alongside get_child_risk_profile and get_active_crises to understand
+    the baseline conditions a crisis hits.
+
+    Args:
+        iso3: ISO3 country code, e.g. "KEN", "HTI", "PHL".
+    """
+    return _j(await clients.sdg_country_context(iso3))
+
+
 def main() -> None:
     mcp.run()
 

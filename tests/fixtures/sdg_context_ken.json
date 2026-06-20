@@ -1,0 +1,4052 @@
+{
+  "SI_POV_DAY1": {
+    "size": 1,
+    "totalElements": 43,
+    "totalPages": 43,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PERCENT",
+            "description": "Percentage",
+            "sdmx": "PT"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Age",
+        "codes": [
+          {
+            "code": "<1M",
+            "description": "under 1 month old",
+            "sdmx": "M0"
+          },
+          {
+            "code": "<1Y",
+            "description": "under 1 year old",
+            "sdmx": "Y0"
+          },
+          {
+            "code": "<5Y",
+            "description": "under 5 years old",
+            "sdmx": "Y0T4"
+          },
+          {
+            "code": "<15Y",
+            "description": "under 15 years old",
+            "sdmx": "Y0T14"
+          },
+          {
+            "code": "<18Y",
+            "description": "under 18 years old",
+            "sdmx": "Y0T17"
+          },
+          {
+            "code": "ALLAGE",
+            "description": "All age ranges or no breaks by age",
+            "sdmx": "_T"
+          },
+          {
+            "code": "1-14",
+            "description": "1 to 14 years old",
+            "sdmx": "Y1T14"
+          },
+          {
+            "code": "1-17",
+            "description": "1 to 17 years old",
+            "sdmx": "Y1T17"
+          },
+          {
+            "code": "5-14",
+            "description": "5 to 14 years old",
+            "sdmx": "Y5T14"
+          },
+          {
+            "code": "5-17",
+            "description": "5 to 17 years old",
+            "sdmx": "Y5T17"
+          },
+          {
+            "code": "5+",
+            "description": "5 years old and over",
+            "sdmx": "Y_GE5"
+          },
+          {
+            "code": "6-14",
+            "description": "6 to 14 years old",
+            "sdmx": "Y6T14"
+          },
+          {
+            "code": "6-17",
+            "description": "6 to 17 years old",
+            "sdmx": "Y6T17"
+          },
+          {
+            "code": "6+",
+            "description": "6 years old and over",
+            "sdmx": "Y_GE6"
+          },
+          {
+            "code": "7-14",
+            "description": "7 to 14 years old",
+            "sdmx": "Y7T14"
+          },
+          {
+            "code": "7-17",
+            "description": "7 to 17 years old",
+            "sdmx": "Y7T17"
+          },
+          {
+            "code": "7+",
+            "description": "7 years old and over",
+            "sdmx": "Y_GE7"
+          },
+          {
+            "code": "10-14",
+            "description": "10 to 14 years old",
+            "sdmx": "Y10T14"
+          },
+          {
+            "code": "10-17",
+            "description": "10 to 17 years old",
+            "sdmx": "Y10T17"
+          },
+          {
+            "code": "10-24",
+            "description": "10 to 24 years old",
+            "sdmx": "Y10T24"
+          },
+          {
+            "code": "10-74",
+            "description": "10 to 74 years old",
+            "sdmx": "Y10T74"
+          },
+          {
+            "code": "10+",
+            "description": "10 years old and over",
+            "sdmx": "Y_GE10"
+          },
+          {
+            "code": "12-14",
+            "description": "12 to 14 years old",
+            "sdmx": "Y12T14"
+          },
+          {
+            "code": "12-17",
+            "description": "12 to 17 years old",
+            "sdmx": "Y12T17"
+          },
+          {
+            "code": "12-30",
+            "description": "12 to 30 years old",
+            "sdmx": "Y12T30"
+          },
+          {
+            "code": "12+",
+            "description": "12 years old and over",
+            "sdmx": "Y_GE12"
+          },
+          {
+            "code": "14-24",
+            "description": "14 to 24 years old",
+            "sdmx": "Y14T24"
+          },
+          {
+            "code": "14-28",
+            "description": "14 to 28 years old",
+            "sdmx": "Y14T28"
+          },
+          {
+            "code": "14-29",
+            "description": "14 to 29 years old",
+            "sdmx": "Y14T29"
+          },
+          {
+            "code": "14+",
+            "description": "14 years old and over",
+            "sdmx": "Y_GE14"
+          },
+          {
+            "code": "15-17",
+            "description": "15 to 17 years old",
+            "sdmx": "Y15T17"
+          },
+          {
+            "code": "15-19",
+            "description": "15 to 19 years old",
+            "sdmx": "Y15T19"
+          },
+          {
+            "code": "15-24",
+            "description": "15 to 24 years old",
+            "sdmx": "Y15T24"
+          },
+          {
+            "code": "15-29",
+            "description": "15 to 29 years old",
+            "sdmx": "Y15T29"
+          },
+          {
+            "code": "15-44",
+            "description": "15 to 44 years old",
+            "sdmx": "Y15T44"
+          },
+          {
+            "code": "15-49",
+            "description": "15 to 49 years old",
+            "sdmx": "Y15T49"
+          },
+          {
+            "code": "15-60",
+            "description": "15 to 60 years old",
+            "sdmx": "Y15T60"
+          },
+          {
+            "code": "15-64",
+            "description": "15 to 64 years old",
+            "sdmx": "Y15T64"
+          },
+          {
+            "code": "15-65",
+            "description": "15 to 65 years old",
+            "sdmx": "Y15T65"
+          },
+          {
+            "code": "15-70",
+            "description": "15 to 70 years old",
+            "sdmx": "Y15T70"
+          },
+          {
+            "code": "15-72",
+            "description": "15 to 72 years old",
+            "sdmx": "Y15T72"
+          },
+          {
+            "code": "15-74",
+            "description": "15 to 74 years old",
+            "sdmx": "Y15T74"
+          },
+          {
+            "code": "15-80",
+            "description": "15 to 80 years old",
+            "sdmx": "Y15T80"
+          },
+          {
+            "code": "15-84",
+            "description": "15 to 84 years old",
+            "sdmx": "Y15T84"
+          },
+          {
+            "code": "15+",
+            "description": "15 years old and over",
+            "sdmx": "Y_GE15"
+          },
+          {
+            "code": "16-24",
+            "description": "16 to 24 years old",
+            "sdmx": "Y16T24"
+          },
+          {
+            "code": "16-65",
+            "description": "16 to 65 years old",
+            "sdmx": "Y16T65"
+          },
+          {
+            "code": "16-74",
+            "description": "16 to 74 years old",
+            "sdmx": "Y16T74"
+          },
+          {
+            "code": "16+",
+            "description": "16 years old and over",
+            "sdmx": "Y_GE16"
+          },
+          {
+            "code": "18-27",
+            "description": "18 to 27 years old",
+            "sdmx": "Y18T27"
+          },
+          {
+            "code": "18-29",
+            "description": "18 to 29 years old",
+            "sdmx": "Y18T29"
+          },
+          {
+            "code": "18-35",
+            "description": "18 to 35 years old",
+            "sdmx": "Y18T35"
+          },
+          {
+            "code": "18-44",
+            "description": "18 to 44 years old",
+            "sdmx": "Y18T44"
+          },
+          {
+            "code": "18+",
+            "description": "18 years old and over",
+            "sdmx": "Y_GE18"
+          },
+          {
+            "code": "19-65",
+            "description": "19 to 65 years old",
+            "sdmx": "Y19T65"
+          },
+          {
+            "code": "20-24",
+            "description": "20 to 24 years old",
+            "sdmx": "Y20T24"
+          },
+          {
+            "code": "20-29",
+            "description": "20 to 29 years old",
+            "sdmx": "Y20T29"
+          },
+          {
+            "code": "20-30",
+            "description": "20 to 30 years old",
+            "sdmx": "Y20T30"
+          },
+          {
+            "code": "29-49",
+            "description": "20 to 49 years old",
+            "sdmx": "Y20T49"
+          },
+          {
+            "code": "20-64",
+            "description": "20 to 64 years old",
+            "sdmx": "Y20T64"
+          },
+          {
+            "code": "20-74",
+            "description": "20 to 74 years old",
+            "sdmx": "Y20T74"
+          },
+          {
+            "code": "25-29",
+            "description": "25 to 29 years old",
+            "sdmx": "Y25T29"
+          },
+          {
+            "code": "25-34",
+            "description": "25 to 34 years old",
+            "sdmx": "Y25T34"
+          },
+          {
+            "code": "25-64",
+            "description": "25 to 64 years old",
+            "sdmx": "Y25T64"
+          },
+          {
+            "code": "25+",
+            "description": "25 years old and over",
+            "sdmx": "Y_GE25"
+          },
+          {
+            "code": "30",
+            "description": "30 years old",
+            "sdmx": "Y30"
+          },
+          {
+            "code": "30-34",
+            "description": "30 to 34 years old",
+            "sdmx": "Y30T34"
+          },
+          {
+            "code": "30-39",
+            "description": "30 to 39 years old",
+            "sdmx": "Y30T39"
+          },
+          {
+            "code": "30-69",
+            "description": "30 to 69 years old",
+            "sdmx": "Y30T69"
+          },
+          {
+            "code": "30-70",
+            "description": "30 to 70 years old",
+            "sdmx": "Y30T70"
+          },
+          {
+            "code": "35",
+            "description": "35 years old",
+            "sdmx": "Y35"
+          },
+          {
+            "code": "35-39",
+            "description": "35 to 39 years old",
+            "sdmx": "Y35T39"
+          },
+          {
+            "code": "35-44",
+            "description": "35 to 44 years old",
+            "sdmx": "Y35T44"
+          },
+          {
+            "code": "35-49",
+            "description": "35 to 49 years old",
+            "sdmx": "Y35T49"
+          },
+          {
+            "code": "M36T59",
+            "description": "36 to 59 months old",
+            "sdmx": "M36T59"
+          },
+          {
+            "code": "40-44",
+            "description": "40 to 44 years old",
+            "sdmx": "Y40T44"
+          },
+          {
+            "code": "40-49",
+            "description": "40 to 49 years old",
+            "sdmx": "Y40T49"
+          },
+          {
+            "code": "45-49",
+            "description": "45 to 49 years old",
+            "sdmx": "Y45T49"
+          },
+          {
+            "code": "45-59",
+            "description": "45 to 59 years old",
+            "sdmx": "Y45T59"
+          },
+          {
+            "code": "5-9",
+            "description": "5 to 9 years old",
+            "sdmx": "Y5T9"
+          },
+          {
+            "code": "10-19",
+            "description": "10 to 19 years old",
+            "sdmx": "Y10T19"
+          },
+          {
+            "code": "50-54",
+            "description": "50 to 54 years old",
+            "sdmx": "Y50T54"
+          },
+          {
+            "code": "50-59",
+            "description": "50 to 59 years old",
+            "sdmx": "Y50T59"
+          },
+          {
+            "code": "55-59",
+            "description": "55 to 59 years old",
+            "sdmx": "Y55T59"
+          },
+          {
+            "code": "60-64",
+            "description": "60 to 64 years old",
+            "sdmx": "Y60T64"
+          },
+          {
+            "code": "60-69",
+            "description": "60 to 69 years old",
+            "sdmx": "Y60T69"
+          },
+          {
+            "code": "60+",
+            "description": "60 years old and over",
+            "sdmx": "Y_GE60"
+          },
+          {
+            "code": "65-69",
+            "description": "65 to 69 years old",
+            "sdmx": "Y65T69"
+          },
+          {
+            "code": "70-74",
+            "description": "70 to 74 years old",
+            "sdmx": "Y70T74"
+          },
+          {
+            "code": "70-79",
+            "description": "70 to 79 years old",
+            "sdmx": "Y70T79"
+          },
+          {
+            "code": "70+",
+            "description": "70 years old and over",
+            "sdmx": "Y_GE70"
+          },
+          {
+            "code": "75-79",
+            "description": "75 to 79 years old",
+            "sdmx": "Y75T79"
+          },
+          {
+            "code": "75+",
+            "description": "75 years old and over",
+            "sdmx": "Y_GE75"
+          },
+          {
+            "code": "80-84",
+            "description": "80 to 84 years old",
+            "sdmx": "Y80T84"
+          },
+          {
+            "code": "80-89",
+            "description": "80 to 89 years old",
+            "sdmx": "Y80T89"
+          },
+          {
+            "code": "80+",
+            "description": "80 years old and over",
+            "sdmx": "Y_GE80"
+          },
+          {
+            "code": "85-89",
+            "description": "85 to 89 years old",
+            "sdmx": "Y85T89"
+          },
+          {
+            "code": "85+",
+            "description": "85 years old and over",
+            "sdmx": "Y_GE85"
+          },
+          {
+            "code": "90-94",
+            "description": "90 to 94 years old",
+            "sdmx": "Y90T94"
+          },
+          {
+            "code": "90-99",
+            "description": "90 to 99 years old",
+            "sdmx": "Y90T99"
+          },
+          {
+            "code": "90+",
+            "description": "90 years old and over",
+            "sdmx": "Y_GE90"
+          },
+          {
+            "code": "95-99",
+            "description": "95 to 99 years old",
+            "sdmx": "Y95T99"
+          },
+          {
+            "code": "95+",
+            "description": "95 years old and over",
+            "sdmx": "Y_GE95"
+          },
+          {
+            "code": "100+",
+            "description": "100 years old and over",
+            "sdmx": "Y_GE100"
+          },
+          {
+            "code": "18-19",
+            "description": "18 to 19 years old",
+            "sdmx": "Y18T19"
+          },
+          {
+            "code": "<10Y",
+            "description": "under 10 years old",
+            "sdmx": "Y0T9"
+          },
+          {
+            "code": "M36T47",
+            "description": "36 to 47 months old",
+            "sdmx": "M36T47"
+          },
+          {
+            "code": "18-24",
+            "description": "18 to 24 years old",
+            "sdmx": "Y18T24"
+          },
+          {
+            "code": "18-49",
+            "description": "18 to 49 years old",
+            "sdmx": "Y18T49"
+          },
+          {
+            "code": "18-50",
+            "description": "18 to 50 years old",
+            "sdmx": "Y18T50"
+          },
+          {
+            "code": "50+",
+            "description": "50 years old and over",
+            "sdmx": "Y_GE50"
+          },
+          {
+            "code": "1-4",
+            "description": "1 to 4 years old",
+            "sdmx": "Y1T4"
+          },
+          {
+            "code": "2-14",
+            "description": "2 to 14 years old",
+            "sdmx": "Y2T14"
+          },
+          {
+            "code": "18-74",
+            "description": "18 to 74 years old",
+            "sdmx": "Y18T74"
+          },
+          {
+            "code": "30-35",
+            "description": "30 to 35 years old",
+            "sdmx": "Y30T35"
+          },
+          {
+            "code": "<8Y",
+            "description": "under 8 years old",
+            "sdmx": "Y0T7"
+          },
+          {
+            "code": "M6T59",
+            "description": "6 to 59 months old",
+            "sdmx": "M6T59"
+          },
+          {
+            "code": "<6Y",
+            "description": "under 6 years old",
+            "sdmx": "Y0T5"
+          },
+          {
+            "code": "65-74",
+            "description": "65 to 74 years old",
+            "sdmx": "Y65T74"
+          },
+          {
+            "code": "75-84",
+            "description": "75 to 84 years old",
+            "sdmx": "Y75T84"
+          },
+          {
+            "code": "_U",
+            "description": "Unknown",
+            "sdmx": "_U"
+          },
+          {
+            "code": "_X",
+            "description": "Not available",
+            "sdmx": "_X"
+          },
+          {
+            "code": "<16Y",
+            "description": "under 16 years old",
+            "sdmx": "Y0T15"
+          },
+          {
+            "code": "<=45Y",
+            "description": "under 46 years old",
+            "sdmx": "Y0T45"
+          },
+          {
+            "code": "46+",
+            "description": "46 years old and over",
+            "sdmx": "Y_GE46"
+          },
+          {
+            "code": "15-28",
+            "description": "15 to 28 years old",
+            "sdmx": "Y15T28"
+          },
+          {
+            "code": "12-24",
+            "description": "12 to 24 years old",
+            "sdmx": "Y12T24"
+          },
+          {
+            "code": "20+",
+            "description": "20 years old and over",
+            "sdmx": "Y_GE20"
+          },
+          {
+            "code": "65+",
+            "description": "65 years old and over",
+            "sdmx": "Y_GE65"
+          },
+          {
+            "code": "25-44",
+            "description": "25 to 44 years old",
+            "sdmx": "Y25T44"
+          },
+          {
+            "code": "45-54",
+            "description": "45 to 54 years old",
+            "sdmx": "Y45T54"
+          },
+          {
+            "code": "45-64",
+            "description": "45 to 64 years old",
+            "sdmx": "Y45T64"
+          },
+          {
+            "code": "55-64",
+            "description": "55 to 64 years old",
+            "sdmx": "Y55T64"
+          },
+          {
+            "code": "6-65",
+            "description": "6 to 65 years old",
+            "sdmx": "Y6T65"
+          }
+        ]
+      },
+      {
+        "id": "Location",
+        "codes": [
+          {
+            "code": "RURAL",
+            "description": "Rural",
+            "sdmx": "R"
+          },
+          {
+            "code": "ALLAREA",
+            "description": "All areas",
+            "sdmx": "_T"
+          },
+          {
+            "code": "URBAN",
+            "description": "Urban",
+            "sdmx": "U"
+          }
+        ]
+      },
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      },
+      {
+        "id": "Sex",
+        "codes": [
+          {
+            "code": "FEMALE",
+            "description": "Female",
+            "sdmx": "F"
+          },
+          {
+            "code": "MALE",
+            "description": "Male",
+            "sdmx": "M"
+          },
+          {
+            "code": "BOTHSEX",
+            "description": "Both sexes",
+            "sdmx": "_T"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "1"
+        ],
+        "target": [
+          "1.1"
+        ],
+        "indicator": [
+          "1.1.1"
+        ],
+        "series": "SI_POV_DAY1",
+        "seriesDescription": "Proportion of population below international poverty line (%)",
+        "seriesCount": "11407",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 1992.0,
+        "value": "32",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": null,
+        "lowerBound": null,
+        "basePeriod": "2021",
+        "source": "Poverty and Inequality Portal, World Bank",
+        "geoInfoUrl": null,
+        "footnotes": [
+          "Accessed March 24, 2026. Based on data from WMS-I. Estimated from grouped consumption data.  Defined as the percentage of the population living on less than $3.00 a day at 2021 international prices. "
+        ],
+        "attributes": {
+          "Nature": "G",
+          "Units": "PERCENT"
+        },
+        "dimensions": {
+          "Age": "ALLAGE",
+          "Location": "ALLAREA",
+          "Sex": "BOTHSEX",
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "VC_DSR_LSGP": {
+    "size": 1,
+    "totalElements": 36,
+    "totalPages": 36,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PERCENT",
+            "description": "Percentage",
+            "sdmx": "PT"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "1"
+        ],
+        "target": [
+          "1.5"
+        ],
+        "indicator": [
+          "1.5.2"
+        ],
+        "series": "VC_DSR_LSGP",
+        "seriesDescription": "Direct economic loss attributed to disasters relative to GDP (%)",
+        "seriesCount": "1769",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2005.0,
+        "value": "0.00179033",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": null,
+        "lowerBound": null,
+        "basePeriod": null,
+        "source": "United Nations Office for Disaster Risk Reduction (2026)",
+        "geoInfoUrl": null,
+        "footnotes": [
+          "Disclaimer: The data being submitted by UNDRR has been extracted from the Sendai Framework Monitoring System as provided by designated national focal points. Some of the data has not followed an official validation process and may be subject to revision at a later date."
+        ],
+        "attributes": {
+          "Nature": "C",
+          "Units": "PERCENT"
+        },
+        "dimensions": {
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "AG_PRD_FIESMS": {
+    "size": 1,
+    "totalElements": 30,
+    "totalPages": 30,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Observation Status",
+        "codes": [
+          {
+            "code": "A",
+            "description": "Normal value",
+            "sdmx": "A"
+          },
+          {
+            "code": "B",
+            "description": "Time series break",
+            "sdmx": "B"
+          },
+          {
+            "code": "D",
+            "description": "Definition differs",
+            "sdmx": "D"
+          },
+          {
+            "code": "E",
+            "description": "Estimated value",
+            "sdmx": "E"
+          },
+          {
+            "code": "F",
+            "description": "Forecast value",
+            "sdmx": "F"
+          },
+          {
+            "code": "G",
+            "description": "Experimental value",
+            "sdmx": "G"
+          },
+          {
+            "code": "H",
+            "description": "Missing value; holiday or weekend",
+            "sdmx": "H"
+          },
+          {
+            "code": "I",
+            "description": "Imputed value (CCSA definition)",
+            "sdmx": "I"
+          },
+          {
+            "code": "J",
+            "description": "Derogation",
+            "sdmx": "J"
+          },
+          {
+            "code": "K",
+            "description": "Data included in another category",
+            "sdmx": "K"
+          },
+          {
+            "code": "L",
+            "description": "Missing value; data exist but were not collected",
+            "sdmx": "L"
+          },
+          {
+            "code": "M",
+            "description": "Missing value; data cannot exist",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Not significant",
+            "sdmx": "N"
+          },
+          {
+            "code": "O",
+            "description": "Missing value",
+            "sdmx": "O"
+          },
+          {
+            "code": "P",
+            "description": "Provisional value",
+            "sdmx": "P"
+          },
+          {
+            "code": "Q",
+            "description": "Missing value; suppressed",
+            "sdmx": "Q"
+          },
+          {
+            "code": "S",
+            "description": "Strike and other special events",
+            "sdmx": "S"
+          },
+          {
+            "code": "U",
+            "description": "Low reliability",
+            "sdmx": "U"
+          },
+          {
+            "code": "V",
+            "description": "Unvalidated value",
+            "sdmx": "V"
+          },
+          {
+            "code": "W",
+            "description": "Includes data from another category",
+            "sdmx": "W"
+          }
+        ]
+      },
+      {
+        "id": "UnitMultiplier",
+        "codes": [
+          {
+            "code": "UNIT",
+            "description": "Units",
+            "sdmx": "0"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PERCENT",
+            "description": "Percentage",
+            "sdmx": "PT"
+          },
+          {
+            "code": "PERCENT",
+            "description": "Percentage",
+            "sdmx": "PT"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Age",
+        "codes": [
+          {
+            "code": "ALLAGE",
+            "description": "All age ranges or no breaks by age",
+            "sdmx": "_T"
+          },
+          {
+            "code": "15+",
+            "description": "15 years old and over",
+            "sdmx": "Y_GE15"
+          },
+          {
+            "code": "15+",
+            "description": "15 years old and over",
+            "sdmx": "Y_GE15"
+          }
+        ]
+      },
+      {
+        "id": "Freq",
+        "codes": [
+          {
+            "code": "ANNUAL",
+            "description": "Annual",
+            "sdmx": "A"
+          }
+        ]
+      },
+      {
+        "id": "Location",
+        "codes": [
+          {
+            "code": "ALLAREA",
+            "description": "All areas",
+            "sdmx": "_T"
+          },
+          {
+            "code": "RURAL",
+            "description": "Rural",
+            "sdmx": "R"
+          },
+          {
+            "code": "ALLAREA",
+            "description": "All areas",
+            "sdmx": "_T"
+          },
+          {
+            "code": "URBAN",
+            "description": "Urban",
+            "sdmx": "U"
+          },
+          {
+            "code": "CITY",
+            "description": "City",
+            "sdmx": "CITY"
+          },
+          {
+            "code": "TSUB",
+            "description": "Town and semi-dense area",
+            "sdmx": "TSUB"
+          }
+        ]
+      },
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      },
+      {
+        "id": "Sex",
+        "codes": [
+          {
+            "code": "_N",
+            "description": "No response",
+            "sdmx": "_N"
+          },
+          {
+            "code": "_O",
+            "description": "Other",
+            "sdmx": "_O"
+          },
+          {
+            "code": "_U",
+            "description": "Unknown",
+            "sdmx": "_U"
+          },
+          {
+            "code": "BOTHSEX",
+            "description": "Both sexes",
+            "sdmx": "_T"
+          },
+          {
+            "code": "FEMALE",
+            "description": "Female",
+            "sdmx": "F"
+          },
+          {
+            "code": "MALE",
+            "description": "Male",
+            "sdmx": "M"
+          },
+          {
+            "code": "BOTHSEX",
+            "description": "Both sexes",
+            "sdmx": "_T"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "2"
+        ],
+        "target": [
+          "2.1"
+        ],
+        "indicator": [
+          "2.1.2"
+        ],
+        "series": "AG_PRD_FIESMS",
+        "seriesDescription": "Prevalence of moderate or severe food insecurity in the population (%)",
+        "seriesCount": "7666",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2015.0,
+        "value": "54.1",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": "55.4",
+        "lowerBound": "52.7",
+        "basePeriod": null,
+        "source": "Food and Agriculture Organization of the United Nations (FAO)",
+        "geoInfoUrl": null,
+        "footnotes": [
+          "3-year average of the period 2014-2016."
+        ],
+        "attributes": {
+          "Nature": "E",
+          "Units": "PERCENT",
+          "Observation Status": "E"
+        },
+        "dimensions": {
+          "Age": "15+",
+          "Location": "ALLAREA",
+          "Sex": "FEMALE",
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "SH_STA_STNT": {
+    "size": 1,
+    "totalElements": 75,
+    "totalPages": 75,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Observation Status",
+        "codes": [
+          {
+            "code": "A",
+            "description": "Normal value",
+            "sdmx": "A"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PERCENT",
+            "description": "Percentage",
+            "sdmx": "PT"
+          },
+          {
+            "code": "PER_POP_U5",
+            "description": "% of children aged 0-59 months",
+            "sdmx": "PT"
+          },
+          {
+            "code": "PER_POP_U5",
+            "description": "% of children aged 0-59 months",
+            "sdmx": "PT"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Age",
+        "codes": [
+          {
+            "code": "<5Y",
+            "description": "under 5 years old",
+            "sdmx": "Y0T4"
+          },
+          {
+            "code": "<5Y",
+            "description": "under 5 years old",
+            "sdmx": "Y0T4"
+          }
+        ]
+      },
+      {
+        "id": "Location",
+        "codes": [
+          {
+            "code": "RURAL",
+            "description": "Rural",
+            "sdmx": "R"
+          },
+          {
+            "code": "ALLAREA",
+            "description": "All areas",
+            "sdmx": "_T"
+          },
+          {
+            "code": "URBAN",
+            "description": "Urban",
+            "sdmx": "U"
+          }
+        ]
+      },
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      },
+      {
+        "id": "Sex",
+        "codes": [
+          {
+            "code": "FEMALE",
+            "description": "Female",
+            "sdmx": "F"
+          },
+          {
+            "code": "MALE",
+            "description": "Male",
+            "sdmx": "M"
+          },
+          {
+            "code": "BOTHSEX",
+            "description": "Both sexes",
+            "sdmx": "_T"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "2"
+        ],
+        "target": [
+          "2.2"
+        ],
+        "indicator": [
+          "2.2.1"
+        ],
+        "series": "SH_STA_STNT",
+        "seriesDescription": "Proportion of children moderately or severely stunted (%)",
+        "seriesCount": "14850",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2000.0,
+        "value": "41.4",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": "43.2",
+        "lowerBound": "39.7",
+        "basePeriod": null,
+        "source": "Joint Child Malnutrition Estimates (2025 Edition), United Nations Children's Fund (UNICEF), World Health Organisation (WHO) and the World Bank Group.",
+        "geoInfoUrl": null,
+        "footnotes": [
+          ""
+        ],
+        "attributes": {
+          "Nature": "M",
+          "Units": "PER_POP_U5",
+          "Observation Status": "A"
+        },
+        "dimensions": {
+          "Age": "<5Y",
+          "Sex": "MALE",
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "SH_STA_WAST": {
+    "size": 1,
+    "totalElements": 8,
+    "totalPages": 8,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Observation Status",
+        "codes": [
+          {
+            "code": "A",
+            "description": "Normal value",
+            "sdmx": "A"
+          },
+          {
+            "code": "D",
+            "description": "Definition differs",
+            "sdmx": "D"
+          },
+          {
+            "code": "E",
+            "description": "Estimated value",
+            "sdmx": "E"
+          }
+        ]
+      },
+      {
+        "id": "UnitMultiplier",
+        "codes": [
+          {
+            "code": "UNIT",
+            "description": "Units",
+            "sdmx": "0"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PERCENT",
+            "description": "Percentage",
+            "sdmx": "PT"
+          },
+          {
+            "code": "PER_POP_U5",
+            "description": "% of children aged 0-59 months",
+            "sdmx": "PT"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Age",
+        "codes": [
+          {
+            "code": "<5Y",
+            "description": "under 5 years old",
+            "sdmx": "Y0T4"
+          },
+          {
+            "code": "<5Y",
+            "description": "under 5 years old",
+            "sdmx": "Y0T4"
+          }
+        ]
+      },
+      {
+        "id": "Freq",
+        "codes": [
+          {
+            "code": "ANNUAL",
+            "description": "Annual",
+            "sdmx": "A"
+          }
+        ]
+      },
+      {
+        "id": "Location",
+        "codes": [
+          {
+            "code": "ALLAREA",
+            "description": "All areas",
+            "sdmx": "_T"
+          },
+          {
+            "code": "RURAL",
+            "description": "Rural",
+            "sdmx": "R"
+          },
+          {
+            "code": "ALLAREA",
+            "description": "All areas",
+            "sdmx": "_T"
+          },
+          {
+            "code": "URBAN",
+            "description": "Urban",
+            "sdmx": "U"
+          }
+        ]
+      },
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      },
+      {
+        "id": "Sex",
+        "codes": [
+          {
+            "code": "FEMALE",
+            "description": "Female",
+            "sdmx": "F"
+          },
+          {
+            "code": "MALE",
+            "description": "Male",
+            "sdmx": "M"
+          },
+          {
+            "code": "BOTHSEX",
+            "description": "Both sexes",
+            "sdmx": "_T"
+          },
+          {
+            "code": "BOTHSEX",
+            "description": "Both sexes",
+            "sdmx": "_T"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "2"
+        ],
+        "target": [
+          "2.2"
+        ],
+        "indicator": [
+          "2.2.2"
+        ],
+        "series": "SH_STA_WAST",
+        "seriesDescription": "Proportion of children moderately or severely wasted (%)",
+        "seriesCount": "1520",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2000.0,
+        "value": "7.4",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": "8.4",
+        "lowerBound": "6.5",
+        "basePeriod": null,
+        "source": "Kenya multiple indicator cluster survey 2000 (MICS). Government  of Kenya and Unicef. Nairobi, Kenya, 2002",
+        "geoInfoUrl": null,
+        "footnotes": [
+          "Height/length modality (standing/lying) was not collected"
+        ],
+        "attributes": {
+          "Nature": "CA",
+          "Units": "PER_POP_U5",
+          "Observation Status": "A"
+        },
+        "dimensions": {
+          "Age": "<5Y",
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "SN_ITK_DEFC": {
+    "size": 1,
+    "totalElements": 24,
+    "totalPages": 24,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Observation Status",
+        "codes": [
+          {
+            "code": "A",
+            "description": "Normal value",
+            "sdmx": "A"
+          },
+          {
+            "code": "E",
+            "description": "Estimated value",
+            "sdmx": "E"
+          },
+          {
+            "code": "I",
+            "description": "Imputed value (CCSA definition)",
+            "sdmx": "I"
+          },
+          {
+            "code": "L",
+            "description": "Missing value; data exist but were not collected",
+            "sdmx": "L"
+          },
+          {
+            "code": "M",
+            "description": "Missing value; data cannot exist",
+            "sdmx": "M"
+          },
+          {
+            "code": "O",
+            "description": "Missing value",
+            "sdmx": "O"
+          },
+          {
+            "code": "Q",
+            "description": "Missing value; suppressed",
+            "sdmx": "Q"
+          },
+          {
+            "code": "V",
+            "description": "Unvalidated value",
+            "sdmx": "V"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PERCENT",
+            "description": "Percentage",
+            "sdmx": "PT"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Age",
+        "codes": [
+          {
+            "code": "ALLAGE",
+            "description": "All age ranges or no breaks by age",
+            "sdmx": "_T"
+          },
+          {
+            "code": "18+",
+            "description": "18 years old and over",
+            "sdmx": "Y_GE18"
+          }
+        ]
+      },
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      },
+      {
+        "id": "Sex",
+        "codes": [
+          {
+            "code": "FEMALE",
+            "description": "Female",
+            "sdmx": "F"
+          },
+          {
+            "code": "MALE",
+            "description": "Male",
+            "sdmx": "M"
+          },
+          {
+            "code": "BOTHSEX",
+            "description": "Both sexes",
+            "sdmx": "_T"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "2"
+        ],
+        "target": [
+          "2.1"
+        ],
+        "indicator": [
+          "2.1.1"
+        ],
+        "series": "SN_ITK_DEFC",
+        "seriesDescription": "Prevalence of undernourishment (%)",
+        "seriesCount": "5005",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2001.0,
+        "value": "31.8",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": null,
+        "lowerBound": null,
+        "basePeriod": null,
+        "source": "Food and Agriculture Organization of the United Nations (FAO)",
+        "geoInfoUrl": null,
+        "footnotes": [
+          "3-year average of the period 2000-2002."
+        ],
+        "attributes": {
+          "Nature": "E",
+          "Units": "PERCENT",
+          "Observation Status": "E"
+        },
+        "dimensions": {
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "SH_DYN_MORT": {
+    "size": 1,
+    "totalElements": 75,
+    "totalPages": 75,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PER_1000_LIVE_BIRTHS",
+            "description": "Per 1,000 live births",
+            "sdmx": "PER_1000_LIVE_BIRTHS"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Age",
+        "codes": [
+          {
+            "code": "<5Y",
+            "description": "under 5 years old",
+            "sdmx": "Y0T4"
+          }
+        ]
+      },
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      },
+      {
+        "id": "Sex",
+        "codes": [
+          {
+            "code": "FEMALE",
+            "description": "Female",
+            "sdmx": "F"
+          },
+          {
+            "code": "MALE",
+            "description": "Male",
+            "sdmx": "M"
+          },
+          {
+            "code": "BOTHSEX",
+            "description": "Both sexes",
+            "sdmx": "_T"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "3"
+        ],
+        "target": [
+          "3.2"
+        ],
+        "indicator": [
+          "3.2.1"
+        ],
+        "series": "SH_DYN_MORT",
+        "seriesDescription": "Under-five mortality rate, by sex (deaths per 1,000 live births)",
+        "seriesCount": "16575",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2000.0,
+        "value": "95.19243149",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": "102.539",
+        "lowerBound": "88.4801",
+        "basePeriod": null,
+        "source": "UN_IGME",
+        "geoInfoUrl": null,
+        "footnotes": [],
+        "attributes": {
+          "Nature": "C",
+          "Units": "PER_1000_LIVE_BIRTHS"
+        },
+        "dimensions": {
+          "Age": "<5Y",
+          "Sex": "BOTHSEX",
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "SH_DYN_NMRT": {
+    "size": 1,
+    "totalElements": 25,
+    "totalPages": 25,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PER_1000_LIVE_BIRTHS",
+            "description": "Per 1,000 live births",
+            "sdmx": "PER_1000_LIVE_BIRTHS"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Age",
+        "codes": [
+          {
+            "code": "<1M",
+            "description": "under 1 month old",
+            "sdmx": "M0"
+          }
+        ]
+      },
+      {
+        "id": "Location",
+        "codes": [
+          {
+            "code": "RURAL",
+            "description": "Rural",
+            "sdmx": "R"
+          },
+          {
+            "code": "ALLAREA",
+            "description": "All areas",
+            "sdmx": "_T"
+          },
+          {
+            "code": "URBAN",
+            "description": "Urban",
+            "sdmx": "U"
+          }
+        ]
+      },
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      },
+      {
+        "id": "Sex",
+        "codes": [
+          {
+            "code": "FEMALE",
+            "description": "Female",
+            "sdmx": "F"
+          },
+          {
+            "code": "MALE",
+            "description": "Male",
+            "sdmx": "M"
+          },
+          {
+            "code": "BOTHSEX",
+            "description": "Both sexes",
+            "sdmx": "_T"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "3"
+        ],
+        "target": [
+          "3.2"
+        ],
+        "indicator": [
+          "3.2.2"
+        ],
+        "series": "SH_DYN_NMRT",
+        "seriesDescription": "Neonatal mortality rate (deaths per 1,000 live births)",
+        "seriesCount": "5525",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2000.0,
+        "value": "26.34790147",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": "29.0517",
+        "lowerBound": "23.747",
+        "basePeriod": null,
+        "source": "UN_IGME",
+        "geoInfoUrl": null,
+        "footnotes": [],
+        "attributes": {
+          "Nature": "C",
+          "Units": "PER_1000_LIVE_BIRTHS"
+        },
+        "dimensions": {
+          "Age": "<1M",
+          "Location": "ALLAREA",
+          "Sex": "BOTHSEX",
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "SH_ACS_DTP3": {
+    "size": 1,
+    "totalElements": 25,
+    "totalPages": 25,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PERCENT",
+            "description": "Percentage",
+            "sdmx": "PT"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "3"
+        ],
+        "target": [
+          "3.b"
+        ],
+        "indicator": [
+          "3.b.1"
+        ],
+        "series": "SH_ACS_DTP3",
+        "seriesDescription": "Proportion of the target population who received 3 doses of diphtheria-tetanus-pertussis (DTP3) vaccine (%)",
+        "seriesCount": "5831",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2000.0,
+        "value": "82",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": null,
+        "lowerBound": null,
+        "basePeriod": null,
+        "source": "WHO/UNICEF coverage estimates 2024 revision, July 2025",
+        "geoInfoUrl": null,
+        "footnotes": [
+          ""
+        ],
+        "attributes": {
+          "Nature": "E",
+          "Units": "PERCENT"
+        },
+        "dimensions": {
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "SE_TOT_CPLR": {
+    "size": 1,
+    "totalElements": 770,
+    "totalPages": 770,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PERCENT",
+            "description": "Percentage",
+            "sdmx": "PT"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Education level",
+        "codes": [
+          {
+            "code": "_T",
+            "description": "Total or not breakdown",
+            "sdmx": "_T"
+          },
+          {
+            "code": "ISCED11_0",
+            "description": "Early childhood education",
+            "sdmx": "ISCED11_0"
+          },
+          {
+            "code": "ISCED11_01",
+            "description": "Early childhood educational development ",
+            "sdmx": "ISCED11_01"
+          },
+          {
+            "code": "ISCED11_10",
+            "description": "Primary education",
+            "sdmx": "ISCED11_10"
+          },
+          {
+            "code": "ISCED11_24",
+            "description": "Lower secondary general education",
+            "sdmx": "ISCED11_24"
+          },
+          {
+            "code": "ISCED11_25",
+            "description": "Lower secondary vocational education",
+            "sdmx": "ISCED11_25"
+          },
+          {
+            "code": "ISCED11_34",
+            "description": "Upper secondary general education",
+            "sdmx": "ISCED11_34"
+          },
+          {
+            "code": "ISCED11_35",
+            "description": "Upper secondary vocational education",
+            "sdmx": "ISCED11_35"
+          },
+          {
+            "code": "ISCED11_4",
+            "description": "Post-secondary non-tertiary education",
+            "sdmx": "ISCED11_4"
+          },
+          {
+            "code": "ISCED11_44",
+            "description": "Post-secondary non-tertiary general education",
+            "sdmx": "ISCED11_44"
+          },
+          {
+            "code": "ISCED11_45",
+            "description": "Post-secondary non-tertiary vocational education",
+            "sdmx": "ISCED11_45"
+          },
+          {
+            "code": "ISCED11_5",
+            "description": "Short-cycle tertiary education",
+            "sdmx": "ISCED11_5"
+          },
+          {
+            "code": "ISCED11_54",
+            "description": "Short-cycle tertiary general education",
+            "sdmx": "ISCED11_54"
+          },
+          {
+            "code": "ISCED11_55",
+            "description": "Short-cycle tertiary vocational education",
+            "sdmx": "ISCED11_55"
+          },
+          {
+            "code": "ISCED11_6",
+            "description": "Bachelor\u2019s or equivalent level",
+            "sdmx": "ISCED11_6"
+          },
+          {
+            "code": "ISCED11_7",
+            "description": "Master\u2019s or equivalent level",
+            "sdmx": "ISCED11_7"
+          },
+          {
+            "code": "ISCED11_8",
+            "description": "Doctoral or equivalent level",
+            "sdmx": "ISCED11_8"
+          },
+          {
+            "code": "ISCED11_9",
+            "description": "Not elsewhere classified   ",
+            "sdmx": "ISCED11_9"
+          },
+          {
+            "code": "ISCED11_99",
+            "description": "Not elsewhere classified ",
+            "sdmx": "ISCED11_99"
+          },
+          {
+            "code": "ISCED11A_0",
+            "description": "Less than primary education",
+            "sdmx": "ISCED11A_0"
+          },
+          {
+            "code": "ISCED11A_01",
+            "description": "Never attended an education programme / No schooling",
+            "sdmx": "ISCED11A_01"
+          },
+          {
+            "code": "ISCED11A_02",
+            "description": "Some early childhood education",
+            "sdmx": "ISCED11A_02"
+          },
+          {
+            "code": "ISCED11A_03",
+            "description": "Some primary education",
+            "sdmx": "ISCED11A_03"
+          },
+          {
+            "code": "ISCED11A_1",
+            "description": "Primary education, sufficient for level completion",
+            "sdmx": "ISCED11A_1"
+          },
+          {
+            "code": "ISCED11A_2",
+            "description": "Lower secondary education, sufficient for level completion",
+            "sdmx": "ISCED11A_2"
+          },
+          {
+            "code": "ISCED11A_3",
+            "description": "Upper secondary education, sufficient for level completion",
+            "sdmx": "ISCED11A_3"
+          },
+          {
+            "code": "ISCED11A_4",
+            "description": "Post-secondary non-tertiary education, sufficient for level completion",
+            "sdmx": "ISCED11A_4"
+          },
+          {
+            "code": "ISCED11A_5",
+            "description": "Short-cycle tertiary education, sufficient for level completion",
+            "sdmx": "ISCED11A_5"
+          },
+          {
+            "code": "ISCED11A_6",
+            "description": "Bachelor\u2019s or equivalent level, sufficient for level completion",
+            "sdmx": "ISCED11A_6"
+          },
+          {
+            "code": "ISCED11A_7",
+            "description": "Master\u2019s or equivalent level, sufficient for level completion",
+            "sdmx": "ISCED11A_7"
+          },
+          {
+            "code": "ISCED11A_8",
+            "description": "Doctoral or equivalent level, sufficient for level completion",
+            "sdmx": "ISCED11A_8"
+          },
+          {
+            "code": "AGGA_01_02",
+            "description": "No primary schooling",
+            "sdmx": "AGGA_01_02"
+          },
+          {
+            "code": "AGG_02T8",
+            "description": "Pre-primary to tertiary education",
+            "sdmx": "AGG_02T8"
+          },
+          {
+            "code": "AGG_1_2",
+            "description": "Primary and lower secondary education (basic education)",
+            "sdmx": "AGG_1_2"
+          },
+          {
+            "code": "AGG_1T3",
+            "description": "Primary and secondary education",
+            "sdmx": "AGG_1T3"
+          },
+          {
+            "code": "AGG_5T8",
+            "description": "Tertiary education",
+            "sdmx": "AGG_5T8"
+          },
+          {
+            "code": "AGG_3_4",
+            "description": "Secondary and post-secondary non-tertiary education (intermediate)",
+            "sdmx": "AGG_3_4"
+          },
+          {
+            "code": "ISCED11_25_35_45",
+            "description": "Vocational secondary education",
+            "sdmx": "ISCED11_25_35_45"
+          },
+          {
+            "code": "ISCED97_0",
+            "description": "Pre-primary education",
+            "sdmx": "ISCED97_0"
+          },
+          {
+            "code": "ISCED97_1",
+            "description": "Primary education or first stage of basic education",
+            "sdmx": "ISCED97_1"
+          },
+          {
+            "code": "ISCED97_2",
+            "description": "Lower secondary or second stage of basic education",
+            "sdmx": "ISCED97_2"
+          },
+          {
+            "code": "ISCED97_3",
+            "description": "Upper secondary education",
+            "sdmx": "ISCED97_3"
+          },
+          {
+            "code": "ISCED97_4",
+            "description": "Post-secondary non-tertiary education",
+            "sdmx": "ISCED97_4"
+          },
+          {
+            "code": "ISCED97_5",
+            "description": "First stage of tertiary education (not leading directly to an advanced research qualification)",
+            "sdmx": "ISCED97_5"
+          },
+          {
+            "code": "ISCED97_5A",
+            "description": "First stage of tertiary education (theoretically based/research preparatory)",
+            "sdmx": "ISCED97_5A"
+          },
+          {
+            "code": "ISCED97_5B",
+            "description": "First stage of tertiary education (practical/technical/occupationally specific)",
+            "sdmx": "ISCED97_5B"
+          },
+          {
+            "code": "ISCED97_6",
+            "description": "Second stage of tertiary education (leading to an advanced research qualification)",
+            "sdmx": "ISCED97_6"
+          },
+          {
+            "code": "GRAD23",
+            "description": "Grades 2/3",
+            "sdmx": "ISCED11A_0_G23"
+          },
+          {
+            "code": "LOWSEC",
+            "description": "Lower secondary",
+            "sdmx": "ISCED11_2"
+          },
+          {
+            "code": "PRIMAR",
+            "description": "Primary",
+            "sdmx": "ISCED11_1"
+          },
+          {
+            "code": "PREPRI",
+            "description": "Pre-primary",
+            "sdmx": "ISCED11_02"
+          },
+          {
+            "code": "SECOND",
+            "description": "Secondary",
+            "sdmx": "AGG_2_3"
+          },
+          {
+            "code": "UPPSEC",
+            "description": "Upper secondary",
+            "sdmx": "ISCED11_3"
+          }
+        ]
+      },
+      {
+        "id": "Location",
+        "codes": [
+          {
+            "code": "RURAL",
+            "description": "Rural",
+            "sdmx": "R"
+          },
+          {
+            "code": "ALLAREA",
+            "description": "All areas",
+            "sdmx": "_T"
+          },
+          {
+            "code": "URBAN",
+            "description": "Urban",
+            "sdmx": "U"
+          }
+        ]
+      },
+      {
+        "id": "Quantile",
+        "codes": [
+          {
+            "code": "B50",
+            "description": "Bottom 50%",
+            "sdmx": "B50"
+          },
+          {
+            "code": "R50",
+            "description": "Richest 50%",
+            "sdmx": "R50"
+          },
+          {
+            "code": "Q1",
+            "description": "Quantile 1 (poorest)",
+            "sdmx": "Q1"
+          },
+          {
+            "code": "Q2",
+            "description": "Quantile 2",
+            "sdmx": "Q2"
+          },
+          {
+            "code": "Q3",
+            "description": "Quantile 3",
+            "sdmx": "Q3"
+          },
+          {
+            "code": "Q4",
+            "description": "Quantile 4",
+            "sdmx": "Q4"
+          },
+          {
+            "code": "Q5",
+            "description": "Quantile 5 (richest)",
+            "sdmx": "Q5"
+          },
+          {
+            "code": "B40",
+            "description": "Bottom 40%",
+            "sdmx": "B40"
+          },
+          {
+            "code": "R60",
+            "description": "Richest 60%",
+            "sdmx": "R60"
+          },
+          {
+            "code": "_T",
+            "description": "Total (national average) or no breakdown",
+            "sdmx": "_T"
+          }
+        ]
+      },
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      },
+      {
+        "id": "Sex",
+        "codes": [
+          {
+            "code": "_N",
+            "description": "No response",
+            "sdmx": "_N"
+          },
+          {
+            "code": "_O",
+            "description": "Other",
+            "sdmx": "_O"
+          },
+          {
+            "code": "_U",
+            "description": "Unknown",
+            "sdmx": "_U"
+          },
+          {
+            "code": "FEMALE",
+            "description": "Female",
+            "sdmx": "F"
+          },
+          {
+            "code": "MALE",
+            "description": "Male",
+            "sdmx": "M"
+          },
+          {
+            "code": "BOTHSEX",
+            "description": "Both sexes",
+            "sdmx": "_T"
+          },
+          {
+            "code": "_X",
+            "description": "Not available",
+            "sdmx": "_X"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "4"
+        ],
+        "target": [
+          "4.1"
+        ],
+        "indicator": [
+          "4.1.2"
+        ],
+        "series": "SE_TOT_CPLR",
+        "seriesDescription": "Completion rate, by sex, location, wealth quintile and education level (%)",
+        "seriesCount": "116691",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2000.0,
+        "value": "63.11",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": null,
+        "lowerBound": null,
+        "basePeriod": null,
+        "source": "Kenya MICS 2000 (GEMR). Data extracted on 26 February 2026.",
+        "geoInfoUrl": null,
+        "footnotes": [],
+        "attributes": {
+          "Nature": "C",
+          "Units": "PERCENT"
+        },
+        "dimensions": {
+          "Location": "ALLAREA",
+          "Sex": "BOTHSEX",
+          "Education level": "PRIMAR",
+          "Reporting Type": "G",
+          "Quantile": "_T"
+        }
+      }
+    ]
+  },
+  "SE_PRE_PARTN": {
+    "size": 1,
+    "totalElements": 30,
+    "totalPages": 30,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PERCENT",
+            "description": "Percentage",
+            "sdmx": "PT"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      },
+      {
+        "id": "Sex",
+        "codes": [
+          {
+            "code": "FEMALE",
+            "description": "Female",
+            "sdmx": "F"
+          },
+          {
+            "code": "MALE",
+            "description": "Male",
+            "sdmx": "M"
+          },
+          {
+            "code": "BOTHSEX",
+            "description": "Both sexes",
+            "sdmx": "_T"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "4"
+        ],
+        "target": [
+          "4.2"
+        ],
+        "indicator": [
+          "4.2.2"
+        ],
+        "series": "SE_PRE_PARTN",
+        "seriesDescription": "Participation rate in organized learning (one year before the official primary entry age), by sex (%)",
+        "seriesCount": "9064",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2001.0,
+        "value": "47.40714",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": null,
+        "lowerBound": null,
+        "basePeriod": null,
+        "source": "SOURCE: Country's submission to UIS SFE Questionnaire A Data extracted on 26 February 2026.",
+        "geoInfoUrl": null,
+        "footnotes": [],
+        "attributes": {
+          "Nature": "E",
+          "Units": "PERCENT"
+        },
+        "dimensions": {
+          "Sex": "BOTHSEX",
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "SP_DYN_MRBF18": {
+    "size": 1,
+    "totalElements": 1,
+    "totalPages": 1,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PERCENT",
+            "description": "Percentage",
+            "sdmx": "PT"
+          },
+          {
+            "code": "PER_MARW_20T24Y",
+            "description": "% of married women aged 20-24 years",
+            "sdmx": "PT_TTTTT"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Age",
+        "codes": [
+          {
+            "code": "20-24",
+            "description": "20 to 24 years old",
+            "sdmx": "Y20T24"
+          }
+        ]
+      },
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      },
+      {
+        "id": "Sex",
+        "codes": [
+          {
+            "code": "FEMALE",
+            "description": "Female",
+            "sdmx": "F"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "5"
+        ],
+        "target": [
+          "5.3"
+        ],
+        "indicator": [
+          "5.3.1"
+        ],
+        "series": "SP_DYN_MRBF18",
+        "seriesDescription": "Proportion of women aged 20-24 years who were married or in a union before age 18 (%)",
+        "seriesCount": "224",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2022.0,
+        "value": "12.5",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": null,
+        "lowerBound": null,
+        "basePeriod": null,
+        "source": "DHS 2022",
+        "geoInfoUrl": null,
+        "footnotes": [
+          "Mandera County could not be visited due to insecurity"
+        ],
+        "attributes": {
+          "Nature": "C",
+          "Units": "PERCENT"
+        },
+        "dimensions": {
+          "Age": "20-24",
+          "Sex": "FEMALE",
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "SP_ACS_BSRVH2O": {
+    "size": 1,
+    "totalElements": 75,
+    "totalPages": 75,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PERCENT",
+            "description": "Percentage",
+            "sdmx": "PT"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Location",
+        "codes": [
+          {
+            "code": "RURAL",
+            "description": "Rural",
+            "sdmx": "R"
+          },
+          {
+            "code": "ALLAREA",
+            "description": "All areas",
+            "sdmx": "_T"
+          },
+          {
+            "code": "URBAN",
+            "description": "Urban",
+            "sdmx": "U"
+          }
+        ]
+      },
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "1"
+        ],
+        "target": [
+          "1.4"
+        ],
+        "indicator": [
+          "1.4.1"
+        ],
+        "series": "SP_ACS_BSRVH2O",
+        "seriesDescription": "Proportion of population using basic drinking water services, by location (%)",
+        "seriesCount": "17183",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2000.0,
+        "value": "45.3600235",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": null,
+        "lowerBound": null,
+        "basePeriod": null,
+        "source": "WHO/UNICEF Joint Monitoring Programme for Water Supply, Sanitation and Hygiene (2025)",
+        "geoInfoUrl": null,
+        "footnotes": [],
+        "attributes": {
+          "Nature": "E",
+          "Units": "PERCENT"
+        },
+        "dimensions": {
+          "Location": "ALLAREA",
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "ER_H2O_STRESS": {
+    "size": 1,
+    "totalElements": 96,
+    "totalPages": 96,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Observation Status",
+        "codes": [
+          {
+            "code": "A",
+            "description": "Normal value",
+            "sdmx": "A"
+          },
+          {
+            "code": "B",
+            "description": "Time series break",
+            "sdmx": "B"
+          },
+          {
+            "code": "D",
+            "description": "Definition differs",
+            "sdmx": "D"
+          },
+          {
+            "code": "E",
+            "description": "Estimated value",
+            "sdmx": "E"
+          },
+          {
+            "code": "F",
+            "description": "Forecast value",
+            "sdmx": "F"
+          },
+          {
+            "code": "G",
+            "description": "Experimental value",
+            "sdmx": "G"
+          },
+          {
+            "code": "H",
+            "description": "Missing value; holiday or weekend",
+            "sdmx": "H"
+          },
+          {
+            "code": "I",
+            "description": "Imputed value (CCSA definition)",
+            "sdmx": "I"
+          },
+          {
+            "code": "J",
+            "description": "Derogation",
+            "sdmx": "J"
+          },
+          {
+            "code": "K",
+            "description": "Data included in another category",
+            "sdmx": "K"
+          },
+          {
+            "code": "L",
+            "description": "Missing value; data exist but were not collected",
+            "sdmx": "L"
+          },
+          {
+            "code": "M",
+            "description": "Missing value; data cannot exist",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Not significant",
+            "sdmx": "N"
+          },
+          {
+            "code": "O",
+            "description": "Missing value",
+            "sdmx": "O"
+          },
+          {
+            "code": "P",
+            "description": "Provisional value",
+            "sdmx": "P"
+          },
+          {
+            "code": "Q",
+            "description": "Missing value; suppressed",
+            "sdmx": "Q"
+          },
+          {
+            "code": "S",
+            "description": "Strike and other special events",
+            "sdmx": "S"
+          },
+          {
+            "code": "U",
+            "description": "Low reliability",
+            "sdmx": "U"
+          },
+          {
+            "code": "V",
+            "description": "Unvalidated value",
+            "sdmx": "V"
+          },
+          {
+            "code": "W",
+            "description": "Includes data from another category",
+            "sdmx": "W"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PERCENT",
+            "description": "Percentage",
+            "sdmx": "PT"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Activity",
+        "codes": [
+          {
+            "code": "TOTAL",
+            "description": "No breakdown",
+            "sdmx": "_T"
+          },
+          {
+            "code": "INDUSTRIES",
+            "description": "Industries",
+            "sdmx": "ISIC4_BTFXE"
+          },
+          {
+            "code": "ISIC4_A01_A0210_A0322",
+            "description": "Agriculture (ISIC4 A01 A0210 A0322)",
+            "sdmx": "ISIC4_A01_A0210_A0322"
+          },
+          {
+            "code": "ISIC4_GTT",
+            "description": "Services (G to T)",
+            "sdmx": "ISIC4_GTT"
+          }
+        ]
+      },
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "6"
+        ],
+        "target": [
+          "6.4"
+        ],
+        "indicator": [
+          "6.4.2"
+        ],
+        "series": "ER_H2O_STRESS",
+        "seriesDescription": "Level of water stress: freshwater withdrawal as a proportion of available freshwater resources (%)",
+        "seriesCount": "20016",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2000.0,
+        "value": "8.33",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": null,
+        "lowerBound": null,
+        "basePeriod": null,
+        "source": "Food and Agriculture Organisation of United Nations (FAO)",
+        "geoInfoUrl": null,
+        "footnotes": [],
+        "attributes": {
+          "Nature": "E",
+          "Units": "PERCENT",
+          "Observation Status": "E"
+        },
+        "dimensions": {
+          "Reporting Type": "G",
+          "Activity": "ISIC4_A01_A0210_A0322"
+        }
+      }
+    ]
+  },
+  "EN_LND_SLUM": {
+    "size": 1,
+    "totalElements": 12,
+    "totalPages": 12,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PERCENT",
+            "description": "Percentage",
+            "sdmx": "PT"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Location",
+        "codes": [
+          {
+            "code": "URBAN",
+            "description": "Urban",
+            "sdmx": "U"
+          }
+        ]
+      },
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "11"
+        ],
+        "target": [
+          "11.1"
+        ],
+        "indicator": [
+          "11.1.1"
+        ],
+        "series": "EN_LND_SLUM",
+        "seriesDescription": "Proportion of urban population living in slums (%)",
+        "seriesCount": "2386",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2000.0,
+        "value": "63.18451",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": null,
+        "lowerBound": null,
+        "basePeriod": null,
+        "source": "United Nations Human Settlements Programme (UN-HABITAT)",
+        "geoInfoUrl": null,
+        "footnotes": [
+          ""
+        ],
+        "attributes": {
+          "Nature": "G",
+          "Units": "PERCENT"
+        },
+        "dimensions": {
+          "Location": "URBAN",
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "EN_ATM_PM25": {
+    "size": 1,
+    "totalElements": 70,
+    "totalPages": 70,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "mgr/m^3",
+            "description": "Micrograms per cubic meter",
+            "sdmx": "GPERM3"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Location",
+        "codes": [
+          {
+            "code": "RURAL",
+            "description": "Rural",
+            "sdmx": "R"
+          },
+          {
+            "code": "ALLAREA",
+            "description": "All areas",
+            "sdmx": "_T"
+          },
+          {
+            "code": "URBAN",
+            "description": "Urban",
+            "sdmx": "U"
+          },
+          {
+            "code": "CITY",
+            "description": "City",
+            "sdmx": "CITY"
+          },
+          {
+            "code": "TSUB",
+            "description": "Town and semi-dense area",
+            "sdmx": "TSUB"
+          }
+        ]
+      },
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "11"
+        ],
+        "target": [
+          "11.6"
+        ],
+        "indicator": [
+          "11.6.2"
+        ],
+        "series": "EN_ATM_PM25",
+        "seriesDescription": "Annual mean levels of fine particulate matter (population-weighted), by location (micrograms per cubic meter)",
+        "seriesCount": "18088",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2010.0,
+        "value": "17.51539",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": null,
+        "lowerBound": null,
+        "basePeriod": null,
+        "source": "WHO",
+        "geoInfoUrl": null,
+        "footnotes": [
+          ""
+        ],
+        "attributes": {
+          "Nature": "E",
+          "Units": "mgr/m^3"
+        },
+        "dimensions": {
+          "Location": "ALLAREA",
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "VC_DSR_DAFF": {
+    "size": 1,
+    "totalElements": 54,
+    "totalPages": 54,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PER_100000_POP",
+            "description": "Per 100,000 population",
+            "sdmx": "PER_100000_POP"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "1"
+        ],
+        "target": [
+          "1.5"
+        ],
+        "indicator": [
+          "1.5.1"
+        ],
+        "series": "VC_DSR_DAFF",
+        "seriesDescription": "Number of directly affected persons attributed to disasters per 100,000 population (number)",
+        "seriesCount": "1955",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2005.0,
+        "value": "69.83926131",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": null,
+        "lowerBound": null,
+        "basePeriod": null,
+        "source": "United Nations Office for Disaster Risk Reduction (2026)",
+        "geoInfoUrl": null,
+        "footnotes": [
+          "Disclaimer: The data being submitted by UNDRR has been extracted from the Sendai Framework Monitoring System as provided by designated national focal points. Some of the data has not followed an official validation process and may be subject to revision at a later date."
+        ],
+        "attributes": {
+          "Nature": "C",
+          "Units": "PER_100000_POP"
+        },
+        "dimensions": {
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "VC_DSR_MTMP": {
+    "size": 1,
+    "totalElements": 60,
+    "totalPages": 60,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "PER_100000_POP",
+            "description": "Per 100,000 population",
+            "sdmx": "PER_100000_POP"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "1"
+        ],
+        "target": [
+          "1.5"
+        ],
+        "indicator": [
+          "1.5.1"
+        ],
+        "series": "VC_DSR_MTMP",
+        "seriesDescription": "Number of deaths and missing persons attributed to disasters per 100,000 population (number)",
+        "seriesCount": "2122",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2005.0,
+        "value": "7.185063203",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": null,
+        "lowerBound": null,
+        "basePeriod": null,
+        "source": "United Nations Office for Disaster Risk Reduction (2026)",
+        "geoInfoUrl": null,
+        "footnotes": [
+          "Disclaimer: The data being submitted by UNDRR has been extracted from the Sendai Framework Monitoring System as provided by designated national focal points. Some of the data has not followed an official validation process and may be subject to revision at a later date."
+        ],
+        "attributes": {
+          "Nature": "C",
+          "Units": "PER_100000_POP"
+        },
+        "dimensions": {
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  },
+  "SG_DSR_LGRGSR": {
+    "size": 1,
+    "totalElements": 9,
+    "totalPages": 9,
+    "pageNumber": 1,
+    "attributes": [
+      {
+        "id": "Nature",
+        "codes": [
+          {
+            "code": "C",
+            "description": "Country data",
+            "sdmx": "C"
+          },
+          {
+            "code": "CA",
+            "description": "Country adjusted data",
+            "sdmx": "CA"
+          },
+          {
+            "code": "E",
+            "description": "Estimated data",
+            "sdmx": "E"
+          },
+          {
+            "code": "G",
+            "description": "Global monitoring data",
+            "sdmx": "G"
+          },
+          {
+            "code": "M",
+            "description": "Modeled data",
+            "sdmx": "M"
+          },
+          {
+            "code": "N",
+            "description": "Non-relevant",
+            "sdmx": "N"
+          },
+          {
+            "code": "NA",
+            "description": "Data nature not available",
+            "sdmx": "_X"
+          }
+        ]
+      },
+      {
+        "id": "Units",
+        "codes": [
+          {
+            "code": "INDEX",
+            "description": "Index",
+            "sdmx": "IX"
+          }
+        ]
+      }
+    ],
+    "dimensions": [
+      {
+        "id": "Reporting Type",
+        "codes": [
+          {
+            "code": "N",
+            "description": "National",
+            "sdmx": "N"
+          },
+          {
+            "code": "G",
+            "description": "Global",
+            "sdmx": "G"
+          }
+        ]
+      }
+    ],
+    "data": [
+      {
+        "goal": [
+          "1"
+        ],
+        "target": [
+          "1.5"
+        ],
+        "indicator": [
+          "1.5.3"
+        ],
+        "series": "SG_DSR_LGRGSR",
+        "seriesDescription": "Score of adoption and implementation of national DRR strategies in line with the Sendai Framework",
+        "seriesCount": "790",
+        "geoAreaCode": "404",
+        "geoAreaName": "Kenya",
+        "timePeriodStart": 2019.0,
+        "value": "0.9",
+        "valueType": "Float",
+        "time_detail": null,
+        "timeCoverage": null,
+        "upperBound": null,
+        "lowerBound": null,
+        "basePeriod": null,
+        "source": "United Nations Office for Disaster Risk Reduction (2026)",
+        "geoInfoUrl": null,
+        "footnotes": [
+          "Disclaimer: The data being submitted by UNDRR has been extracted from the Sendai Framework Monitoring System as provided by designated national focal points. Some of the data has not followed an official validation process and may be subject to revision at a later date."
+        ],
+        "attributes": {
+          "Nature": "C",
+          "Units": "INDEX"
+        },
+        "dimensions": {
+          "Reporting Type": "G"
+        }
+      }
+    ]
+  }
+}

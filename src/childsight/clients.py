@@ -381,3 +381,108 @@ async def sdg_goal_list() -> dict[str, Any]:
     url = f"{SDG_API}/Goal/List?includechildren=false"
     resp = await _get(url)
     return {"goals": resp.json(), "provenance": _stamp("UN DESA Global SDG Indicators Database", url)}
+
+
+# --------------------------------------------------------- SDG country context
+
+SDG_CONTEXT_SERIES: dict[str, list[tuple[str, str]]] = {
+    "1_poverty": [
+        ("SI_POV_DAY1",  "Extreme poverty rate (%)"),
+        ("VC_DSR_LSGP",  "Economic losses from disasters (% GDP)"),
+    ],
+    "2_hunger": [
+        ("AG_PRD_FIESMS", "Moderate/severe food insecurity (%)"),
+        ("SH_STA_STNT",   "Child stunting — chronic undernutrition (%)"),
+        ("SH_STA_WAST",   "Child wasting — acute undernutrition (%)"),
+        ("SN_ITK_DEFC",   "Prevalence of undernourishment (%)"),
+    ],
+    "3_health": [
+        ("SH_DYN_MORT",  "Under-5 mortality rate (per 1,000 live births)"),
+        ("SH_DYN_NMRT",  "Neonatal mortality rate (per 1,000 live births)"),
+        ("SH_ACS_DTP3",  "DTP3 vaccination coverage (%)"),
+    ],
+    "4_education": [
+        ("SE_TOT_CPLR",  "School completion rate (%)"),
+        ("SE_PRE_PARTN", "Pre-primary education participation (%)"),
+    ],
+    "5_gender": [
+        ("SP_DYN_MRBF18", "Child marriage — women married before 18 (%)"),
+    ],
+    "6_water": [
+        ("SP_ACS_BSRVH2O", "Population using safe drinking water (%)"),
+        ("ER_H2O_STRESS",  "Freshwater withdrawal as % of available resources"),
+    ],
+    "11_cities": [
+        ("EN_LND_SLUM",  "Urban population in slums (%)"),
+        ("EN_ATM_PM25",  "Fine particulate matter PM2.5 (µg/m³)"),
+        ("VC_DSR_DAFF",  "Population directly affected by disasters (per 100k)"),
+    ],
+    "13_climate": [
+        ("VC_DSR_MTMP",    "Deaths/missing from disasters (per 100k)"),
+        ("SG_DSR_LGRGSR",  "National disaster risk reduction strategy score"),
+    ],
+}
+
+
+def _parse_sdg_value(raw: str | None) -> float | None:
+    """Convert DESA value string to float; return None for NaN/missing."""
+    if raw is None:
+        return None
+    try:
+        v = float(raw)
+        import math
+        return None if math.isnan(v) else v
+    except (ValueError, TypeError):
+        return None
+
+
+async def sdg_country_context(iso3: str) -> dict[str, Any]:
+    """Macro SDG context for a country: latest available value per series,
+    grouped by goal. All 17 series queried in parallel with bounded concurrency.
+    Missing or NaN values reported explicitly — never silently dropped.
+    """
+    area = ISO3_TO_M49.get(iso3.upper())
+    if not area:
+        return {"iso3": iso3, "error": f"No M49 code for {iso3}", "goals": {}}
+
+    url = f"{SDG_API}/Series/Data"
+
+    # Build flat list of (goal_key, series_code, label) to preserve goal grouping
+    flat: list[tuple[str, str, str]] = [
+        (goal, code, label)
+        for goal, series in SDG_CONTEXT_SERIES.items()
+        for code, label in series
+    ]
+
+    async def fetch_one(goal: str, code: str, label: str) -> tuple[str, str, str, dict]:
+        try:
+            resp = await _get(url, {"seriesCode": code, "areaCode": area, "pageSize": 1})
+            raw = resp.json()
+            row = raw.get("data", [{}])[0] if raw.get("data") else {}
+            return goal, code, label, {
+                "value": _parse_sdg_value(row.get("value")),
+                "year": row.get("timePeriodStart"),
+                "nature": (row.get("attributes") or {}).get("Nature"),
+                "total_records": raw.get("totalElements", 0),
+                "no_data": raw.get("totalElements", 0) == 0,
+            }
+        except Exception as e:
+            return goal, code, label, {"error": str(e), "no_data": True}
+
+    results = await gather_limited(
+        (fetch_one(g, c, l) for g, c, l in flat), limit=4, per_task_timeout=15.0
+    )
+
+    goals: dict[str, list] = {g: [] for g in SDG_CONTEXT_SERIES}
+    for r in results:
+        if isinstance(r, BaseException):
+            continue
+        goal, code, label, data = r
+        goals[goal].append({"series": code, "label": label, **data})
+
+    return {
+        "iso3": iso3.upper(),
+        "m49": area,
+        "goals": goals,
+        "provenance": _stamp("UN DESA Global SDG Indicators Database", url),
+    }

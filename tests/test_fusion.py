@@ -50,6 +50,16 @@ class FakeResponse:
         pass
 
 
+_sdg_context_fixture: dict | None = None
+
+
+def _sdg_context_data() -> dict:
+    global _sdg_context_fixture
+    if _sdg_context_fixture is None:
+        _sdg_context_fixture = json.loads((FIXTURES / "sdg_context_ken.json").read_text())
+    return _sdg_context_fixture
+
+
 def fake_get(url: str, params: dict | None = None):
     if "gdacs.org" in url:
         return FakeResponse((FIXTURES / "gdacs_events.json").read_text())
@@ -58,6 +68,11 @@ def fake_get(url: str, params: dict | None = None):
     if "UNICEF,DM" in url:
         return FakeResponse((FIXTURES / "dm_ken.csv").read_text())
     if "unstats.un.org" in url:
+        # SDG context: per-series fixture keyed by seriesCode param
+        series_code = (params or {}).get("seriesCode")
+        if series_code and series_code in _sdg_context_data():
+            return FakeResponse(json.dumps(_sdg_context_data()[series_code]))
+        # Fall back to single-series fixture for existing tests
         return FakeResponse((FIXTURES / "sdg_kenya.json").read_text())
     raise AssertionError(f"unexpected url {url}")
 
@@ -119,7 +134,23 @@ def main():
         assert any(b.get("data") for b in brief["sdg_baselines"] if isinstance(b, dict)), "baselines pulled"
         print("PASS generate_situation_brief: structure, gaps, sources, SDG baselines")
 
-    print("\nAll 6 checks passed — parsing and fusion logic verified against real API fixtures.")
+        # 7. SDG country context
+        ctx = json.loads(run(server.get_sdg_context("KEN")))
+        assert ctx["iso3"] == "KEN"
+        assert ctx["m49"] == "404"
+        goals = ctx["goals"]
+        assert "1_poverty" in goals and "3_health" in goals
+        # poverty series present with numeric value
+        pov = next((s for s in goals["1_poverty"] if s["series"] == "SI_POV_DAY1"), None)
+        assert pov and pov["value"] is not None, f"SI_POV_DAY1 missing or null: {pov}"
+        # NaN values from API come back as None, not crash
+        food = next((s for s in goals["2_hunger"] if s["series"] == "AG_PRD_FIESMS"), None)
+        assert food is not None, "AG_PRD_FIESMS missing from hunger goal"
+        # provenance present
+        assert ctx["provenance"]["source"].startswith("UN DESA")
+        print(f"PASS get_sdg_context: {sum(len(v) for v in goals.values())} series across {len(goals)} goals, NaN safe, provenance ok")
+
+    print("\nAll 7 checks passed — parsing and fusion logic verified against real API fixtures.")
     return failures
 
 
