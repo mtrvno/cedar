@@ -306,6 +306,15 @@
         <div class="band" id="polyBand"></div>
         <div class="scoregrid" id="polyGrid"></div>
         <p class="note" style="color:var(--mut);font-size:12.5px;margin-top:16px">Off-track = latest value misses the published SDG benchmark; where no fixed benchmark exists, status reflects the trend. Every figure is real World Bank / UN data, generated with 0 LLM calls at $0.00. Full reproducible queries in the CLI brief (<code>cedar.py --polycrisis</code>).</p>
+        <div class="llmcard" id="polyLlmCard">
+          <div class="llmhead">
+            <span class="colhead" style="border:0;padding:0;margin:0">Executive summary <span class="muted" style="text-transform:none;letter-spacing:0">— optional LLM polish</span></span>
+            <span class="src-badge baked" id="polyLlmBadge">Off · deterministic</span>
+          </div>
+          <p class="muted" style="margin:8px 0 12px">Summarises this country's cross-SDG risk read from the verified scorecard above — same number guardrail. Uses the OpenAI key you enter on the Overview tab.</p>
+          <div class="llmrow"><button id="polyLlmBtn" onclick="genPolySummary()">Generate summary</button></div>
+          <div id="polyLlmOut"></div>
+        </div>
       </section>
 
       <!-- EQUITY -->
@@ -475,30 +484,28 @@ function setSrc(id,state){
   else if(state==='off'){el.className='src-badge off';el.textContent='Live data unavailable';}
   else{el.className='src-badge baked';el.textContent='Built-in · offline';}
 }
-/* ===== Optional in-browser LLM executive summary (guardrailed; key stays in memory) ===== */
+/* ===== Optional in-browser LLM (guardrailed; key stays in memory; shared by Overview + Polycrisis) ===== */
 const LLM_PRICE={'gpt-4o-mini':[0.15,0.60],'gpt-4o':[2.5,10],'gpt-4.1-mini':[0.40,1.60]};
-function resetLLM(){ const o=document.getElementById('llmOut'); if(o)o.innerHTML='';
-  const b=document.getElementById('llmBadge'); if(b){b.className='src-badge baked';b.textContent='Off · deterministic';} }
-async function genSummary(){
+const LLM_SYS="You are an evidence editor for a UN agency. Rewrite the verified findings into a concise 2–3 sentence executive summary for a policymaker. Use ONLY the facts and numbers given; never introduce a new number, country, year or claim; never speculate. Neutral, factual tone.";
+let lastPolyClaims="";
+function resetLLM(){
+  ['llmOut','polyLlmOut'].forEach(id=>{const o=document.getElementById(id); if(o)o.innerHTML='';});
+  ['llmBadge','polyLlmBadge'].forEach(id=>{const b=document.getElementById(id); if(b){b.className='src-badge baked';b.textContent='Off · deterministic';}});
+}
+async function llmSummarize(claims,out,badge,btn){
   const key=document.getElementById('llmKey').value.trim(), model=document.getElementById('llmModel').value;
-  const out=document.getElementById('llmOut'), btn=document.getElementById('llmBtn'), badge=document.getElementById('llmBadge');
-  if(!key){ out.innerHTML='<div class="llmblock">Enter an OpenAI API key to generate a summary.</div>'; return; }
-  if(!lastRes||!lastRes.findings){ out.innerHTML='<div class="llmblock">No findings to summarise yet.</div>'; return; }
-  const claims=lastRes.findings.map(f=>'- '+f.txt).join('\n');
-  const sys="You are an evidence editor for a UN agency. Rewrite the verified findings into a concise 2–3 sentence executive summary for a policymaker. Use ONLY the facts and numbers given; never introduce a new number, country, year or claim; never speculate. Neutral, factual tone.";
-  btn.disabled=true; badge.className='src-badge live'; badge.innerHTML='<span class="ld"></span> Calling OpenAI…'; out.innerHTML='';
+  if(!key){ out.innerHTML='<div class="llmblock">Enter your OpenAI API key on the Overview tab first.</div>'; return; }
+  if(!claims){ out.innerHTML='<div class="llmblock">Nothing to summarise yet.</div>'; return; }
+  if(btn)btn.disabled=true; badge.className='src-badge live'; badge.innerHTML='<span class="ld"></span> Calling OpenAI…'; out.innerHTML='';
   const t0=performance.now();
   try{
     const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
       headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
-      body:JSON.stringify({model,temperature:0,messages:[{role:'system',content:sys},{role:'user',content:claims}]})});
+      body:JSON.stringify({model,temperature:0,messages:[{role:'system',content:LLM_SYS},{role:'user',content:claims}]})});
     if(!r.ok){ throw new Error('HTTP '+r.status+' — '+(await r.text()).slice(0,160)); }
-    const j=await r.json();
-    const text=((j.choices&&j.choices[0].message.content)||'').trim();
-    const u=j.usage||{};
+    const j=await r.json(); const text=((j.choices&&j.choices[0].message.content)||'').trim(); const u=j.usage||{};
     const invented=(text.match(/\d+(?:\.\d+)?/g)||[]).filter(x=>!claims.includes(x));
-    const secs=((performance.now()-t0)/1000).toFixed(1);
-    const pr=LLM_PRICE[model]||[0.15,0.60];
+    const secs=((performance.now()-t0)/1000).toFixed(1), pr=LLM_PRICE[model]||[0.15,0.60];
     const cost=((u.prompt_tokens||0)/1e6*pr[0]+(u.completion_tokens||0)/1e6*pr[1]);
     if(invented.length){
       badge.className='src-badge off'; badge.textContent='Guardrail blocked';
@@ -506,12 +513,20 @@ async function genSummary(){
     }else{
       badge.className='src-badge live'; badge.innerHTML='<span class="ld"></span> LLM · '+model;
       out.innerHTML=`<div class="llmsummary"><span class="tag">LLM-drafted · number-checked ✓</span>${text.replace(/</g,'&lt;')}
-        <div class="llmmeta">${model} · ${(u.prompt_tokens||0)}+${(u.completion_tokens||0)} tokens · ~$${cost.toFixed(4)} · ${secs}s · every number verified against the findings above.</div></div>`;
+        <div class="llmmeta">${model} · ${(u.prompt_tokens||0)}+${(u.completion_tokens||0)} tokens · ~$${cost.toFixed(4)} · ${secs}s · every number verified against the findings.</div></div>`;
     }
   }catch(err){
     badge.className='src-badge off'; badge.textContent='Error';
     out.innerHTML=`<div class="llmblock">Call failed: ${String(err.message||err).replace(/</g,'&lt;')}<br>Check the key, model name, balance, or network. CEDAR's findings remain valid — the LLM is optional polish.</div>`;
-  }finally{ btn.disabled=false; }
+  }finally{ if(btn)btn.disabled=false; }
+}
+function genSummary(){
+  if(!lastRes||!lastRes.findings){ document.getElementById('llmOut').innerHTML='<div class="llmblock">No findings to summarise yet.</div>'; return; }
+  llmSummarize(lastRes.findings.map(f=>'- '+f.txt).join('\n'),
+    document.getElementById('llmOut'), document.getElementById('llmBadge'), document.getElementById('llmBtn'));
+}
+function genPolySummary(){
+  llmSummarize(lastPolyClaims, document.getElementById('polyLlmOut'), document.getElementById('polyLlmBadge'), document.getElementById('polyLlmBtn'));
 }
 function indStat(store,code){
   const d=store[code]||{obs:{}}; const ys=Object.keys(d.obs).map(Number).sort((a,b)=>a-b);
@@ -591,6 +606,11 @@ async function renderPolycrisis(){
       <div class="meta">${r.ind.n} · ${bench} · ${r.st.ly}</div>
       <div class="st ${s[1]}">${s[0]} · ${r.st.conf} confidence</div></div>`;
   }).join('');
+  // build the verified claim text for the optional LLM summary, and clear any stale one
+  lastPolyClaims=`${nm} — ${bv[1]}: ${sN} of ${n} SDG fronts off-track or worsening.\n`+
+    scored.map(r=>`- ${r.dom}: ${r.ind.n} ${fmt(r.st.last)} ${r.ind.u} (${r.st.ly}), ${r.status}${r.ind.t!=null?` vs SDG benchmark ${fmt(r.ind.t)}`:''}.`).join('\n');
+  const po=document.getElementById('polyLlmOut'); if(po)po.innerHTML='';
+  const pb=document.getElementById('polyLlmBadge'); if(pb){pb.className='src-badge baked';pb.textContent='Off · deterministic';}
 }
 
 function analyse(iso){
