@@ -93,3 +93,5 @@ export CEDAR_LLM_MODEL="llama3.1"
 python3 cedar.py --country KEN --theme child-survival --llm
 ```
 If the key is missing or the call fails, CEDAR silently falls back to the deterministic $0.00 narration — the brief, ledger, citations and numbers are identical either way. The LLM only ever rewrites prose; it never sits between a question and a number.
+
+**In the web UI:** the Overview tab has an optional "Executive summary" card — paste an OpenAI key, pick a model, and it drafts a summary in-browser from the verified findings, with the same number guardrail (it blocks and reports any figure the model invents) plus a live token/cost readout. The key is kept in memory only (never stored, logged, or committed). Because a static page exposes keys client-side, use a scoped/temporary key for the demo and a server-side proxy in production.

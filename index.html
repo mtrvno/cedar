@@ -129,6 +129,20 @@
   .themebar button{border:1px solid var(--line);background:#fff;color:var(--mut);padding:7px 12px;border-radius:5px;font-family:var(--sans);font-size:12.5px;cursor:pointer}
   .themebar button:hover{color:var(--navy)}
   .themebar button.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+  /* LLM summary card */
+  .llmcard{margin-top:24px;border:1px solid var(--line);border-radius:6px;padding:18px 20px;background:#fafcfe}
+  .llmhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .llmrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .llmrow input{flex:1;min-width:220px;border:1px solid var(--line);border-radius:4px;padding:9px 11px;font-family:var(--mono);font-size:13px}
+  .llmrow input:focus{outline:2px solid #cfe0ef;border-color:var(--unblue)}
+  .llmrow select{width:auto;min-width:150px}
+  .llmrow button{background:var(--navy);color:#fff;border:0;border-radius:4px;padding:9px 16px;font:inherit;font-size:13px;cursor:pointer}
+  .llmrow button:hover{background:#1d3a5c} .llmrow button:disabled{opacity:.55;cursor:default}
+  .llmnote{font-size:11px;color:var(--faint);margin-top:9px;line-height:1.5}
+  .llmsummary{margin-top:14px;border-left:3px solid var(--unblue);background:#fff;border:1px solid var(--line);border-left-width:3px;border-radius:0 6px 6px 0;padding:13px 15px;font-size:14.5px;line-height:1.6}
+  .llmsummary .tag{display:block;font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:var(--unblue);font-weight:700;margin-bottom:6px}
+  .llmmeta{font-size:11.5px;color:var(--mut);margin-top:8px}
+  .llmblock{margin-top:14px;border-left:3px solid var(--bad);background:#fdf3f2;border-radius:0 6px 6px 0;padding:12px 15px;font-size:13.5px;color:var(--bad)}
   /* data-source badge */
   .src-badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 10px;border-radius:20px;border:1px solid}
   .src-badge.live{background:#eaf4fb;color:var(--unblue);border-color:#cfe0ef}
@@ -224,6 +238,25 @@
           </div>
         </div>
         <div class="metastrip" id="metastrip"></div>
+
+        <div class="llmcard" id="llmCard">
+          <div class="llmhead">
+            <span class="colhead" style="border:0;padding:0;margin:0">Executive summary <span class="muted" style="text-transform:none;letter-spacing:0">— optional LLM polish</span></span>
+            <span class="src-badge baked" id="llmBadge">Off · deterministic</span>
+          </div>
+          <p class="muted" style="margin:8px 0 12px">The model only rewrites the verified findings above into prose. A guardrail blocks any number it introduces that isn't already in those findings — it never invents figures. Default output stays $0.00; this is optional.</p>
+          <div class="llmrow">
+            <input id="llmKey" type="password" placeholder="OpenAI API key (sk-…)" autocomplete="off" spellcheck="false">
+            <select id="llmModel">
+              <option value="gpt-4o-mini">gpt-4o-mini (cheapest)</option>
+              <option value="gpt-4o">gpt-4o</option>
+              <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+            </select>
+            <button id="llmBtn" onclick="genSummary()">Generate summary</button>
+          </div>
+          <div class="llmnote">🔒 Your key is used only for this in-browser request to OpenAI and is <b>never stored, logged, or committed</b> (kept in memory for this tab only). Because a static page exposes keys in the browser, use a scoped/temporary key here and a server-side proxy in production.</div>
+          <div id="llmOut"></div>
+        </div>
       </section>
 
       <!-- MAP -->
@@ -442,6 +475,44 @@ function setSrc(id,state){
   else if(state==='off'){el.className='src-badge off';el.textContent='Live data unavailable';}
   else{el.className='src-badge baked';el.textContent='Built-in · offline';}
 }
+/* ===== Optional in-browser LLM executive summary (guardrailed; key stays in memory) ===== */
+const LLM_PRICE={'gpt-4o-mini':[0.15,0.60],'gpt-4o':[2.5,10],'gpt-4.1-mini':[0.40,1.60]};
+function resetLLM(){ const o=document.getElementById('llmOut'); if(o)o.innerHTML='';
+  const b=document.getElementById('llmBadge'); if(b){b.className='src-badge baked';b.textContent='Off · deterministic';} }
+async function genSummary(){
+  const key=document.getElementById('llmKey').value.trim(), model=document.getElementById('llmModel').value;
+  const out=document.getElementById('llmOut'), btn=document.getElementById('llmBtn'), badge=document.getElementById('llmBadge');
+  if(!key){ out.innerHTML='<div class="llmblock">Enter an OpenAI API key to generate a summary.</div>'; return; }
+  if(!lastRes||!lastRes.findings){ out.innerHTML='<div class="llmblock">No findings to summarise yet.</div>'; return; }
+  const claims=lastRes.findings.map(f=>'- '+f.txt).join('\n');
+  const sys="You are an evidence editor for a UN agency. Rewrite the verified findings into a concise 2–3 sentence executive summary for a policymaker. Use ONLY the facts and numbers given; never introduce a new number, country, year or claim; never speculate. Neutral, factual tone.";
+  btn.disabled=true; badge.className='src-badge live'; badge.innerHTML='<span class="ld"></span> Calling OpenAI…'; out.innerHTML='';
+  const t0=performance.now();
+  try{
+    const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
+      headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
+      body:JSON.stringify({model,temperature:0,messages:[{role:'system',content:sys},{role:'user',content:claims}]})});
+    if(!r.ok){ throw new Error('HTTP '+r.status+' — '+(await r.text()).slice(0,160)); }
+    const j=await r.json();
+    const text=((j.choices&&j.choices[0].message.content)||'').trim();
+    const u=j.usage||{};
+    const invented=(text.match(/\d+(?:\.\d+)?/g)||[]).filter(x=>!claims.includes(x));
+    const secs=((performance.now()-t0)/1000).toFixed(1);
+    const pr=LLM_PRICE[model]||[0.15,0.60];
+    const cost=((u.prompt_tokens||0)/1e6*pr[0]+(u.completion_tokens||0)/1e6*pr[1]);
+    if(invented.length){
+      badge.className='src-badge off'; badge.textContent='Guardrail blocked';
+      out.innerHTML=`<div class="llmblock"><b>Guardrail blocked the summary.</b> The model introduced figure(s) not in the verified findings: ${invented.join(', ')}. Output withheld — CEDAR will not show an ungrounded number.</div>`;
+    }else{
+      badge.className='src-badge live'; badge.innerHTML='<span class="ld"></span> LLM · '+model;
+      out.innerHTML=`<div class="llmsummary"><span class="tag">LLM-drafted · number-checked ✓</span>${text.replace(/</g,'&lt;')}
+        <div class="llmmeta">${model} · ${(u.prompt_tokens||0)}+${(u.completion_tokens||0)} tokens · ~$${cost.toFixed(4)} · ${secs}s · every number verified against the findings above.</div></div>`;
+    }
+  }catch(err){
+    badge.className='src-badge off'; badge.textContent='Error';
+    out.innerHTML=`<div class="llmblock">Call failed: ${String(err.message||err).replace(/</g,'&lt;')}<br>Check the key, model name, balance, or network. CEDAR's findings remain valid — the LLM is optional polish.</div>`;
+  }finally{ btn.disabled=false; }
+}
 function indStat(store,code){
   const d=store[code]||{obs:{}}; const ys=Object.keys(d.obs).map(Number).sort((a,b)=>a-b);
   if(!ys.length) return {d,ys,empty:true};
@@ -644,6 +715,7 @@ function selectCountry(iso){
   document.getElementById('m_time').textContent=(0.002+Math.random()*0.01).toFixed(3)+'s';
   document.querySelectorAll('#rank tr').forEach(r=>r.classList.remove('sel'));
   const rk=document.getElementById('rk_'+iso); if(rk)rk.classList.add('sel');
+  resetLLM();   // clear any prior country's LLM summary
   // keep the country-aware panels in sync when the selection changes while they are open
   if(document.getElementById('pane-sdg').classList.contains('show')) renderSDG(curTheme);
   if(document.getElementById('pane-poly').classList.contains('show')) renderPolycrisis();
