@@ -162,6 +162,17 @@
   .chatinput input:focus{outline:2px solid #cfe0ef;border-color:var(--unblue)}
   .chatinput button{background:var(--navy);color:#fff;border:0;border-radius:18px;padding:9px 18px;cursor:pointer;font:inherit}
   .chatinput button:disabled{opacity:.5;cursor:default}
+  /* chat session meter */
+  .chatmeter{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:12px;background:#fff}
+  .chatmeter .cell{flex:1;min-width:104px;padding:10px 13px;border-right:1px solid var(--hair)}
+  .chatmeter .cell:last-child{border-right:0;flex:1.4;min-width:150px}
+  .chatmeter .k{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--faint)}
+  .chatmeter .v{font-size:17px;font-weight:700;color:var(--navy);margin-top:2px}
+  .chatmeter .v.g{color:var(--good)}
+  .tokbar{height:6px;border-radius:3px;background:#e8edf2;overflow:hidden;margin-top:7px;display:flex}
+  .tokbar i{display:block;height:100%} .tokbar .tin{background:var(--unblue)} .tokbar .tout{background:var(--good)}
+  .tokleg{font-size:9.5px;color:var(--faint);margin-top:4px}
+  .chatreset{font-size:11px;margin-left:10px;color:var(--link);cursor:pointer}
   /* data-source badge */
   .src-badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 10px;border-radius:20px;border:1px solid}
   .src-badge.live{background:#eaf4fb;color:var(--unblue);border-color:#cfe0ef}
@@ -340,7 +351,8 @@
       <!-- ASK CEDAR (agentic chat) -->
       <section class="pane" id="pane-chat">
         <p class="lead">Ask about the selected country. The assistant answers <b>only from authoritative data</b> — it calls tools to fetch World Bank indicators on demand and cites every figure. <span id="chatCtx" class="muted"></span></p>
-        <span class="src-badge baked" id="chatBadge" style="margin-bottom:10px">Idle</span>
+        <div style="margin-bottom:10px"><span class="src-badge baked" id="chatBadge">Idle</span><span class="chatreset" onclick="resetChat()">Reset session</span></div>
+        <div class="chatmeter" id="chatMeter"></div>
         <div class="chatwrap">
           <div class="chatlog" id="chatLog"></div>
           <div class="chips" id="chatChips"></div>
@@ -479,7 +491,7 @@ function showTab(id){
   if(id==='ev'){ runChain(lastRes); }
   if(id==='sdg'){ renderSDG(curTheme); }
   if(id==='poly'){ renderPolycrisis(); }
-  if(id==='chat'){ renderChatCtx(); setTimeout(()=>{const i=document.getElementById('chatInput'); if(i)i.focus();},60); }
+  if(id==='chat'){ renderChatCtx(); renderMeter(); setTimeout(()=>{const i=document.getElementById('chatInput'); if(i)i.focus();},60); }
 }
 
 /* ===== Multi-SDG (Kenya flagship) ===== */
@@ -568,6 +580,23 @@ function genPolySummary(){
 
 /* ===== Agentic chat: function-calling assistant grounded in the World Bank API ===== */
 let chatMsgs=[];
+let chatStats={ans:0,tool:0,tokIn:0,tokOut:0,cost:0,inds:new Set(),ctys:new Set()};
+function renderMeter(){
+  const s=chatStats, tot=s.tokIn+s.tokOut, inPct=tot?Math.round(s.tokIn/tot*100):0;
+  document.getElementById('chatMeter').innerHTML=
+    `<div class="cell"><div class="k">Answers</div><div class="v">${s.ans}</div></div>`+
+    `<div class="cell"><div class="k">WB data lookups</div><div class="v">${s.tool}</div></div>`+
+    `<div class="cell"><div class="k">Indicators</div><div class="v">${s.inds.size}</div></div>`+
+    `<div class="cell"><div class="k">Countries</div><div class="v">${s.ctys.size}</div></div>`+
+    `<div class="cell"><div class="k">Cost (this session)</div><div class="v g">$${s.cost.toFixed(4)}</div>`+
+      `<div class="tokbar"><i class="tin" style="width:${inPct}%"></i><i class="tout" style="width:${100-inPct}%"></i></div>`+
+      `<div class="tokleg">${tot.toLocaleString()} tokens — ${s.tokIn.toLocaleString()} in · ${s.tokOut.toLocaleString()} out</div></div>`;
+}
+function resetChat(){
+  chatMsgs=[]; chatStats={ans:0,tool:0,tokIn:0,tokOut:0,cost:0,inds:new Set(),ctys:new Set()};
+  document.getElementById('chatLog').innerHTML=''; renderMeter();
+  const b=document.getElementById('chatBadge'); b.className='src-badge baked'; b.textContent='Idle';
+}
 const CHAT_CHIPS=["Is it on track for child survival?","How has poverty changed since 2015?","Compare under-5 mortality with a neighbour","What's the biggest SDG risk here?","Draft a one-paragraph donor memo"];
 const CHAT_TOOLS=[
  {type:"function",function:{name:"get_indicator",description:"Authoritative time series for one indicator in one country from the World Bank. Returns yearly values, latest, earliest, SDG target, source and a re-runnable query URL.",
@@ -595,11 +624,19 @@ function packInd(iso,code,d){
 }
 async function execTool(name,args,sources){
   if(name==='list_indicators') return Object.keys(META).map(c=>({code:c,name:META[c].n,unit:META[c].u}));
-  if(name==='get_indicator'){ const p=packInd(args.iso,args.code,await fetchInd(args.iso,args.code)); if(!p.error)sources.push(p); return p; }
-  if(name==='compare_indicator'){ const out=[]; for(const iso of (args.isos||[])){ const p=packInd(iso,args.code,await fetchInd(iso,args.code));
-      if(!p.error){sources.push(p); out.push({country:p.country,iso,latest:p.latest});} else out.push({iso,error:p.error}); }
+  if(name==='get_indicator'){ chatStats.tool++; const p=packInd(args.iso,args.code,await fetchInd(args.iso,args.code));
+    if(!p.error){sources.push(p); chatStats.inds.add(p.code); chatStats.ctys.add(p.iso);} return p; }
+  if(name==='compare_indicator'){ const out=[]; for(const iso of (args.isos||[])){ chatStats.tool++; const p=packInd(iso,args.code,await fetchInd(iso,args.code));
+      if(!p.error){sources.push(p); chatStats.inds.add(p.code); chatStats.ctys.add(p.iso); out.push({country:p.country,iso,latest:p.latest});} else out.push({iso,error:p.error}); }
     return {code:args.code,results:out}; }
   return {error:'unknown tool'};
+}
+function toolSummary(name,result){
+  if(result&&result.error) return 'no data';
+  if(name==='get_indicator'&&result.latest) return `${Object.keys(result.series||{}).length} values · ${result.latest.year}: ${result.latest.value}${result.unit?(' '+result.unit):''}`;
+  if(name==='compare_indicator'&&result.results) return `${result.results.filter(x=>!x.error).length} countries`;
+  if(name==='list_indicators') return `${result.length} indicators`;
+  return 'done';
 }
 function addMsg(role,text){ const log=document.getElementById('chatLog'); const el=document.createElement('div'); el.className='msg '+role; el.textContent=text; log.appendChild(el); log.scrollTop=log.scrollHeight; return el; }
 function renderChatCtx(){
@@ -640,15 +677,19 @@ async function runAgent(userText){
       messages.push(m); chatMsgs.push(m);
       for(const tc of m.tool_calls){
         let args={}; try{args=JSON.parse(tc.function.arguments||'{}');}catch(e){}
-        addMsg('tool','↳ '+tc.function.name+'('+Object.values(args).join(', ')+')');
+        const note=addMsg('tool','↳ '+tc.function.name+'('+Object.values(args).join(', ')+') …');
         const result=await execTool(tc.function.name,args,sources);
+        note.textContent='↳ '+tc.function.name+'('+Object.values(args).join(', ')+') → '+toolSummary(tc.function.name,result);
         const tmsg={role:'tool',tool_call_id:tc.id,content:JSON.stringify(result)};
         messages.push(tmsg); chatMsgs.push(tmsg);
       }
-      continue;
+      renderMeter(); continue;
     }
     final=m.content||''; messages.push(m); chatMsgs.push(m); break;
   }
+  const pr=LLM_PRICE[model]||[0.15,0.60];
+  chatStats.ans++; chatStats.tokIn+=tokIn; chatStats.tokOut+=tokOut; chatStats.cost+=(tokIn/1e6*pr[0]+tokOut/1e6*pr[1]);
+  renderMeter();
   return {final,sources,tokIn,tokOut};
 }
 function renderBotAnswer(out){
