@@ -1129,6 +1129,249 @@
       "obs": {
         "2021": 22.9
       }
+    },
+    {
+      "indicator_code": "SI.POV.DDAY",
+      "indicator_name": "Poverty headcount ratio at $3.00/day (2021 PPP) (% of population)",
+      "ref_area": "KEN",
+      "ref_area_name": "Kenya",
+      "upstream_source": "World Bank PIP -> WDI",
+      "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SI.POV.DDAY?format=json&date=2010:2023",
+      "obs": {
+        "2005": 44.6,
+        "2015": 37.7,
+        "2020": 44.4,
+        "2021": 46.4,
+        "2022": 45.5
+      }
+    },
+    {
+      "indicator_code": "SE.PRM.CMPT.ZS",
+      "indicator_name": "Primary completion rate, total (% of relevant age group)",
+      "ref_area": "KEN",
+      "ref_area_name": "Kenya",
+      "upstream_source": "UNESCO UIS -> WDI",
+      "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SE.PRM.CMPT.ZS?format=json&date=2010:2023",
+      "obs": {
+        "2005": 87.8,
+        "2014": 99.0,
+        "2015": 101.3,
+        "2016": 102.2
+      }
+    },
+    {
+      "indicator_code": "EG.ELC.ACCS.ZS",
+      "indicator_name": "Access to electricity (% of population)",
+      "ref_area": "KEN",
+      "ref_area_name": "Kenya",
+      "upstream_source": "World Bank/IEA Tracking SDG7 -> WDI",
+      "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/EG.ELC.ACCS.ZS?format=json&date=2010:2023",
+      "obs": {
+        "2010": 19.2,
+        "2011": 36.2,
+        "2012": 38.1,
+        "2013": 40.1,
+        "2014": 36.0,
+        "2015": 41.6,
+        "2016": 53.1,
+        "2017": 55.8,
+        "2018": 61.2,
+        "2019": 69.7,
+        "2020": 71.5,
+        "2021": 76.5,
+        "2022": 76.0,
+        "2023": 76.2
+      }
+    },
+    {
+      "indicator_code": "SP.DYN.LE00.IN",
+      "indicator_name": "Life expectancy at birth, total (years)",
+      "ref_area": "KEN",
+      "ref_area_name": "Kenya",
+      "upstream_source": "UN World Population Prospects -> WDI",
+      "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SP.DYN.LE00.IN?format=json&date=2010:2023",
+      "obs": {
+        "2010": 60.9,
+        "2011": 61.3,
+        "2012": 61.5,
+        "2013": 61.7,
+        "2014": 62.0,
+        "2015": 62.3,
+        "2016": 62.5,
+        "2017": 62.7,
+        "2018": 62.8,
+        "2019": 62.9,
+        "2020": 61.6,
+        "2021": 61.2,
+        "2022": 63.5,
+        "2023": 63.6
+      }
+    },
+    {
+      "indicator_code": "SH.STA.MMRT",
+      "indicator_name": "Maternal mortality ratio (modeled, per 100,000 live births)",
+      "ref_area": "KEN",
+      "ref_area_name": "Kenya",
+      "upstream_source": "WHO/UN MMEIG -> WDI",
+      "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.STA.MMRT?format=json&date=2010:2023",
+      "obs": {
+        "2010": 210,
+        "2011": 209,
+        "2012": 214,
+        "2013": 206,
+        "2014": 203,
+        "2015": 203,
+        "2016": 196,
+        "2017": 186,
+        "2018": 183,
+        "2019": 176,
+        "2020": 184,
+        "2021": 183,
+        "2022": 155,
+        "2023": 149
+      }
+    },
+    {
+      "indicator_code": "NY.GDP.PCAP.CD",
+      "indicator_name": "GDP per capita (current US$)",
+      "ref_area": "KEN",
+      "ref_area_name": "Kenya",
+      "upstream_source": "World Bank national accounts -> WDI",
+      "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/NY.GDP.PCAP.CD?format=json&date=2010:2023",
+      "obs": {
+        "2010": 1092,
+        "2011": 1096,
+        "2012": 1285,
+        "2013": 1371,
+        "2014": 1483,
+        "2015": 1489,
+        "2016": 1554,
+        "2017": 1667,
+        "2018": 1836,
+        "2019": 1960,
+        "2020": 1928,
+        "2021": 2061,
+        "2022": 2110,
+        "2023": 1943
+      }
+    },
+    {
+      "indicator_code": "SH.STA.BASS.ZS",
+      "indicator_name": "People using at least basic sanitation services (% of population)",
+      "ref_area": "KEN",
+      "ref_area_name": "Kenya",
+      "upstream_source": "WHO/UNICEF JMP -> WDI",
+      "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.STA.BASS.ZS?format=json&date=2010:2023",
+      "obs": {
+        "2010": 30.8,
+        "2011": 31.5,
+        "2012": 32.2,
+        "2013": 33.0,
+        "2014": 33.7,
+        "2015": 34.4,
+        "2016": 35.1,
+        "2017": 35.9,
+        "2018": 36.6,
+        "2019": 37.3,
+        "2020": 38.0,
+        "2021": 38.7,
+        "2022": 39.5,
+        "2023": 40.2
+      }
+    },
+    {
+      "indicator_code": "SH.H2O.BASW.ZS",
+      "indicator_name": "People using at least basic drinking water services (% of population)",
+      "ref_area": "KEN",
+      "ref_area_name": "Kenya",
+      "upstream_source": "WHO/UNICEF JMP -> WDI",
+      "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.H2O.BASW.ZS?format=json&date=2010:2023",
+      "obs": {
+        "2010": 53.9,
+        "2011": 54.8,
+        "2012": 55.6,
+        "2013": 56.5,
+        "2014": 57.3,
+        "2015": 58.2,
+        "2016": 59.0,
+        "2017": 59.8,
+        "2018": 60.7,
+        "2019": 61.5,
+        "2020": 62.3,
+        "2021": 63.1,
+        "2022": 64.0,
+        "2023": 64.8
+      }
+    },
+    {
+      "indicator_code": "EG.FEC.RNEW.ZS",
+      "indicator_name": "Renewable energy consumption (% of total final energy)",
+      "ref_area": "KEN",
+      "ref_area_name": "Kenya",
+      "upstream_source": "World Bank/IEA -> WDI",
+      "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/EG.FEC.RNEW.ZS?format=json&date=2010:2023",
+      "obs": {
+        "2010": 74.0,
+        "2011": 74.7,
+        "2012": 76.2,
+        "2013": 74.3,
+        "2014": 71.8,
+        "2015": 69.2,
+        "2016": 68.3,
+        "2017": 68.1,
+        "2018": 68.7,
+        "2019": 68.1,
+        "2020": 69.0,
+        "2021": 67.7
+      }
+    },
+    {
+      "indicator_code": "SL.UEM.TOTL.ZS",
+      "indicator_name": "Unemployment, total (% of labour force, modeled ILO)",
+      "ref_area": "KEN",
+      "ref_area_name": "Kenya",
+      "upstream_source": "ILO modelled estimate -> WDI",
+      "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SL.UEM.TOTL.ZS?format=json&date=2010:2023",
+      "obs": {
+        "2010": 2.8,
+        "2011": 2.7,
+        "2012": 2.7,
+        "2013": 2.8,
+        "2014": 2.8,
+        "2015": 2.8,
+        "2016": 2.8,
+        "2017": 3.5,
+        "2018": 4.3,
+        "2019": 5.0,
+        "2020": 5.6,
+        "2021": 5.7,
+        "2022": 5.6,
+        "2023": 5.4
+      }
+    },
+    {
+      "indicator_code": "EN.GHG.CO2.PC.CE.AR5",
+      "indicator_name": "CO2 emissions excl. LULUCF per capita (t CO2e/capita)",
+      "ref_area": "KEN",
+      "ref_area_name": "Kenya",
+      "upstream_source": "EDGAR / WB climate -> WDI",
+      "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/EN.GHG.CO2.PC.CE.AR5?format=json&date=2010:2023",
+      "obs": {
+        "2010": 0.32,
+        "2011": 0.32,
+        "2012": 0.29,
+        "2013": 0.31,
+        "2014": 0.34,
+        "2015": 0.36,
+        "2016": 0.38,
+        "2017": 0.39,
+        "2018": 0.38,
+        "2019": 0.38,
+        "2020": 0.37,
+        "2021": 0.4,
+        "2022": 0.41,
+        "2023": 0.38
+      }
     }
   ],
   "sdg_targets": {
@@ -1150,6 +1393,36 @@
     "SH.IMM.IDPT": {
       "target": 90,
       "label": "IA2030 / GVAP benchmark: >=90% DTP3 national coverage",
+      "direction": "above"
+    },
+    "SI.POV.DDAY": {
+      "target": 3.0,
+      "label": "SDG 1.1: end extreme poverty (proxy <3% at $3.00/day)",
+      "direction": "below"
+    },
+    "SE.PRM.CMPT.ZS": {
+      "target": 100,
+      "label": "SDG 4.1: universal primary completion",
+      "direction": "above"
+    },
+    "EG.ELC.ACCS.ZS": {
+      "target": 100,
+      "label": "SDG 7.1: universal access to electricity by 2030",
+      "direction": "above"
+    },
+    "SH.STA.MMRT": {
+      "target": 70,
+      "label": "SDG 3.1: maternal mortality <70 per 100,000 by 2030",
+      "direction": "below"
+    },
+    "SH.STA.BASS.ZS": {
+      "target": 100,
+      "label": "SDG 6.2: universal sanitation (basic+)",
+      "direction": "above"
+    },
+    "SH.H2O.BASW.ZS": {
+      "target": 100,
+      "label": "SDG 6.1: universal drinking water (basic+)",
       "direction": "above"
     }
   },

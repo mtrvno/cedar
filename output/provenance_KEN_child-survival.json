@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-20T08:46:49Z",
-  "question": "State of child survival in KEN",
+  "generated_at": "2026-06-20T14:52:40Z",
+  "question": "State of child survival (sdg 2.2, 3.2) in KEN",
   "evidence_chain": [
     "discover",
     "retrieve",
@@ -18,7 +18,7 @@
         "upstream_source": "UN IGME (UN Inter-agency Group for Child Mortality Estimation, led by UNICEF/WHO/UN DESA/World Bank)",
         "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.DYN.MORT?format=json&date=2010:2023",
         "source_last_updated": "2026-04-08",
-        "retrieved_at": "2026-06-20T08:46:49Z",
+        "retrieved_at": "2026-06-20T14:52:40Z",
         "retrieval_mode": "bundled-cache"
       },
       "verification": {
@@ -68,7 +68,7 @@
         "upstream_source": "UN IGME (UN Inter-agency Group for Child Mortality Estimation, led by UNICEF/WHO/UN DESA/World Bank)",
         "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SP.DYN.IMRT.IN?format=json&date=2015:2023",
         "source_last_updated": "2026-04-08",
-        "retrieved_at": "2026-06-20T08:46:49Z",
+        "retrieved_at": "2026-06-20T14:52:40Z",
         "retrieval_mode": "bundled-cache"
       },
       "verification": {
@@ -109,7 +109,7 @@
         "upstream_source": "WHO/UNICEF Estimates of National Immunization Coverage (WUENIC)",
         "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.IMM.IDPT?format=json&date=2014:2023",
         "source_last_updated": "2026-04-08",
-        "retrieved_at": "2026-06-20T08:46:49Z",
+        "retrieved_at": "2026-06-20T14:52:40Z",
         "retrieval_mode": "bundled-cache"
       },
       "verification": {
@@ -150,7 +150,7 @@
         "upstream_source": "UNICEF/WHO/World Bank Joint Child Malnutrition Estimates (JME)",
         "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.STA.STNT.ZS?format=json&date=2014:2023",
         "source_last_updated": "2026-04-08",
-        "retrieved_at": "2026-06-20T08:46:49Z",
+        "retrieved_at": "2026-06-20T14:52:40Z",
         "retrieval_mode": "bundled-cache"
       },
       "verification": {

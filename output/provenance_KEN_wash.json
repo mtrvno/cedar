@@ -1,0 +1,113 @@
+{
+  "generated_at": "2026-06-20T14:52:41Z",
+  "question": "State of water & sanitation (sdg 6) in KEN",
+  "evidence_chain": [
+    "discover",
+    "retrieve",
+    "verify",
+    "analyse",
+    "narrate",
+    "review",
+    "output"
+  ],
+  "packs": [
+    {
+      "indicator": "SH.H2O.BASW.ZS",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "WHO/UNICEF JMP -> WDI",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.H2O.BASW.ZS?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:41Z",
+        "retrieval_mode": "bundled-cache"
+      },
+      "verification": {
+        "indicator_code": "SH.H2O.BASW.ZS",
+        "n_values": 14,
+        "span_years": 14,
+        "coverage": 1.0,
+        "latest_year": 2023,
+        "confidence_tier": "High",
+        "caveats": [],
+        "value_hash": "78de3ca0dd57"
+      },
+      "claims": [
+        {
+          "id": "SH.H2O.BASW.ZS.trend",
+          "text": "Basic drinking-water coverage rose from 53.9 to 64.8 % of population between 2010 and 2023 (+20.2%, +1.4%/yr).",
+          "verdict": "improving",
+          "datapoints": [
+            "SH.H2O.BASW.ZS@2010",
+            "SH.H2O.BASW.ZS@2023"
+          ]
+        },
+        {
+          "id": "SH.H2O.BASW.ZS.target",
+          "text": "As of 2023, the value of 64.8 does not yet meet the benchmark of 100 (SDG 6.1: universal drinking water (basic+)); a gap of 35.2 % of population remains.",
+          "verdict": "off-track",
+          "datapoints": [
+            "SH.H2O.BASW.ZS@2023"
+          ],
+          "benchmark": 100
+        }
+      ]
+    },
+    {
+      "indicator": "SH.STA.BASS.ZS",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "WHO/UNICEF JMP -> WDI",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.STA.BASS.ZS?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:41Z",
+        "retrieval_mode": "bundled-cache"
+      },
+      "verification": {
+        "indicator_code": "SH.STA.BASS.ZS",
+        "n_values": 14,
+        "span_years": 14,
+        "coverage": 1.0,
+        "latest_year": 2023,
+        "confidence_tier": "High",
+        "caveats": [],
+        "value_hash": "42273b41fff6"
+      },
+      "claims": [
+        {
+          "id": "SH.STA.BASS.ZS.trend",
+          "text": "Basic sanitation coverage rose from 30.8 to 40.2 % of population between 2010 and 2023 (+30.5%, +2.1%/yr).",
+          "verdict": "improving",
+          "datapoints": [
+            "SH.STA.BASS.ZS@2010",
+            "SH.STA.BASS.ZS@2023"
+          ]
+        },
+        {
+          "id": "SH.STA.BASS.ZS.target",
+          "text": "As of 2023, the value of 40.2 does not yet meet the benchmark of 100 (SDG 6.2: universal sanitation (basic+)); a gap of 59.8 % of population remains.",
+          "verdict": "off-track",
+          "datapoints": [
+            "SH.STA.BASS.ZS@2023"
+          ],
+          "benchmark": 100
+        }
+      ]
+    }
+  ],
+  "review": {
+    "passed": true,
+    "issues": []
+  },
+  "cost_report": {
+    "wall_clock_seconds": 0.003,
+    "authoritative_api_calls": 0,
+    "cache_hits": 2,
+    "llm_calls": 0,
+    "llm_tokens_in": 0,
+    "llm_tokens_out": 0,
+    "cedar_llm_cost_usd": 0.0,
+    "naive_single_big_model_cost_usd": 0.097,
+    "cost_reduction_vs_naive": "100%",
+    "runs_with_zero_llm": true
+  }
+}

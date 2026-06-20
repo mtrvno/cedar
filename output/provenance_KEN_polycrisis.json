@@ -1,0 +1,151 @@
+{
+  "generated_at": "2026-06-20T14:52:41Z",
+  "question": "Polycrisis risk read for KEN",
+  "composite": {
+    "domains": 7,
+    "stressed": 5,
+    "band": "HIGH stress"
+  },
+  "evidence_chain": [
+    "discover",
+    "retrieve",
+    "verify",
+    "analyse",
+    "narrate",
+    "review",
+    "output"
+  ],
+  "domains": [
+    {
+      "domain": "Child survival",
+      "code": "SH.DYN.MORT",
+      "value": 39.6,
+      "year": 2023,
+      "benchmark": "25",
+      "status": "off-track",
+      "confidence": "High",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "UN IGME (UN Inter-agency Group for Child Mortality Estimation, led by UNICEF/WHO/UN DESA/World Bank)",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.DYN.MORT?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:41Z",
+        "retrieval_mode": "bundled-cache"
+      }
+    },
+    {
+      "domain": "Nutrition",
+      "code": "SH.STA.STNT.ZS",
+      "value": 17.6,
+      "year": 2022,
+      "benchmark": "(trend)",
+      "status": "improving",
+      "confidence": "Low",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "UNICEF/WHO/World Bank Joint Child Malnutrition Estimates (JME)",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.STA.STNT.ZS?format=json&date=2014:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:41Z",
+        "retrieval_mode": "bundled-cache"
+      }
+    },
+    {
+      "domain": "Maternal health",
+      "code": "SH.STA.MMRT",
+      "value": 149,
+      "year": 2023,
+      "benchmark": "70",
+      "status": "off-track",
+      "confidence": "High",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "WHO/UN MMEIG -> WDI",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.STA.MMRT?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:41Z",
+        "retrieval_mode": "bundled-cache"
+      }
+    },
+    {
+      "domain": "Poverty",
+      "code": "SI.POV.DDAY",
+      "value": 45.5,
+      "year": 2022,
+      "benchmark": "3",
+      "status": "off-track",
+      "confidence": "Low",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "World Bank PIP -> WDI",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SI.POV.DDAY?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:41Z",
+        "retrieval_mode": "bundled-cache"
+      }
+    },
+    {
+      "domain": "Education",
+      "code": "SE.PRM.CMPT.ZS",
+      "value": 102.2,
+      "year": 2016,
+      "benchmark": "100",
+      "status": "on-track",
+      "confidence": "Low",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "UNESCO UIS -> WDI",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SE.PRM.CMPT.ZS?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:41Z",
+        "retrieval_mode": "bundled-cache"
+      }
+    },
+    {
+      "domain": "Water",
+      "code": "SH.H2O.BASW.ZS",
+      "value": 64.8,
+      "year": 2023,
+      "benchmark": "100",
+      "status": "off-track",
+      "confidence": "High",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "WHO/UNICEF JMP -> WDI",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.H2O.BASW.ZS?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:41Z",
+        "retrieval_mode": "bundled-cache"
+      }
+    },
+    {
+      "domain": "Energy access",
+      "code": "EG.ELC.ACCS.ZS",
+      "value": 76.2,
+      "year": 2023,
+      "benchmark": "100",
+      "status": "off-track",
+      "confidence": "High",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "World Bank/IEA Tracking SDG7 -> WDI",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/EG.ELC.ACCS.ZS?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:41Z",
+        "retrieval_mode": "bundled-cache"
+      }
+    }
+  ],
+  "cost_report": {
+    "wall_clock_seconds": 0.001,
+    "authoritative_api_calls": 0,
+    "cache_hits": 7,
+    "llm_calls": 0,
+    "llm_tokens_in": 0,
+    "llm_tokens_out": 0,
+    "cedar_llm_cost_usd": 0.0,
+    "naive_single_big_model_cost_usd": 0.097,
+    "cost_reduction_vs_naive": "100%",
+    "runs_with_zero_llm": true
+  }
+}

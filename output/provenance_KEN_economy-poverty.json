@@ -1,0 +1,138 @@
+{
+  "generated_at": "2026-06-20T14:52:40Z",
+  "question": "State of economy & poverty (sdg 1, 8) in KEN",
+  "evidence_chain": [
+    "discover",
+    "retrieve",
+    "verify",
+    "analyse",
+    "narrate",
+    "review",
+    "output"
+  ],
+  "packs": [
+    {
+      "indicator": "SI.POV.DDAY",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "World Bank PIP -> WDI",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SI.POV.DDAY?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:40Z",
+        "retrieval_mode": "bundled-cache"
+      },
+      "verification": {
+        "indicator_code": "SI.POV.DDAY",
+        "n_values": 5,
+        "span_years": 18,
+        "coverage": 0.28,
+        "latest_year": 2022,
+        "confidence_tier": "Low",
+        "caveats": [
+          "Sparse series: only 5 of 18 years carry a value (survey-dependent indicator). Treat year-on-year movement with caution."
+        ],
+        "value_hash": "1494c17ad794"
+      },
+      "claims": [
+        {
+          "id": "SI.POV.DDAY.trend",
+          "text": "Poverty rate ($3.00/day, 2021 PPP) rose from 44.6 to 45.5 % of population between 2005 and 2022 (+2.0%, +0.1%/yr).",
+          "verdict": "worsening",
+          "datapoints": [
+            "SI.POV.DDAY@2005",
+            "SI.POV.DDAY@2022"
+          ]
+        },
+        {
+          "id": "SI.POV.DDAY.target",
+          "text": "As of 2022, the value of 45.5 does not yet meet the benchmark of 3 (SDG 1.1: end extreme poverty (proxy <3% at $3.00/day)); a gap of 42.5 % of population remains.",
+          "verdict": "off-track",
+          "datapoints": [
+            "SI.POV.DDAY@2022"
+          ],
+          "benchmark": 3.0
+        }
+      ]
+    },
+    {
+      "indicator": "NY.GDP.PCAP.CD",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "World Bank national accounts -> WDI",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/NY.GDP.PCAP.CD?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:40Z",
+        "retrieval_mode": "bundled-cache"
+      },
+      "verification": {
+        "indicator_code": "NY.GDP.PCAP.CD",
+        "n_values": 14,
+        "span_years": 14,
+        "coverage": 1.0,
+        "latest_year": 2023,
+        "confidence_tier": "High",
+        "caveats": [],
+        "value_hash": "2feb7d5a42c8"
+      },
+      "claims": [
+        {
+          "id": "NY.GDP.PCAP.CD.trend",
+          "text": "GDP per capita rose from 1092 to 1943 current US$ between 2010 and 2023 (+77.9%, +4.5%/yr).",
+          "verdict": "improving",
+          "datapoints": [
+            "NY.GDP.PCAP.CD@2010",
+            "NY.GDP.PCAP.CD@2023"
+          ]
+        }
+      ]
+    },
+    {
+      "indicator": "SL.UEM.TOTL.ZS",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "ILO modelled estimate -> WDI",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SL.UEM.TOTL.ZS?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:40Z",
+        "retrieval_mode": "bundled-cache"
+      },
+      "verification": {
+        "indicator_code": "SL.UEM.TOTL.ZS",
+        "n_values": 14,
+        "span_years": 14,
+        "coverage": 1.0,
+        "latest_year": 2023,
+        "confidence_tier": "High",
+        "caveats": [],
+        "value_hash": "1ff4c8abe906"
+      },
+      "claims": [
+        {
+          "id": "SL.UEM.TOTL.ZS.trend",
+          "text": "Unemployment rate rose from 2.8 to 5.4 % of labour force between 2010 and 2023 (+92.9%, +5.2%/yr).",
+          "verdict": "worsening",
+          "datapoints": [
+            "SL.UEM.TOTL.ZS@2010",
+            "SL.UEM.TOTL.ZS@2023"
+          ]
+        }
+      ]
+    }
+  ],
+  "review": {
+    "passed": true,
+    "issues": []
+  },
+  "cost_report": {
+    "wall_clock_seconds": 0.004,
+    "authoritative_api_calls": 0,
+    "cache_hits": 3,
+    "llm_calls": 0,
+    "llm_tokens_in": 0,
+    "llm_tokens_out": 0,
+    "cedar_llm_cost_usd": 0.0,
+    "naive_single_big_model_cost_usd": 0.097,
+    "cost_reduction_vs_naive": "100%",
+    "runs_with_zero_llm": true
+  }
+}

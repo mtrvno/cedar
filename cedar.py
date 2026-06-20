@@ -97,10 +97,35 @@ def llm_executive_summary(claims_text, meter):
 # --------------------------------------------------------------------------------------
 THEMES = {
     "child-survival": {
-        "label": "Child survival",
+        "label": "Child survival (SDG 2.2, 3.2)",
         "indicators": ["SH.DYN.MORT", "SP.DYN.IMRT.IN", "SH.IMM.IDPT", "SH.STA.STNT.ZS"],
         "headline": "SH.DYN.MORT",
         "comparator": "SSF",
+    },
+    "economy-poverty": {
+        "label": "Economy & poverty (SDG 1, 8)",
+        "indicators": ["SI.POV.DDAY", "NY.GDP.PCAP.CD", "SL.UEM.TOTL.ZS"],
+        "headline": "SI.POV.DDAY",
+    },
+    "education": {
+        "label": "Education (SDG 4)",
+        "indicators": ["SE.PRM.CMPT.ZS"],
+        "headline": "SE.PRM.CMPT.ZS",
+    },
+    "health-system": {
+        "label": "Health system (SDG 3)",
+        "indicators": ["SP.DYN.LE00.IN", "SH.STA.MMRT", "SH.DYN.MORT"],
+        "headline": "SH.STA.MMRT",
+    },
+    "wash": {
+        "label": "Water & sanitation (SDG 6)",
+        "indicators": ["SH.H2O.BASW.ZS", "SH.STA.BASS.ZS"],
+        "headline": "SH.H2O.BASW.ZS",
+    },
+    "energy-climate": {
+        "label": "Energy & climate (SDG 7, 13)",
+        "indicators": ["EG.ELC.ACCS.ZS", "EG.FEC.RNEW.ZS", "EN.GHG.CO2.PC.CE.AR5"],
+        "headline": "EG.ELC.ACCS.ZS",
     },
 }
 CATALOG = {
@@ -112,7 +137,39 @@ CATALOG = {
                       "lineage": "UNICEF/WHO/World Bank Joint Malnutrition Estimates -> World Bank WDI"},
     "SH.IMM.IDPT":   {"name": "DPT immunization coverage", "unit": "% of children 12-23 months", "better": "higher",
                       "lineage": "WHO/UNICEF (WUENIC) -> World Bank WDI"},
+    "SI.POV.DDAY":   {"name": "Poverty rate ($3.00/day, 2021 PPP)", "unit": "% of population", "better": "lower",
+                      "lineage": "World Bank PIP -> WDI"},
+    "NY.GDP.PCAP.CD":{"name": "GDP per capita", "unit": "current US$", "better": "higher",
+                      "lineage": "World Bank national accounts -> WDI"},
+    "SL.UEM.TOTL.ZS":{"name": "Unemployment rate", "unit": "% of labour force", "better": "lower",
+                      "lineage": "ILO modelled estimate -> WDI"},
+    "SE.PRM.CMPT.ZS":{"name": "Primary completion rate", "unit": "% of relevant age group", "better": "higher",
+                      "lineage": "UNESCO UIS -> WDI"},
+    "SP.DYN.LE00.IN":{"name": "Life expectancy at birth", "unit": "years", "better": "higher",
+                      "lineage": "UN World Population Prospects -> WDI"},
+    "SH.STA.MMRT":   {"name": "Maternal mortality ratio", "unit": "per 100,000 live births", "better": "lower",
+                      "lineage": "WHO/UN MMEIG -> WDI"},
+    "SH.H2O.BASW.ZS":{"name": "Basic drinking-water coverage", "unit": "% of population", "better": "higher",
+                      "lineage": "WHO/UNICEF JMP -> WDI"},
+    "SH.STA.BASS.ZS":{"name": "Basic sanitation coverage", "unit": "% of population", "better": "higher",
+                      "lineage": "WHO/UNICEF JMP -> WDI"},
+    "EG.ELC.ACCS.ZS":{"name": "Access to electricity", "unit": "% of population", "better": "higher",
+                      "lineage": "World Bank/IEA Tracking SDG7 -> WDI"},
+    "EG.FEC.RNEW.ZS":{"name": "Renewable energy share", "unit": "% of final energy", "better": "higher",
+                      "lineage": "World Bank/IEA -> WDI"},
+    "EN.GHG.CO2.PC.CE.AR5":{"name": "CO2 emissions per capita", "unit": "t CO2e/capita", "better": "lower",
+                      "lineage": "EDGAR / WB climate -> WDI"},
 }
+# Polycrisis: one headline indicator per SDG domain → a single cross-cutting risk read.
+POLYCRISIS_DOMAINS = [
+    ("Child survival", "SH.DYN.MORT"),
+    ("Nutrition",      "SH.STA.STNT.ZS"),
+    ("Maternal health","SH.STA.MMRT"),
+    ("Poverty",        "SI.POV.DDAY"),
+    ("Education",      "SE.PRM.CMPT.ZS"),
+    ("Water",          "SH.H2O.BASW.ZS"),
+    ("Energy access",  "EG.ELC.ACCS.ZS"),
+]
 
 def now_iso():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -611,6 +668,110 @@ def run_drilldown(country, dimension="wealth", offline=False):
     print(f"\n{'='*78}\n{brief}\n")
     return prov
 
+# ======================================================================================
+# POLYCRISIS  - one headline indicator per SDG domain, scored on/off-track, fused into a
+# single cross-cutting country risk read. Reasoning ACROSS the Commons, not within one theme.
+# ======================================================================================
+def run_polycrisis(country, offline=False):
+    meter = CostMeter()
+    retr = Retriever(meter, offline=offline)
+    verifier = Verifier()
+    targets = retr.cache.get("sdg_targets", {})
+
+    print(f"\nCEDAR POLYCRISIS  |  question: \"How many SDG fronts is {country} losing at once?\"")
+    print("-" * 78)
+    rows, caveats = [], []
+    for domain, code in POLYCRISIS_DOMAINS:
+        s = retr.fetch(code, country)
+        if not s:
+            print(f"  [skip] no data for {domain} ({code})"); continue
+        obs = {y: v for y, v in s["obs"].items() if v is not None}
+        if not obs:
+            print(f"  [skip] empty series for {domain}"); continue
+        ys = sorted(obs); first, last = obs[ys[0]], obs[ys[-1]]
+        tgt = targets.get(code, {})
+        better = CATALOG[code]["better"]
+        if tgt.get("target") is not None:
+            t, dirn = tgt["target"], tgt["direction"]
+            met = (last <= t) if dirn == "below" else (last >= t)
+            status = "on-track" if met else "off-track"
+            bench = f"{t:g}"
+        else:
+            improving = (last < first and better == "lower") or (last > first and better == "higher")
+            status = "improving" if improving else "worsening"
+            bench = "(trend)"
+        v = verifier.assess(s)
+        stressed = status in ("off-track", "worsening")
+        print(f"  [score] {domain:<15} {last:g} {CATALOG[code]['unit']:<26} -> {status}")
+        rows.append({"domain": domain, "code": code, "name": CATALOG[code]["name"], "value": last,
+                     "unit": CATALOG[code]["unit"], "year": ys[-1], "benchmark": bench, "status": status,
+                     "stressed": stressed, "confidence": v["confidence_tier"], "provenance": s["provenance"]})
+        for c in v["caveats"]:
+            caveats.append(f"{CATALOG[code]['name']}: {c}")
+
+    n = len(rows); stressed_n = sum(r["stressed"] for r in rows)
+    band = "HIGH stress" if stressed_n >= 4 else ("ELEVATED stress" if stressed_n >= 2 else "LOWER stress")
+    print("-" * 78)
+    print(f"  [composite] {stressed_n}/{n} domains off-track or worsening  ->  {band}")
+
+    L = []
+    L.append(f"# Polycrisis risk read - {country}")
+    L.append("")
+    L.append(f"*Cross-SDG composite from {n} authoritative headline indicators. "
+             f"Generated by CEDAR - every figure cited below.*")
+    L.append("")
+    L.append(f"## Headline: {band.lower()} - {stressed_n} of {n} SDG fronts off-track or worsening")
+    L.append("")
+    L.append("| Domain | Indicator | Latest | Benchmark | Status | Confidence |")
+    L.append("|---|---|---|---|---|---|")
+    badge = {"off-track": "[!] off-track", "on-track": "[OK] on-track",
+             "worsening": "[-] worsening", "improving": "[+] improving"}
+    for r in rows:
+        L.append(f"| {r['domain']} | {r['name']} | {r['value']:g} {r['unit']} | {r['benchmark']} "
+                 f"| {badge.get(r['status'], r['status'])} | {r['confidence']} |")
+    L.append("")
+    if caveats:
+        L.append("## Caveats")
+        L.append("")
+        for c in caveats:
+            L.append(f"- {c}")
+        L.append("")
+    L.append("## Methods & reproducibility")
+    L.append("")
+    L.append("One headline indicator per SDG domain. 'Off-track' = latest value misses the published SDG "
+             "benchmark; where no fixed benchmark exists, status reflects the trend (first vs latest). "
+             "All figures pulled from authoritative APIs; no figure is model-generated.")
+    L.append("")
+    L.append("## Evidence ledger")
+    L.append("")
+    L.append("| Domain | Indicator | Source (lineage) | Query |")
+    L.append("|---|---|---|---|")
+    for r in rows:
+        L.append(f"| {r['domain']} | {r['code']} | {r['provenance']['upstream_source']} "
+                 f"| [link]({r['provenance']['query_url']}) |")
+    rep = meter.report()
+    L.append("")
+    L.append(f"*Produced in {rep['wall_clock_seconds']}s with {rep['llm_calls']} LLM calls - $0.00.*")
+    brief = "\n".join(L)
+
+    os.makedirs(OUT_DIR, exist_ok=True)
+    with open(os.path.join(OUT_DIR, f"brief_{country}_polycrisis.md"), "w") as f:
+        f.write(brief)
+    prov = {
+        "generated_at": now_iso(), "question": f"Polycrisis risk read for {country}",
+        "composite": {"domains": n, "stressed": stressed_n, "band": band},
+        "evidence_chain": ["discover", "retrieve", "verify", "analyse", "narrate", "review", "output"],
+        "domains": [{"domain": r["domain"], "code": r["code"], "value": r["value"], "year": r["year"],
+                     "benchmark": r["benchmark"], "status": r["status"], "confidence": r["confidence"],
+                     "provenance": r["provenance"]} for r in rows],
+        "cost_report": rep,
+    }
+    with open(os.path.join(OUT_DIR, f"provenance_{country}_polycrisis.json"), "w") as f:
+        json.dump(prov, f, indent=2)
+    print(f"  [output] polycrisis brief + provenance written to ./output/")
+    print(f"\n{'='*78}\n{brief}\n")
+    return prov
+
 def _write_ledger(path, packs):
     import csv
     with open(path, "w", newline="") as f:
@@ -627,11 +788,14 @@ def _write_ledger(path, packs):
                             pr["query_url"]])
 
 def list_catalog():
-    print("\nCEDAR catalog\n" + "-"*40)
+    print("\nCEDAR catalog\n" + "-"*60)
     for t, spec in THEMES.items():
         print(f"theme: {t}  ({spec['label']})")
         for c in spec["indicators"]:
             print(f"   - {c}: {CATALOG[c]['name']} [{CATALOG[c]['unit']}] | lineage: {CATALOG[c]['lineage']}")
+    print(f"\ncross-cutting: polycrisis  (one headline per domain across {len(POLYCRISIS_DOMAINS)} SDG fronts)")
+    for domain, c in POLYCRISIS_DOMAINS:
+        print(f"   - {domain}: {c} ({CATALOG[c]['name']})")
     print()
 
 if __name__ == "__main__":
@@ -641,10 +805,13 @@ if __name__ == "__main__":
     ap.add_argument("--offline", action="store_true", help="use bundled cache, no network")
     ap.add_argument("--llm", action="store_true", help="(optional) layer an LLM for narrative polish")
     ap.add_argument("--drilldown", choices=["wealth"], help="within-country drill-down (e.g. stunting by wealth quintile)")
+    ap.add_argument("--polycrisis", action="store_true", help="cross-SDG composite risk read for a country")
     ap.add_argument("--list", action="store_true", help="list the indicator catalog and exit")
     args = ap.parse_args()
     if args.list:
         list_catalog(); sys.exit(0)
+    if args.polycrisis:
+        run_polycrisis(args.country, offline=args.offline); sys.exit(0)
     if args.drilldown:
         run_drilldown(args.country, dimension=args.drilldown, offline=args.offline); sys.exit(0)
     run(args.country, args.theme, offline=args.offline, use_llm=args.llm)

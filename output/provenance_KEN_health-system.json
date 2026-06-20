@@ -1,0 +1,145 @@
+{
+  "generated_at": "2026-06-20T14:52:41Z",
+  "question": "State of health system (sdg 3) in KEN",
+  "evidence_chain": [
+    "discover",
+    "retrieve",
+    "verify",
+    "analyse",
+    "narrate",
+    "review",
+    "output"
+  ],
+  "packs": [
+    {
+      "indicator": "SP.DYN.LE00.IN",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "UN World Population Prospects -> WDI",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SP.DYN.LE00.IN?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:41Z",
+        "retrieval_mode": "bundled-cache"
+      },
+      "verification": {
+        "indicator_code": "SP.DYN.LE00.IN",
+        "n_values": 14,
+        "span_years": 14,
+        "coverage": 1.0,
+        "latest_year": 2023,
+        "confidence_tier": "High",
+        "caveats": [],
+        "value_hash": "e1e54ab04262"
+      },
+      "claims": [
+        {
+          "id": "SP.DYN.LE00.IN.trend",
+          "text": "Life expectancy at birth rose from 60.9 to 63.6 years between 2010 and 2023 (+4.4%, +0.3%/yr).",
+          "verdict": "improving",
+          "datapoints": [
+            "SP.DYN.LE00.IN@2010",
+            "SP.DYN.LE00.IN@2023"
+          ]
+        }
+      ]
+    },
+    {
+      "indicator": "SH.STA.MMRT",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "WHO/UN MMEIG -> WDI",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.STA.MMRT?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:41Z",
+        "retrieval_mode": "bundled-cache"
+      },
+      "verification": {
+        "indicator_code": "SH.STA.MMRT",
+        "n_values": 14,
+        "span_years": 14,
+        "coverage": 1.0,
+        "latest_year": 2023,
+        "confidence_tier": "High",
+        "caveats": [],
+        "value_hash": "466e3550be53"
+      },
+      "claims": [
+        {
+          "id": "SH.STA.MMRT.trend",
+          "text": "Maternal mortality ratio fell from 210 to 149 per 100,000 live births between 2010 and 2023 (-29.0%, -2.6%/yr).",
+          "verdict": "improving",
+          "datapoints": [
+            "SH.STA.MMRT@2010",
+            "SH.STA.MMRT@2023"
+          ]
+        },
+        {
+          "id": "SH.STA.MMRT.target",
+          "text": "As of 2023, the value of 149 does not yet meet the benchmark of 70 (SDG 3.1: maternal mortality <70 per 100,000 by 2030); a gap of 79 per 100,000 live births remains.",
+          "verdict": "off-track",
+          "datapoints": [
+            "SH.STA.MMRT@2023"
+          ],
+          "benchmark": 70
+        }
+      ]
+    },
+    {
+      "indicator": "SH.DYN.MORT",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "UN IGME (UN Inter-agency Group for Child Mortality Estimation, led by UNICEF/WHO/UN DESA/World Bank)",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.DYN.MORT?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:41Z",
+        "retrieval_mode": "bundled-cache"
+      },
+      "verification": {
+        "indicator_code": "SH.DYN.MORT",
+        "n_values": 14,
+        "span_years": 14,
+        "coverage": 1.0,
+        "latest_year": 2023,
+        "confidence_tier": "High",
+        "caveats": [],
+        "value_hash": "5b55d4762606"
+      },
+      "claims": [
+        {
+          "id": "SH.DYN.MORT.trend",
+          "text": "Under-5 mortality rate fell from 53.1 to 39.6 per 1,000 live births between 2010 and 2023 (-25.4%, -2.2%/yr).",
+          "verdict": "improving",
+          "datapoints": [
+            "SH.DYN.MORT@2010",
+            "SH.DYN.MORT@2023"
+          ]
+        },
+        {
+          "id": "SH.DYN.MORT.target",
+          "text": "As of 2023, the value of 39.6 does not yet meet the benchmark of 25 (SDG 3.2.1: reduce under-5 mortality to at least as low as 25 per 1,000 live births by 2030); a gap of 14.6 per 1,000 live births remains.",
+          "verdict": "off-track",
+          "datapoints": [
+            "SH.DYN.MORT@2023"
+          ],
+          "benchmark": 25
+        }
+      ]
+    }
+  ],
+  "review": {
+    "passed": true,
+    "issues": []
+  },
+  "cost_report": {
+    "wall_clock_seconds": 0.003,
+    "authoritative_api_calls": 0,
+    "cache_hits": 3,
+    "llm_calls": 0,
+    "llm_tokens_in": 0,
+    "llm_tokens_out": 0,
+    "cedar_llm_cost_usd": 0.0,
+    "naive_single_big_model_cost_usd": 0.097,
+    "cost_reduction_vs_naive": "100%",
+    "runs_with_zero_llm": true
+  }
+}

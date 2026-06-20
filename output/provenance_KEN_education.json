@@ -1,0 +1,75 @@
+{
+  "generated_at": "2026-06-20T14:52:41Z",
+  "question": "State of education (sdg 4) in KEN",
+  "evidence_chain": [
+    "discover",
+    "retrieve",
+    "verify",
+    "analyse",
+    "narrate",
+    "review",
+    "output"
+  ],
+  "packs": [
+    {
+      "indicator": "SE.PRM.CMPT.ZS",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "UNESCO UIS -> WDI",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SE.PRM.CMPT.ZS?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T14:52:41Z",
+        "retrieval_mode": "bundled-cache"
+      },
+      "verification": {
+        "indicator_code": "SE.PRM.CMPT.ZS",
+        "n_values": 4,
+        "span_years": 12,
+        "coverage": 0.33,
+        "latest_year": 2016,
+        "confidence_tier": "Low",
+        "caveats": [
+          "Sparse series: only 4 of 12 years carry a value (survey-dependent indicator). Treat year-on-year movement with caution.",
+          "Latest available data point is 2016; figures may lag current conditions."
+        ],
+        "value_hash": "54f379c0b6c2"
+      },
+      "claims": [
+        {
+          "id": "SE.PRM.CMPT.ZS.trend",
+          "text": "Primary completion rate rose from 87.8 to 102.2 % of relevant age group between 2005 and 2016 (+16.4%, +1.4%/yr).",
+          "verdict": "improving",
+          "datapoints": [
+            "SE.PRM.CMPT.ZS@2005",
+            "SE.PRM.CMPT.ZS@2016"
+          ]
+        },
+        {
+          "id": "SE.PRM.CMPT.ZS.target",
+          "text": "As of 2016, the value of 102.2 meets the benchmark of 100 (SDG 4.1: universal primary completion); target achieved.",
+          "verdict": "on-track",
+          "datapoints": [
+            "SE.PRM.CMPT.ZS@2016"
+          ],
+          "benchmark": 100
+        }
+      ]
+    }
+  ],
+  "review": {
+    "passed": true,
+    "issues": []
+  },
+  "cost_report": {
+    "wall_clock_seconds": 0.003,
+    "authoritative_api_calls": 0,
+    "cache_hits": 1,
+    "llm_calls": 0,
+    "llm_tokens_in": 0,
+    "llm_tokens_out": 0,
+    "cedar_llm_cost_usd": 0.0,
+    "naive_single_big_model_cost_usd": 0.097,
+    "cost_reduction_vs_naive": "100%",
+    "runs_with_zero_llm": true
+  }
+}

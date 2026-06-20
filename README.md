@@ -8,11 +8,27 @@ CEDAR turns a plain-language policy question into a **decision-ready evidence br
 
 ## Quick start (no dependencies)
 ```bash
-python3 cedar.py --country KEN --theme child-survival            # live API → falls back to cache
-python3 cedar.py --country KEN --theme child-survival --offline  # fully offline, $0.00 per brief
+python3 cedar.py --country KEN --theme child-survival --offline  # a themed SDG brief, $0.00
+python3 cedar.py --country KEN --theme energy-climate --offline  # another SDG theme
+python3 cedar.py --country KEN --polycrisis --offline            # cross-SDG composite risk read
 python3 cedar.py --country NGA --drilldown wealth --offline      # within-country equity drill-down
-python3 cedar.py --list                                          # show the indicator catalog
+python3 cedar.py --list                                          # show all themes + indicators
 ```
+
+## Themes & briefs (SDG-mapped)
+Each theme is a curated set of authoritative indicators with SDG benchmarks; a brief is generated the same grounded way for any of them:
+
+| Theme | SDGs | Headline indicators |
+|---|---|---|
+| `child-survival` | 2.2, 3.2 | under-5 & infant mortality, DPT immunization, stunting |
+| `economy-poverty` | 1, 8 | poverty rate ($3.00/day), GDP per capita, unemployment |
+| `education` | 4 | primary completion rate |
+| `health-system` | 3 | life expectancy, maternal mortality, under-5 mortality |
+| `wash` | 6 | basic drinking-water & sanitation coverage |
+| `energy-climate` | 7, 13 | electricity access, renewable share, CO₂ per capita |
+| `--polycrisis` | cross-cutting | one headline per domain → a single country risk read (e.g. Kenya: **5 of 7 fronts off-track → HIGH stress**) |
+
+Adding a theme or indicator is a catalog edit (`THEMES` + `CATALOG` in `cedar.py`, plus a cache/API entry) — not new architecture. Coverage varies by SDG; the caveat engine flags sparse or stale series (e.g. survey-only poverty, 2016 education) as Low confidence rather than hiding the gap.
 Outputs land in `./output/`: the cited brief (`.md`), the evidence ledger (`.csv`), and the machine-readable provenance + cost report (`.json`).
 
 ## What's here
