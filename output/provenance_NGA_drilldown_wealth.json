@@ -1,0 +1,96 @@
+{
+  "generated_at": "2026-06-20T08:46:49Z",
+  "question": "Within NGA, who is left behind on stunting?",
+  "drilldown": {
+    "dimension": "wealth_quintile",
+    "year": 2018
+  },
+  "evidence_chain": [
+    "discover",
+    "retrieve",
+    "verify",
+    "analyse",
+    "narrate",
+    "review",
+    "output"
+  ],
+  "values": {
+    "poorest (Q1)": 55.4,
+    "Q2": 49.4,
+    "Q3": 37.8,
+    "Q4": 26.9,
+    "richest (Q5)": 16.8
+  },
+  "national": 36.8,
+  "ratio_poorest_to_richest": 3.3,
+  "gap_points": 38.6,
+  "provenance": [
+    {
+      "indicator": "SH.STA.STNT.Q1.ZS",
+      "quintile": "poorest (Q1)",
+      "value": 55.4,
+      "publisher": "World Bank World Development Indicators (WDI)",
+      "upstream_source": "World Bank HNP Statistics by Wealth Quintile (source 39); upstream DHS/MICS surveys",
+      "query_url": "https://api.worldbank.org/v2/country/NGA/indicator/SH.STA.STNT.Q1.ZS?format=json",
+      "source_last_updated": "2026-04-08",
+      "retrieved_at": "2026-06-20T08:46:49Z",
+      "retrieval_mode": "bundled-cache"
+    },
+    {
+      "indicator": "SH.STA.STNT.Q2.ZS",
+      "quintile": "Q2",
+      "value": 49.4,
+      "publisher": "World Bank World Development Indicators (WDI)",
+      "upstream_source": "World Bank HNP Statistics by Wealth Quintile (source 39); upstream DHS/MICS surveys",
+      "query_url": "https://api.worldbank.org/v2/country/NGA/indicator/SH.STA.STNT.Q2.ZS?format=json",
+      "source_last_updated": "2026-04-08",
+      "retrieved_at": "2026-06-20T08:46:49Z",
+      "retrieval_mode": "bundled-cache"
+    },
+    {
+      "indicator": "SH.STA.STNT.Q3.ZS",
+      "quintile": "Q3",
+      "value": 37.8,
+      "publisher": "World Bank World Development Indicators (WDI)",
+      "upstream_source": "World Bank HNP Statistics by Wealth Quintile (source 39); upstream DHS/MICS surveys",
+      "query_url": "https://api.worldbank.org/v2/country/NGA/indicator/SH.STA.STNT.Q3.ZS?format=json",
+      "source_last_updated": "2026-04-08",
+      "retrieved_at": "2026-06-20T08:46:49Z",
+      "retrieval_mode": "bundled-cache"
+    },
+    {
+      "indicator": "SH.STA.STNT.Q4.ZS",
+      "quintile": "Q4",
+      "value": 26.9,
+      "publisher": "World Bank World Development Indicators (WDI)",
+      "upstream_source": "World Bank HNP Statistics by Wealth Quintile (source 39); upstream DHS/MICS surveys",
+      "query_url": "https://api.worldbank.org/v2/country/NGA/indicator/SH.STA.STNT.Q4.ZS?format=json",
+      "source_last_updated": "2026-04-08",
+      "retrieved_at": "2026-06-20T08:46:49Z",
+      "retrieval_mode": "bundled-cache"
+    },
+    {
+      "indicator": "SH.STA.STNT.Q5.ZS",
+      "quintile": "richest (Q5)",
+      "value": 16.8,
+      "publisher": "World Bank World Development Indicators (WDI)",
+      "upstream_source": "World Bank HNP Statistics by Wealth Quintile (source 39); upstream DHS/MICS surveys",
+      "query_url": "https://api.worldbank.org/v2/country/NGA/indicator/SH.STA.STNT.Q5.ZS?format=json",
+      "source_last_updated": "2026-04-08",
+      "retrieved_at": "2026-06-20T08:46:49Z",
+      "retrieval_mode": "bundled-cache"
+    }
+  ],
+  "cost_report": {
+    "wall_clock_seconds": 0.001,
+    "authoritative_api_calls": 0,
+    "cache_hits": 6,
+    "llm_calls": 0,
+    "llm_tokens_in": 0,
+    "llm_tokens_out": 0,
+    "cedar_llm_cost_usd": 0.0,
+    "naive_single_big_model_cost_usd": 0.097,
+    "cost_reduction_vs_naive": "100%",
+    "runs_with_zero_llm": true
+  }
+}

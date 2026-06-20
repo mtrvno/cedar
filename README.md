@@ -1,0 +1,36 @@
+# CEDAR — Cited Evidence & Data Analytic Reporting
+
+**UN Open Source Week Hack-A-Thon 2026 · Challenge 3 (UNICEF Innocenti): Agentic Copilots & Analytic Intelligence**
+
+> Grounded evidence you can trace to the source — at a fraction of the cost.
+
+CEDAR turns a plain-language policy question into a **decision-ready evidence brief where every number is traceable** back to an authoritative API query, through a visible 7-stage evidence chain. Its analytic core runs with **no LLM and no paid API key**, so it works on a zero budget — the direct answer to the challenge's digital-divide concern.
+
+## Quick start (no dependencies)
+```bash
+python3 cedar.py --country KEN --theme child-survival            # live API → falls back to cache
+python3 cedar.py --country KEN --theme child-survival --offline  # fully offline, $0.00 per brief
+python3 cedar.py --country NGA --drilldown wealth --offline      # within-country equity drill-down
+python3 cedar.py --list                                          # show the indicator catalog
+```
+Outputs land in `./output/`: the cited brief (`.md`), the evidence ledger (`.csv`), and the machine-readable provenance + cost report (`.json`).
+
+## What's here
+| File | What it is |
+|---|---|
+| `cedar.py` | The agentic engine: Discover → Retrieve → Verify → Analyse → Narrate → Review → Output |
+| `index.html` | Self-contained interactive demo (open in any browser) — **GDACS-style world map of 36 countries**, evidence chain, charts, ledger, cost meter. Click any country to generate its brief. |
+| `CONCEPT_AND_ARCHITECTURE.md` | Full concept, architecture, judging-criteria mapping, production roadmap |
+| `CEDAR_Pitch.pptx` | Judge-facing pitch deck |
+| `data/cache_worldbank.json` | Real World Bank WDI values (offline cache) |
+| `output/` | Example generated brief, ledger, and provenance |
+
+## The three ideas that win
+1. **Visible evidence chain** — a 7-stage state machine, each step an inspectable artifact, not a hidden chat reasoning.
+2. **Grounding by construction** — every claim links to the datapoints it stands on; an evidence ledger preserves lineage (UN IGME → WDI); a caveat engine turns data gaps into honest warnings; the LLM never sits between a question and a number.
+3. **Frugal by design** — deterministic core = $0.00; LLM optional; live cost meter vs a naive single-big-model baseline.
+
+## Drill-down (within-country equity)
+The same evidence chain re-runs at finer granularity. Click a country in the demo (or run `--drilldown wealth`) to break a national figure down by **household wealth quintile** — exposing the disparity the average hides. Real example: in Nigeria (2018) the poorest fifth of children are stunted at **55.4%** vs **16.8%** in the richest — a **3.3× gap** the 36.8% national average conceals. Live for Kenya, Nigeria and India; the architecture extends to urban/rural, mother's education and subnational regions via the UNICEF SDMX / DHS connectors.
+
+All figures are real World Bank / UN IGME / DHS-MICS data — Kenya's full four-indicator brief, under-5 mortality for 36 countries on the map, and wealth-quintile equity for 3 countries — retrieved 2026-06-18 (sources updated 2022–2026). Open-source and reproducible.

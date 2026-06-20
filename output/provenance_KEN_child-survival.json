@@ -1,0 +1,197 @@
+{
+  "generated_at": "2026-06-20T08:46:49Z",
+  "question": "State of child survival in KEN",
+  "evidence_chain": [
+    "discover",
+    "retrieve",
+    "verify",
+    "analyse",
+    "narrate",
+    "review",
+    "output"
+  ],
+  "packs": [
+    {
+      "indicator": "SH.DYN.MORT",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "UN IGME (UN Inter-agency Group for Child Mortality Estimation, led by UNICEF/WHO/UN DESA/World Bank)",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.DYN.MORT?format=json&date=2010:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T08:46:49Z",
+        "retrieval_mode": "bundled-cache"
+      },
+      "verification": {
+        "indicator_code": "SH.DYN.MORT",
+        "n_values": 14,
+        "span_years": 14,
+        "coverage": 1.0,
+        "latest_year": 2023,
+        "confidence_tier": "High",
+        "caveats": [],
+        "value_hash": "5b55d4762606"
+      },
+      "claims": [
+        {
+          "id": "SH.DYN.MORT.trend",
+          "text": "Under-5 mortality rate fell from 53.1 to 39.6 per 1,000 live births between 2010 and 2023 (-25.4%, -2.2%/yr).",
+          "verdict": "improving",
+          "datapoints": [
+            "SH.DYN.MORT@2010",
+            "SH.DYN.MORT@2023"
+          ]
+        },
+        {
+          "id": "SH.DYN.MORT.target",
+          "text": "As of 2023, the value of 39.6 does not yet meet the benchmark of 25 (SDG 3.2.1: reduce under-5 mortality to at least as low as 25 per 1,000 live births by 2030); a gap of 14.6 per 1,000 live births remains.",
+          "verdict": "off-track",
+          "datapoints": [
+            "SH.DYN.MORT@2023"
+          ],
+          "benchmark": 25
+        },
+        {
+          "id": "SH.DYN.MORT.compare",
+          "text": "In 2023, Kenya (39.6) sits below the Sub-Saharan Africa average (73.2 per 1,000 live births).",
+          "verdict": "context",
+          "datapoints": [
+            "SH.DYN.MORT@2023",
+            "SH.DYN.MORT#SSF@2023"
+          ]
+        }
+      ]
+    },
+    {
+      "indicator": "SP.DYN.IMRT.IN",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "UN IGME (UN Inter-agency Group for Child Mortality Estimation, led by UNICEF/WHO/UN DESA/World Bank)",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SP.DYN.IMRT.IN?format=json&date=2015:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T08:46:49Z",
+        "retrieval_mode": "bundled-cache"
+      },
+      "verification": {
+        "indicator_code": "SP.DYN.IMRT.IN",
+        "n_values": 9,
+        "span_years": 9,
+        "coverage": 1.0,
+        "latest_year": 2023,
+        "confidence_tier": "High",
+        "caveats": [],
+        "value_hash": "fe36f0c7abf3"
+      },
+      "claims": [
+        {
+          "id": "SP.DYN.IMRT.IN.trend",
+          "text": "Infant mortality rate fell from 38.9 to 34.7 per 1,000 live births between 2015 and 2023 (-10.8%, -1.4%/yr).",
+          "verdict": "improving",
+          "datapoints": [
+            "SP.DYN.IMRT.IN@2015",
+            "SP.DYN.IMRT.IN@2023"
+          ]
+        },
+        {
+          "id": "SP.DYN.IMRT.IN.target",
+          "text": "As of 2023, the value of 34.7 does not yet meet the benchmark of 12 (SDG 3.2 (neonatal proxy context): reduce preventable infant/newborn deaths); a gap of 22.7 per 1,000 live births remains.",
+          "verdict": "off-track",
+          "datapoints": [
+            "SP.DYN.IMRT.IN@2023"
+          ],
+          "benchmark": 12
+        }
+      ]
+    },
+    {
+      "indicator": "SH.IMM.IDPT",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "WHO/UNICEF Estimates of National Immunization Coverage (WUENIC)",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.IMM.IDPT?format=json&date=2014:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T08:46:49Z",
+        "retrieval_mode": "bundled-cache"
+      },
+      "verification": {
+        "indicator_code": "SH.IMM.IDPT",
+        "n_values": 10,
+        "span_years": 10,
+        "coverage": 1.0,
+        "latest_year": 2023,
+        "confidence_tier": "High",
+        "caveats": [],
+        "value_hash": "8f6999ec9ed1"
+      },
+      "claims": [
+        {
+          "id": "SH.IMM.IDPT.trend",
+          "text": "DPT immunization coverage rose from 92 to 93 % of children 12-23 months between 2014 and 2023 (+1.1%, +0.1%/yr).",
+          "verdict": "improving",
+          "datapoints": [
+            "SH.IMM.IDPT@2014",
+            "SH.IMM.IDPT@2023"
+          ]
+        },
+        {
+          "id": "SH.IMM.IDPT.target",
+          "text": "As of 2023, the value of 93 meets the benchmark of 90 (IA2030 / GVAP benchmark: >=90% DTP3 national coverage); target achieved.",
+          "verdict": "on-track",
+          "datapoints": [
+            "SH.IMM.IDPT@2023"
+          ],
+          "benchmark": 90
+        }
+      ]
+    },
+    {
+      "indicator": "SH.STA.STNT.ZS",
+      "provenance": {
+        "publisher": "World Bank World Development Indicators (WDI)",
+        "upstream_source": "UNICEF/WHO/World Bank Joint Child Malnutrition Estimates (JME)",
+        "query_url": "https://api.worldbank.org/v2/country/KEN/indicator/SH.STA.STNT.ZS?format=json&date=2014:2023",
+        "source_last_updated": "2026-04-08",
+        "retrieved_at": "2026-06-20T08:46:49Z",
+        "retrieval_mode": "bundled-cache"
+      },
+      "verification": {
+        "indicator_code": "SH.STA.STNT.ZS",
+        "n_values": 3,
+        "span_years": 10,
+        "coverage": 0.3,
+        "latest_year": 2022,
+        "confidence_tier": "Low",
+        "caveats": [
+          "Sparse series: only 3 of 10 years carry a value (survey-dependent indicator). Treat year-on-year movement with caution."
+        ],
+        "value_hash": "08dfb445afa3"
+      },
+      "claims": [
+        {
+          "id": "SH.STA.STNT.ZS.trend",
+          "text": "Stunting prevalence (under-5) fell from 26.2 to 17.6 % of children under 5 between 2014 and 2022 (-32.8%, -4.9%/yr).",
+          "verdict": "improving",
+          "datapoints": [
+            "SH.STA.STNT.ZS@2014",
+            "SH.STA.STNT.ZS@2022"
+          ]
+        }
+      ]
+    }
+  ],
+  "review": {
+    "passed": true,
+    "issues": []
+  },
+  "cost_report": {
+    "wall_clock_seconds": 0.005,
+    "authoritative_api_calls": 0,
+    "cache_hits": 5,
+    "llm_calls": 0,
+    "llm_tokens_in": 0,
+    "llm_tokens_out": 0,
+    "cedar_llm_cost_usd": 0.0,
+    "naive_single_big_model_cost_usd": 0.097,
+    "cost_reduction_vs_naive": "100%",
+    "runs_with_zero_llm": true
+  }
+}

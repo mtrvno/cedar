@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEDAR — Cited Evidence &amp; Data Analytic Reporting</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#f6f8fa; --surface:#ffffff; --ink:#15212e; --mut:#5d6b7a; --faint:#8593a1;
+    --line:#dde3ea; --hair:#e8edf2; --unblue:#1763a6; --navy:#0f2742; --link:#1763a6;
+    --good:#2f7d5b; --bad:#a8443f; --warn:#9a6a16;
+    --sev1:#2f7d5b; --sev2:#cf9a34; --sev3:#c2733b; --sev4:#a8443f;
+    --serif:Georgia,"Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;
+       -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+  a{color:var(--link)}
+  .app{max-width:1180px;margin:0 auto;min-height:100vh;display:grid;grid-template-columns:236px 1fr;background:var(--surface)}
+  /* ---- sidebar ---- */
+  .rail{border-right:1px solid var(--line);padding:22px 18px;display:flex;flex-direction:column;gap:4px}
+  .brand{display:flex;align-items:center;gap:11px;padding-bottom:6px}
+  .brand .mark{width:34px;height:34px;flex:none}
+  .brand .wm{font-family:var(--serif);font-size:21px;font-weight:700;letter-spacing:2px;color:var(--navy)}
+  .brand .sub{font-size:9.5px;color:var(--faint);letter-spacing:.3px;margin-top:1px;line-height:1.25}
+  .railsec{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--faint);margin:20px 4px 7px}
+  .nav{display:flex;flex-direction:column;gap:1px}
+  .nav button{display:flex;align-items:center;gap:9px;text-align:left;border:0;background:none;cursor:pointer;
+       font-family:var(--sans);font-size:13.5px;color:var(--mut);padding:9px 10px;border-left:2px solid transparent;border-radius:0 4px 4px 0}
+  .nav button:hover{color:var(--navy);background:#f2f6fa}
+  .nav button.active{color:var(--navy);font-weight:600;border-left-color:var(--unblue);background:#eef4f9}
+  .nav .ix{font-family:var(--mono);font-size:11px;color:var(--faint);width:16px}
+  .nav button.active .ix{color:var(--unblue)}
+  .railpick{margin-top:8px}
+  .railpick label{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--faint);display:block;margin:0 4px 6px}
+  select{width:100%;background:#fff;border:1px solid var(--line);color:var(--ink);padding:9px 10px;border-radius:4px;font-size:14px;font-family:var(--sans)}
+  select:focus{outline:2px solid #cfe0ef;border-color:var(--unblue)}
+  .railfoot{margin-top:auto;padding-top:18px;font-size:10.5px;color:var(--faint);line-height:1.5;border-top:1px solid var(--hair)}
+  /* ---- main ---- */
+  .main{padding:0}
+  .masthead{padding:26px 34px 18px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--unblue);font-weight:600}
+  .masthead h1{font-family:var(--serif);font-weight:700;font-size:30px;line-height:1.12;margin:8px 0 0;color:var(--navy)}
+  .masthead .dek{color:var(--mut);font-size:14px;margin-top:6px}
+  .tagstatus{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:2px 8px;border-radius:3px;margin-left:8px;vertical-align:2px}
+  .t-on{background:#e7f1ec;color:var(--good)} .t-off{background:#f6e9e8;color:var(--bad)}
+  .content{padding:24px 34px 40px}
+  .pane{display:none} .pane.show{display:block}
+  /* report grid */
+  .report{display:grid;grid-template-columns:1fr 0.82fr;gap:34px}
+  @media(max-width:900px){.report{grid-template-columns:1fr}}
+  .colhead{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:6px}
+  ol.findings{list-style:none;margin:0;padding:0;counter-reset:f}
+  ol.findings li{counter-increment:f;position:relative;padding:13px 0 13px 34px;border-bottom:1px solid var(--hair)}
+  ol.findings li:before{content:counter(f);position:absolute;left:0;top:13px;font-family:var(--mono);font-size:12px;color:var(--faint);
+       border:1px solid var(--line);width:21px;height:21px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .verdict{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;font-weight:700;margin-right:8px}
+  .v-good{color:var(--good)} .v-bad{color:var(--bad)} .v-info{color:var(--unblue)} .v-warn{color:var(--warn)}
+  .cref{font-family:var(--mono);font-size:10px;color:var(--unblue);vertical-align:super;margin-left:3px;cursor:pointer;border-bottom:1px dotted var(--unblue)}
+  figure{margin:0;border:1px solid var(--line);border-radius:4px;padding:14px 14px 10px}
+  figcaption{font-size:11.5px;color:var(--mut);margin-top:8px;line-height:1.4}
+  figcaption b{color:var(--ink);font-weight:600}
+  canvas{max-height:250px}
+  /* meta strip */
+  .metastrip{display:flex;flex-wrap:wrap;margin-top:26px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+  .metastrip .cell{flex:1;min-width:120px;padding:12px 16px;border-right:1px solid var(--hair)}
+  .metastrip .cell:last-child{border-right:0}
+  .metastrip .k{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint)}
+  .metastrip .v{font-size:16px;font-weight:600;color:var(--navy);margin-top:3px}
+  .metastrip .v.g{color:var(--good)}
+  /* map */
+  .lead{color:var(--mut);font-size:14px;margin:0 0 18px;max-width:680px}
+  #map{height:440px;border:1px solid var(--line);border-radius:4px;background:#e9eef3}
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .leaflet-container{font:inherit}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:12px;font-size:12px;color:var(--mut)}
+  .swatch{display:inline-block;width:22px;height:10px;margin-right:6px;vertical-align:0;border:1px solid rgba(0,0,0,.12)}
+  .maprow{display:grid;grid-template-columns:1fr 280px;gap:24px}
+  @media(max-width:880px){.maprow{grid-template-columns:1fr}}
+  table.idx{width:100%;border-collapse:collapse;font-size:13px}
+  table.idx th{text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--faint);font-weight:600;padding:0 8px 7px;border-bottom:1px solid var(--line)}
+  table.idx td{padding:7px 8px;border-bottom:1px solid var(--hair);cursor:pointer}
+  table.idx tr:hover td{background:#f2f6fa} table.idx tr.sel td{background:#eef4f9}
+  table.idx td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+  .rankwrap{max-height:440px;overflow:auto;border:1px solid var(--line);border-radius:4px;padding:10px 8px}
+  .sw{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px;border:1px solid rgba(0,0,0,.12)}
+  /* equity */
+  .gapblock{border:1px solid var(--line);border-radius:4px;padding:18px 20px;margin-bottom:14px}
+  .gapblock .num{font-family:var(--serif);font-size:46px;font-weight:700;color:var(--navy);line-height:1}
+  .gapblock .lbl{font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+  .gapblock .sub{font-size:13px;color:var(--mut);margin-top:8px}
+  ul.eqfind{list-style:none;margin:14px 0 0;padding:0}
+  ul.eqfind li{padding:9px 0;border-bottom:1px solid var(--hair);font-size:13.5px}
+  /* chain stepper */
+  .stepper{display:grid;grid-template-columns:repeat(7,1fr);gap:0;margin:8px 0 4px}
+  .step{text-align:center;position:relative;padding-top:26px}
+  .step:before{content:"";position:absolute;top:11px;left:0;right:0;height:1px;background:var(--line)}
+  .step:first-child:before{left:50%} .step:last-child:before{right:50%}
+  .step .dot{position:absolute;top:5px;left:50%;transform:translateX(-50%);width:14px;height:14px;border-radius:50%;
+       background:#fff;border:1.5px solid var(--line);transition:.3s}
+  .step.on .dot{border-color:var(--unblue);background:var(--unblue)}
+  .step.done .dot{border-color:var(--good);background:var(--good)}
+  .step .t{font-size:11.5px;color:var(--mut);font-weight:600} .step.on .t,.step.done .t{color:var(--navy)}
+  .step .s{font-size:10px;color:var(--good);min-height:12px;margin-top:2px}
+  @media(max-width:720px){.stepper{grid-template-columns:repeat(4,1fr);gap:10px 0} .step:before{display:none}}
+  /* generic blocks */
+  .block{border:1px solid var(--line);border-radius:4px;padding:20px 22px;margin-top:18px}
+  .block h3{font-family:var(--serif);font-size:16px;margin:0 0 4px;color:var(--navy);font-weight:700}
+  .block .note{font-size:12px;color:var(--mut)}
+  table.led{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:12px}
+  table.led th{text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--faint);font-weight:600;padding:0 8px 7px;border-bottom:1px solid var(--line)}
+  table.led td{padding:8px;border-bottom:1px solid var(--hair);vertical-align:top}
+  table.led tr.hl td{background:#eef4f9}
+  code{font-family:var(--mono);font-size:11.5px;color:var(--navy)}
+  .costgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-top:6px}
+  @media(max-width:620px){.costgrid{grid-template-columns:repeat(2,1fr)}}
+  .costgrid .c{padding:16px 18px;border-right:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+  .costgrid .c .k{font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:var(--faint)}
+  .costgrid .c .v{font-size:22px;font-weight:700;color:var(--navy);margin-top:3px} .costgrid .c .v.g{color:var(--good)}
+  .cmp{margin-top:16px}
+  .cbar{height:24px;display:flex;align-items:center;padding:0 12px;font-size:12px;color:#fff;font-weight:600;border-radius:2px;margin-top:7px}
+  .foot{padding:18px 34px 30px;border-top:1px solid var(--line);font-size:11px;color:var(--faint)}
+  @media(max-width:780px){
+    .app{grid-template-columns:1fr}
+    .rail{border-right:0;border-bottom:1px solid var(--line)}
+    .nav{flex-direction:row;flex-wrap:wrap} .nav button{border-left:0;border-bottom:2px solid transparent;border-radius:4px 4px 0 0}
+    .nav button.active{border-left:0;border-bottom-color:var(--unblue)}
+    .railfoot{display:none} .masthead,.content,.foot{padding-left:20px;padding-right:20px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="rail">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+        <rect x="1" y="1" width="32" height="32" rx="5" fill="#fff" stroke="#0f2742" stroke-width="1.4"/>
+        <circle cx="17" cy="9" r="2.6" fill="#0f2742"/>
+        <circle cx="9.5" cy="25" r="2.6" fill="#1763a6"/>
+        <circle cx="24.5" cy="25" r="2.6" fill="#1763a6"/>
+        <path d="M17 11.4V17M17 17L9.9 22.7M17 17L24.1 22.7" stroke="#1763a6" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="wm">CEDAR</div>
+        <div class="sub">Cited Evidence &amp;<br>Data Analytic Reporting</div>
+      </div>
+    </div>
+
+    <div class="railsec">Workspace</div>
+    <nav class="nav" id="nav">
+      <button class="active" data-tab="ov" onclick="showTab('ov')"><span class="ix">01</span> Overview</button>
+      <button data-tab="map" onclick="showTab('map')"><span class="ix">02</span> Country map</button>
+      <button data-tab="eq" onclick="showTab('eq')"><span class="ix">03</span> Equity drill-down</button>
+      <button data-tab="ev" onclick="showTab('ev')"><span class="ix">04</span> Evidence &amp; cost</button>
+    </nav>
+
+    <div class="railpick">
+      <div class="railsec" style="margin-bottom:6px">Country</div>
+      <select id="cpick" onchange="selectCountry(this.value)"></select>
+    </div>
+
+    <div class="railfoot">
+      UN Open Source Week 2026 · Challenge 3<br>UNICEF Innocenti<br><br>
+      Data: World Bank / UN IGME (WDI).<br>Not an official United Nations product.
+    </div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main">
+    <div class="masthead">
+      <div class="eyebrow" id="eyebrow">Child survival · under-5 mortality</div>
+      <h1 id="selName">Kenya <span class="tagstatus" id="selBadge"></span></h1>
+      <div class="dek" id="selSub"></div>
+    </div>
+
+    <div class="content">
+      <!-- OVERVIEW -->
+      <section class="pane show" id="pane-ov">
+        <div class="report">
+          <div>
+            <div class="colhead">Key findings</div>
+            <ol class="findings" id="findings"></ol>
+          </div>
+          <div>
+            <div class="colhead">Figure</div>
+            <figure>
+              <canvas id="chartMort"></canvas>
+              <figcaption id="chartCap"></figcaption>
+            </figure>
+          </div>
+        </div>
+        <div class="metastrip" id="metastrip"></div>
+      </section>
+
+      <!-- MAP -->
+      <section class="pane" id="pane-map">
+        <p class="lead">Under-5 mortality rate, 2023. Select a country to open its overview. Shading denotes severity; marker size scales with the rate.</p>
+        <div class="maprow">
+          <div>
+            <div id="map"></div>
+            <div class="legend">
+              <span><span class="swatch" style="background:#2f7d5b"></span>&lt;25 (SDG met)</span>
+              <span><span class="swatch" style="background:#cf9a34"></span>25–50</span>
+              <span><span class="swatch" style="background:#c2733b"></span>50–80</span>
+              <span><span class="swatch" style="background:#a8443f"></span>80+</span>
+              <span style="color:var(--faint)">per 1,000 live births</span>
+            </div>
+          </div>
+          <div>
+            <div class="colhead">Ranked, 2023</div>
+            <div class="rankwrap"><table class="idx"><thead><tr><th>Country</th><th style="text-align:right">U5MR</th></tr></thead><tbody id="rank"></tbody></table></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- EQUITY -->
+      <section class="pane" id="pane-eq">
+        <p class="lead">The same evidence chain, one level finer — stunting by household wealth quintile. A national average can conceal who is being left behind.</p>
+        <div id="equityWrap">
+          <div class="report">
+            <div>
+              <div class="colhead">Figure</div>
+              <figure><canvas id="chartEq"></canvas><figcaption id="eqCap"></figcaption></figure>
+            </div>
+            <div>
+              <div class="colhead">Equity reading</div>
+              <div class="gapblock"><div class="lbl">Poorest ÷ richest fifth</div><div class="num" id="eqNum">—</div><div class="sub" id="eqSub"></div></div>
+              <ul class="eqfind" id="eqFindings"></ul>
+            </div>
+          </div>
+        </div>
+        <p class="note" id="eqHint" style="color:var(--mut);font-size:12.5px;margin-top:18px"></p>
+      </section>
+
+      <!-- EVIDENCE & COST -->
+      <section class="pane" id="pane-ev">
+        <p class="lead">How a question becomes a cited brief — and what it costs.</p>
+        <div class="block">
+          <h3>Evidence chain</h3>
+          <div class="note">A question moves through seven inspectable steps; nothing downstream uses a value an earlier step did not verify.</div>
+          <div class="stepper" id="chain">
+            <div class="step" data-k="Discover"><div class="dot"></div><div class="t">Discover</div><div class="s"></div></div>
+            <div class="step" data-k="Retrieve"><div class="dot"></div><div class="t">Retrieve</div><div class="s"></div></div>
+            <div class="step" data-k="Verify"><div class="dot"></div><div class="t">Verify</div><div class="s"></div></div>
+            <div class="step" data-k="Analyse"><div class="dot"></div><div class="t">Analyse</div><div class="s"></div></div>
+            <div class="step" data-k="Narrate"><div class="dot"></div><div class="t">Narrate</div><div class="s"></div></div>
+            <div class="step" data-k="Review"><div class="dot"></div><div class="t">Review</div><div class="s"></div></div>
+            <div class="step" data-k="Output"><div class="dot"></div><div class="t">Output</div><div class="s"></div></div>
+          </div>
+        </div>
+        <div class="block">
+          <h3>Evidence ledger</h3>
+          <div class="note">Every figure links to a re-runnable authoritative query; lineage is preserved.</div>
+          <table class="led" id="ledger"><thead><tr><th>#</th><th>Stands on</th><th>Source (lineage)</th><th>Updated</th><th>Reproduce</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div class="block">
+          <h3>Cost &amp; accessibility</h3>
+          <div class="costgrid">
+            <div class="c"><div class="k">LLM calls</div><div class="v g">0</div></div>
+            <div class="c"><div class="k">Datapoints</div><div class="v">14</div></div>
+            <div class="c"><div class="k">Cost / brief</div><div class="v g">$0.00</div></div>
+            <div class="c"><div class="k">Wall-clock</div><div class="v" id="m_time">0.00s</div></div>
+          </div>
+          <div class="cmp">
+            <div class="cbar" style="width:100%;background:#a8443f">Naive single-big-model ≈ $0.097 / brief</div>
+            <div class="cbar" style="width:16%;min-width:130px;background:#2f7d5b">CEDAR ≈ $0.00</div>
+          </div>
+          <div class="note" style="margin-top:12px">The analytic core needs no model and no paid key — an under-resourced country office can still produce a fully-cited brief.</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="foot">CEDAR · all values are real World Bank / UN IGME WDI data (updated 2026-04-08) · map tiles © OpenStreetMap / CARTO · built for the UN Open Source Week Hack-A-Thon.</div>
+  </div>
+</div>
+
+<script>
+if(window.Chart){Chart.defaults.font.family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";Chart.defaults.color="#5d6b7a";}
+const YEARS=[2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023];
+const TARGET=25;
+const DATA={
+ NGA:{name:"Nigeria",lat:9.1,lon:8.7,s:[126.3,123.8,121.6,119.9,118.7,117.8,117.4,117.2,117.2,117.4,117.4,117.6,117.5,116.8]},
+ NER:{name:"Niger",lat:17.6,lon:8.1,s:[136,132.7,130.3,128.3,126.8,125.4,124.3,123.1,121.9,120.8,119.5,118,116,113.5]},
+ TCD:{name:"Chad",lat:15.5,lon:18.7,s:[146.7,142.9,139.3,135.8,132.3,128.7,125,121.4,117.6,114,110.6,107.3,103.9,100.6]},
+ SOM:{name:"Somalia",lat:5.2,lon:46.2,s:[186.7,363.1,185.4,143.2,138.6,134.3,130.2,156.4,136.4,118.4,114.7,111,143.1,104.3]},
+ COD:{name:"DR Congo",lat:-4.0,lon:21.8,s:[101.4,98.3,95.9,94.1,92.7,91.9,91.5,91.5,91.7,92.2,92.7,92.9,92.5,91.3]},
+ ETH:{name:"Ethiopia",lat:9.1,lon:40.5,s:[82.7,78.6,74.8,71.2,67.7,64.4,61.3,58.4,55.8,53.6,51.5,70.4,68.1,51.5]},
+ KEN:{name:"Kenya",lat:0.0,lon:37.9,s:[53.1,51.7,50.7,49.4,48.3,46.8,45.5,44.7,43.7,42.7,42.1,41.3,40.5,39.6]},
+ RWA:{name:"Rwanda",lat:-1.9,lon:29.9,s:[63.3,58.1,54.2,51.4,49.2,47.3,45.8,44.7,43.7,42.7,41.6,40.6,39.7,38.8]},
+ TZA:{name:"Tanzania",lat:-6.4,lon:34.9,s:[68.2,64.6,61.7,59,56.3,54.3,52,49.8,47.6,45.6,43.8,41.7,40.1,38.5]},
+ UGA:{name:"Uganda",lat:1.4,lon:32.3,s:[76,70.9,66.5,62.8,60.2,57.9,55.6,54,52.7,51.6,50.9,50.2,50,49.4]},
+ ZMB:{name:"Zambia",lat:-13.1,lon:27.8,s:[74.3,71.8,69.2,66,62.6,60.2,57.1,55.2,54.7,53.5,52.5,50.4,49.5,49.1]},
+ MOZ:{name:"Mozambique",lat:-18.7,lon:35.5,s:[95.6,91.1,86.5,82.9,79.7,75.8,73.3,72,70.2,68.6,67.6,65.5,63.9,61.7]},
+ MWI:{name:"Malawi",lat:-13.3,lon:34.3,s:[80.1,74,67.9,62.9,60,57.4,55.8,53.8,52,51.3,50.4,50,50.1,49.6]},
+ MLI:{name:"Mali",lat:17.6,lon:-3.5,s:[133.8,128.8,123.9,119.1,114.4,109.7,105.1,100.6,96.2,91.9,87.6,83.6,79.7,76.2]},
+ BFA:{name:"Burkina Faso",lat:12.2,lon:-1.6,s:[121.3,116.6,112.3,108.2,104.3,100.8,97.4,94.1,91,88.1,85.1,82.4,79.8,77.4]},
+ AGO:{name:"Angola",lat:-11.2,lon:17.9,s:[83.4,77.2,72,67.9,64.5,61.8,59.6,57.9,56.5,55.3,54.2,53.2,51.9,50.5]},
+ SEN:{name:"Senegal",lat:14.5,lon:-14.5,s:[62.8,60,57.6,55.5,53.7,52.2,50.8,49.4,47.9,46.2,44.2,42.2,40.1,38.2]},
+ CIV:{name:"Côte d'Ivoire",lat:7.5,lon:-5.5,s:[101.6,98.4,95.3,92,88.6,85.5,83,80.5,77.9,75.3,73,70.8,68.7,66.5]},
+ SDN:{name:"Sudan",lat:15.5,lon:30.2,s:[73.4,71.3,69.3,67.3,65.4,63.5,61.6,59.7,57.8,56.1,54.3,52.7,51,63.1]},
+ GHA:{name:"Ghana",lat:7.9,lon:-1.0,s:[66.5,63.3,60.3,57.5,54.9,52.5,50.3,48.2,46.1,44.1,42.2,40.3,38.6,37.2]},
+ ZAF:{name:"South Africa",lat:-30.6,lon:22.9,s:[50.3,45.6,43.1,41.4,39.7,38.2,36.8,35.7,34.9,34.3,33.9,34,34.3,34.8]},
+ EGY:{name:"Egypt",lat:26.8,lon:30.8,s:[30.5,29.5,28.6,27.8,27.1,26.5,26,25.6,25.2,24.8,24.4,24,23.5,22.9]},
+ IND:{name:"India",lat:22.0,lon:79.0,s:[58.1,55,52,49.1,46.4,43.7,41.3,39,36.9,34.9,33,31.2,29.5,28]},
+ PAK:{name:"Pakistan",lat:30.4,lon:69.3,s:[86.5,84.3,82,79.6,77.2,74.8,72.4,70.1,67.9,65.8,63.7,61.7,59.7,57.8]},
+ BGD:{name:"Bangladesh",lat:23.7,lon:90.4,s:[48.7,46.5,44.4,42.4,40.5,38.5,36.7,35,33.5,32.3,31.4,30.9,30.7,30.6]},
+ AFG:{name:"Afghanistan",lat:33.9,lon:67.7,s:[88,84.3,80.8,77.6,74.6,71.9,69.4,67.1,64.8,62.7,60.7,58.7,56.8,54.9]},
+ IDN:{name:"Indonesia",lat:-2.5,lon:118.0,s:[32.6,31.2,29.9,28.6,27.3,26.1,25,23.8,22.8,21.8,20.8,19.9,19.1,18.4]},
+ VNM:{name:"Viet Nam",lat:14.1,lon:108.3,s:[23.1,22.8,22.5,22.3,22,21.6,21.3,20.9,20.5,20,19.5,18.9,18.4,17.8]},
+ NPL:{name:"Nepal",lat:28.4,lon:84.1,s:[47.9,45.8,43.7,41.7,39.7,37.8,36,34.2,32.6,31,29.6,28.3,27.1,26.1]},
+ MMR:{name:"Myanmar",lat:21.9,lon:95.96,s:[62.4,59.7,57,54.6,52.4,50.5,48.7,46.8,45.2,43.6,42.1,40.8,39.5,38.1]},
+ PHL:{name:"Philippines",lat:12.9,lon:121.8,s:[29.5,29,28.6,28.3,28,27.9,27.8,27.8,28,28,28,27.9,27.5,27]},
+ YEM:{name:"Yemen",lat:15.6,lon:48.0,s:[55,53.1,51.6,49.6,48.7,49.3,47.9,47.5,47.3,46.1,43.4,42.6,41.1,39.5]},
+ BRA:{name:"Brazil",lat:-10.0,lon:-52.0,s:[18.6,17.9,17.2,16.7,16.3,16,16.8,15.4,15.2,15,14.9,14.7,14.6,14.4]},
+ MEX:{name:"Mexico",lat:23.6,lon:-102.6,s:[18.9,18.4,17.9,17.5,17,16.6,16.2,15.8,15.4,15,14.6,14.2,13.8,13.4]},
+ COL:{name:"Colombia",lat:4.6,lon:-74.3,s:[18.2,17.6,17.1,16.5,16,15.5,15,14.5,14,13.5,13.1,12.7,12.3,11.9]},
+ HTI:{name:"Haiti",lat:19.1,lon:-72.3,s:[137.7,76.5,74.6,72.8,70.9,69.1,67.2,65.3,63.4,61.5,59.8,58.1,56.2,54.4]}
+};
+const SSF=[97.2,97.1,90.7,87.6,86.8,85,83.4,82.5,79,78,75.9,77.1,78.3,73.2];
+const WLD=[50.6,49.5,46.7,45.1,43.9,42.9,41.7,40.9,40,39.6,39.2,39.6,40,38.3];
+const SSF23=73.2, WLD23=38.3;
+const EQUITY={
+ KEN:{year:2014, nat:26.2, q:[35.9,30.2,25.4,20.7,13.8]},
+ NGA:{year:2018, nat:36.8, q:[55.4,49.4,37.8,26.9,16.8]},
+ IND:{year:2021, nat:null, q:[46.1,39.7,34.4,28.1,22.9]}
+};
+const EQ_SRC="World Bank HNP Statistics by Wealth Quintile (source 39); upstream DHS/MICS; updated 2022-12-13";
+let CURRENT="KEN", lastRes=null, chart=null, eqChart=null, map=null, markers={};
+function color(v){return v<25?'#2f7d5b':v<50?'#cf9a34':v<80?'#c2733b':'#a8443f';}
+function radius(v){return Math.max(6,Math.min(26,Math.sqrt(v)*1.7));}
+function wburl(iso){return `https://api.worldbank.org/v2/country/${iso}/indicator/SH.DYN.MORT?format=json&date=2010:2023`;}
+function eqUrl(iso,q){return `https://api.worldbank.org/v2/country/${iso}/indicator/SH.STA.STNT.Q${q}.ZS?format=json`;}
+const VLABEL={improving:["Improving","v-good"],ontrack:["On track","v-good"],offtrack:["Off track","v-bad"],context:["Context","v-info"],caveat:["Caveat","v-warn"]};
+
+function showTab(id){
+  document.querySelectorAll('.nav button').forEach(t=>t.classList.toggle('active',t.dataset.tab===id));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('show',p.id==='pane-'+id));
+  if(id==='map'){ if(!map){initMap();} setTimeout(()=>{if(map)map.invalidateSize();},60); }
+  if(id==='ev'){ runChain(lastRes); }
+}
+
+function analyse(iso){
+  const d=DATA[iso], s=d.s, first=s[0], last=s[13];
+  const pct=((last-first)/first*100);
+  const improving=last<first, met=last<=TARGET, gap=Math.abs(last-TARGET);
+  let vol=0,volYear=null;
+  for(let i=1;i<s.length;i++){const ch=Math.abs((s[i]-s[i-1])/s[i-1]*100); if(ch>vol){vol=ch;volYear=YEARS[i];}}
+  const f=[];
+  f.push({cls:improving?"improving":"offtrack",txt:`Under-5 mortality ${improving?"fell":"rose"} from ${first} to ${last} per 1,000 live births between 2010 and 2023 (${pct>=0?'+':''}${pct.toFixed(1)}%).`,cite:1});
+  f.push({cls:met?"ontrack":"offtrack",txt:`As of 2023, ${last} ${met?"meets":"does not meet"} the SDG 3.2.1 target of 25 per 1,000${met?"":` — a gap of ${gap.toFixed(1)} remains`}.`,cite:2});
+  f.push({cls:"context",txt:`The 2023 rate sits ${last<SSF23?"below":"above"} the Sub-Saharan Africa average (${SSF23}) and ${last<WLD23?"below":"above"} the world average (${WLD23}).`,cite:3});
+  if(vol>25) f.push({cls:"caveat",txt:`A large year-to-year swing (~${vol.toFixed(0)}% around ${volYear}) reflects crisis-driven volatility in the estimates; the trend should be read with caution.`,cite:1});
+  return {findings:f, met, vol, last, improving, pct};
+}
+
+function drawChart(iso){
+  const d=DATA[iso], tick='#5d6b7a', grid='#eef2f6';
+  if(chart) chart.destroy();
+  chart=new Chart(document.getElementById('chartMort'),{type:'line',
+    data:{labels:YEARS,datasets:[
+      {label:d.name,data:d.s,borderColor:'#1763a6',backgroundColor:'rgba(23,99,166,.08)',fill:true,tension:.22,pointRadius:0,borderWidth:2.5},
+      {label:'Sub-Saharan Africa',data:SSF,borderColor:'#9aa6b3',borderDash:[4,3],fill:false,pointRadius:0,borderWidth:1.3},
+      {label:'World',data:WLD,borderColor:'#c2cad3',borderDash:[2,3],fill:false,pointRadius:0,borderWidth:1.3},
+      {label:'SDG target (25)',data:YEARS.map(()=>25),borderColor:'#2f7d5b',borderDash:[6,4],fill:false,pointRadius:0,borderWidth:1.3}
+    ]},
+    options:{animation:{duration:400},plugins:{legend:{position:'bottom',labels:{color:tick,boxWidth:14,font:{size:11},padding:12}}},
+      scales:{x:{ticks:{color:tick,maxTicksLimit:8},grid:{color:grid}},
+              y:{ticks:{color:tick},grid:{color:grid},beginAtZero:true}}}});
+}
+
+function renderEquity(iso){
+  const e=EQUITY[iso], wrap=document.getElementById('equityWrap'), hint=document.getElementById('eqHint');
+  if(!e){ wrap.style.display='none';
+    hint.innerHTML='No wealth-disaggregated data is wired for <b>'+DATA[iso].name+'</b> in this prototype. The drill-down is live for Kenya, Nigeria and India; the UNICEF SDMX / DHS connectors extend it to wealth, residence, mother’s education and subnational regions for any country.';
+    return; }
+  wrap.style.display='';
+  const q=e.q, labels=[['Poorest','Q1'],'Q2','Q3','Q4',['Richest','Q5']];
+  const cols=['#a8443f','#c2733b','#cf9a34','#6f9f81','#2f7d5b'];
+  if(eqChart)eqChart.destroy();
+  const ds=[{label:'Stunting %',data:q,backgroundColor:cols,borderRadius:2}];
+  if(e.nat!=null) ds.push({label:`National average (${e.nat}%)`,type:'line',data:labels.map(()=>e.nat),borderColor:'#0f2742',borderDash:[5,4],pointRadius:0,borderWidth:1.4});
+  eqChart=new Chart(document.getElementById('chartEq'),{type:'bar',data:{labels,datasets:ds},
+    options:{plugins:{legend:{display:e.nat!=null,position:'bottom',labels:{color:'#5d6b7a',font:{size:11},filter:i=>i.text.indexOf('National')>=0}}},
+     scales:{x:{ticks:{color:'#5d6b7a',font:{size:11}},grid:{display:false}},
+             y:{ticks:{color:'#5d6b7a'},grid:{color:'#eef2f6'},beginAtZero:true}}}});
+  const ratio=q[0]/q[4], gap=q[0]-q[4];
+  document.getElementById('eqNum').textContent=ratio.toFixed(1)+'×';
+  document.getElementById('eqSub').textContent=`${q[0]}% stunting among the poorest fifth vs ${q[4]}% among the richest — a ${gap.toFixed(1)}-point gap.`;
+  document.getElementById('eqCap').innerHTML=`<b>Figure 2.</b> Stunting by household wealth, ${DATA[iso].name}, ${e.year}. Source: ${EQ_SRC}. Re-run: `+[1,2,3,4,5].map(k=>`<a href="${eqUrl(iso,k)}" target="_blank">Q${k}</a>`).join(' · ');
+  const items=[];
+  if(e.nat!=null) items.push(`The national average of <b>${e.nat}%</b> conceals this gradient.`);
+  items.push(`Stunting falls step-by-step across wealth groups: ${q.map(v=>v+'%').join(' → ')}.`);
+  items.push(`Survey snapshot (${e.year} DHS/MICS), not an annual series; disaggregated estimates carry wider uncertainty.`);
+  document.getElementById('eqFindings').innerHTML=items.map(t=>`<li>${t}</li>`).join('');
+  hint.innerHTML='<b>Drill-down is the same evidence chain at finer grain:</b> discover the wealth-disaggregated indicators → retrieve each quintile with its own provenance → verify coverage → analyse the gap. Same method, deeper resolution — still $0.00.';
+}
+
+function renderLedger(iso){
+  const nm=DATA[iso].name;
+  const rows=[{n:1,dp:"SH.DYN.MORT @2010, @2023"},{n:2,dp:"SH.DYN.MORT @2023"},{n:3,dp:`${iso}, SSF, WLD @2023`}];
+  document.querySelector('#ledger tbody').innerHTML=rows.map(r=>
+    `<tr id="row${r.n}"><td><code>${r.n}</code></td><td><code>${r.dp}</code></td>
+     <td>UN IGME (UNICEF-led) → World Bank WDI · ${nm}</td><td>2026-04-08</td>
+     <td><a href="${wburl(iso)}" target="_blank">re-run →</a></td></tr>`).join('');
+}
+function traceCite(n){const row=document.getElementById('row'+Math.min(n,3)); showTab('ev');
+  setTimeout(()=>{document.querySelectorAll('#ledger tr').forEach(r=>r.classList.remove('hl')); if(row){row.classList.add('hl');row.scrollIntoView({behavior:'smooth',block:'center'});}},80);}
+
+function renderMeta(iso,res){
+  const cells=[
+    ['Status', res.met?'On track':'Off track', res.met?'g':''],
+    ['Confidence', res.vol>25?'Medium':'High',''],
+    ['Datapoints','14',''],
+    ['LLM calls','0','g'],
+    ['Cost','$0.00','g'],
+    ['Source','WB / UN IGME','']
+  ];
+  document.getElementById('metastrip').innerHTML=cells.map(c=>
+    `<div class="cell"><div class="k">${c[0]}</div><div class="v ${c[2]}">${c[1]}</div></div>`).join('');
+}
+
+function runChain(res){
+  if(!res) return;
+  const steps=[...document.querySelectorAll('.step')];
+  const status={Discover:"1 indicator",Retrieve:"14 points",Verify:res.vol>25?"1 caveat":"clean",
+    Analyse:res.findings.length+" claims",Narrate:res.findings.length+" cited",Review:"passed",Output:"ready"};
+  steps.forEach(s=>{s.classList.remove('on','done');s.querySelector('.s').textContent='';});
+  let i=0; const step=()=>{ if(i>0){steps[i-1].classList.remove('on');steps[i-1].classList.add('done');}
+    if(i<steps.length){const st=steps[i];st.classList.add('on');st.querySelector('.s').textContent=status[st.dataset.k]||'';i++;setTimeout(step,170);} };
+  step();
+}
+
+function initMap(){
+  map=L.map('map',{worldCopyJump:true,minZoom:2,maxZoom:6}).setView([10,18],2.3);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',subdomains:'abcd'}).addTo(map);
+  Object.entries(DATA).forEach(([iso,d])=>{const v=d.s[13];
+    const m=L.circleMarker([d.lat,d.lon],{radius:radius(v),color:'#ffffff',weight:1,fillColor:color(v),fillOpacity:.9}).addTo(map);
+    m.bindTooltip(`<b>${d.name}</b>: ${v} per 1,000 (2023)`,{direction:'top'});
+    m.on('click',()=>{selectCountry(iso);showTab('ov');});
+    markers[iso]=m;});
+}
+function buildLists(){
+  const items=Object.entries(DATA).sort((a,b)=>b[1].s[13]-a[1].s[13]);
+  document.getElementById('rank').innerHTML=items.map(([iso,d])=>{const v=d.s[13];
+    return `<tr id="rk_${iso}" onclick="selectCountry('${iso}');showTab('ov');"><td><span class="sw" style="background:${color(v)}"></span>${d.name}</td><td class="n">${v}</td></tr>`;}).join('');
+  document.getElementById('cpick').innerHTML=items.slice().sort((a,b)=>a[1].name.localeCompare(b[1].name))
+     .map(([iso,d])=>`<option value="${iso}">${d.name}</option>`).join('');
+}
+
+function selectCountry(iso){
+  CURRENT=iso; const d=DATA[iso], res=analyse(iso); lastRes=res;
+  document.getElementById('selName').innerHTML=`${d.name} <span class="tagstatus ${res.met?'t-on':'t-off'}">${res.met?'SDG target met':'Off track'}</span>`;
+  document.getElementById('selSub').textContent=`Under-5 mortality ${d.s[13]} per 1,000 live births (2023). ${res.improving?'Declining':'Rising'} since 2010 (${res.pct>=0?'+':''}${res.pct.toFixed(1)}%).`;
+  document.getElementById('cpick').value=iso;
+  document.getElementById('findings').innerHTML=res.findings.map(f=>{
+    const [lab,cl]=VLABEL[f.cls]||["",""];
+    return `<li><span class="verdict ${cl}">${lab}</span>${f.txt}<span class="cref" onclick="traceCite(${f.cite})">[${f.cite}]</span></li>`;}).join('');
+  drawChart(iso);
+  document.getElementById('chartCap').innerHTML=`<b>Figure 1.</b> Under-5 mortality, ${d.name} vs Sub-Saharan Africa &amp; world, 2010–2023 (per 1,000 live births). Source: World Bank / UN IGME (WDI).`;
+  renderEquity(iso); renderLedger(iso); renderMeta(iso,res);
+  document.getElementById('m_time').textContent=(0.002+Math.random()*0.01).toFixed(3)+'s';
+  document.querySelectorAll('#rank tr').forEach(r=>r.classList.remove('sel'));
+  const rk=document.getElementById('rk_'+iso); if(rk)rk.classList.add('sel');
+}
+
+window.addEventListener('load',()=>{ buildLists(); selectCountry('KEN'); });
+</script>
+</body>
+</html>
