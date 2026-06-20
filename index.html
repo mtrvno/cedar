@@ -129,6 +129,14 @@
   .themebar button{border:1px solid var(--line);background:#fff;color:var(--mut);padding:7px 12px;border-radius:5px;font-family:var(--sans);font-size:12.5px;cursor:pointer}
   .themebar button:hover{color:var(--navy)}
   .themebar button.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+  /* data-source badge */
+  .src-badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 10px;border-radius:20px;border:1px solid}
+  .src-badge.live{background:#eaf4fb;color:var(--unblue);border-color:#cfe0ef}
+  .src-badge.baked{background:#eef2f4;color:var(--mut);border-color:var(--line)}
+  .src-badge.off{background:#fbf2e2;color:var(--warn);border-color:#ecdcb6}
+  .src-badge .ld{width:7px;height:7px;border-radius:50%;background:var(--unblue);display:inline-block}
+  .src-badge.live .ld{animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
   /* polycrisis */
   .band{padding:14px 18px;border-radius:6px;margin-bottom:18px;font-weight:600;font-size:15px;border:1px solid}
   .band.high{background:#f6e9e8;color:var(--bad);border-color:#e6c9c6}
@@ -241,8 +249,11 @@
 
       <!-- SDG BRIEFS -->
       <section class="pane" id="pane-sdg">
-        <p class="lead">One grounded, benchmarked brief per SDG theme. Multi-SDG depth is wired for <b>Kenya</b> (the flagship) in this demo; any country runs live via the CLI.</p>
-        <div class="themebar" id="themebar"></div>
+        <p class="lead">One grounded, benchmarked brief per SDG theme for the selected country. Kenya is built-in; other countries are fetched live from the World Bank API.</p>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+          <div class="themebar" id="themebar" style="margin:0"></div>
+          <span id="sdgSrc" class="src-badge baked"></span>
+        </div>
         <div class="report">
           <div>
             <div class="colhead" id="sdgFindHead">Key findings</div>
@@ -257,7 +268,8 @@
 
       <!-- POLYCRISIS -->
       <section class="pane" id="pane-poly">
-        <p class="lead">A cross-SDG read for <b>Kenya</b>: one headline indicator per domain, each scored against its SDG benchmark, fused into a single risk picture.</p>
+        <p class="lead">A cross-SDG read for the selected country: one headline indicator per domain, each scored against its SDG benchmark, fused into a single risk picture.</p>
+        <div style="margin-bottom:10px"><span id="polySrc" class="src-badge baked"></span></div>
         <div class="band" id="polyBand"></div>
         <div class="scoregrid" id="polyGrid"></div>
         <p class="note" style="color:var(--mut);font-size:12.5px;margin-top:16px">Off-track = latest value misses the published SDG benchmark; where no fixed benchmark exists, status reflects the trend. Every figure is real World Bank / UN data, generated with 0 LLM calls at $0.00. Full reproducible queries in the CLI brief (<code>cedar.py --polycrisis</code>).</p>
@@ -423,6 +435,13 @@ async function ensureCountry(iso){
   return obj;
 }
 function hasData(store){return store&&Object.values(store).some(d=>d.obs&&Object.keys(d.obs).length);}
+function setSrc(id,state){
+  const el=document.getElementById(id); if(!el) return;
+  if(state==='fetch'){el.className='src-badge live';el.innerHTML='<span class="ld"></span> Fetching live…';}
+  else if(state==='live'){el.className='src-badge live';el.innerHTML='<span class="ld"></span> Live · World Bank API';}
+  else if(state==='off'){el.className='src-badge off';el.textContent='Live data unavailable';}
+  else{el.className='src-badge baked';el.textContent='Built-in · offline';}
+}
 function indStat(store,code){
   const d=store[code]||{obs:{}}; const ys=Object.keys(d.obs).map(Number).sort((a,b)=>a-b);
   if(!ys.length) return {d,ys,empty:true};
@@ -445,10 +464,12 @@ async function renderSDG(key){
   const iso=CURRENT, nm=DATA[iso]?DATA[iso].name:iso;
   const head=document.getElementById('sdgFindHead'), fnd=document.getElementById('sdgFindings');
   head.textContent=`${nm} · ${th.label} — ${th.sdg}`;
+  setSrc('sdgSrc', iso==="KEN"?'baked':(SDGCACHE[iso]?'live':'fetch'));
   if(iso!=="KEN"&&!SDGCACHE[iso]) fnd.innerHTML=`<li style="border:0;padding-left:0;color:var(--mut)">Fetching live World Bank data for ${nm}…</li>`;
   const store=await ensureCountry(iso);
-  if(!hasData(store)){ fnd.innerHTML=`<li style="border:0;padding-left:0;color:var(--mut)">Live data couldn't be loaded for ${nm} (offline or blocked). Kenya is built-in; any country runs via <code>cedar.py</code>.</li>`;
+  if(!hasData(store)){ setSrc('sdgSrc','off'); fnd.innerHTML=`<li style="border:0;padding-left:0;color:var(--mut)">Live data couldn't be loaded for ${nm} (offline or blocked). Kenya is built-in; any country runs via <code>cedar.py</code>.</li>`;
     if(window._sdgChart)window._sdgChart.destroy(); document.getElementById('sdgCap').innerHTML=""; return; }
+  setSrc('sdgSrc', iso==="KEN"?'baked':'live');
   fnd.innerHTML=th.codes.map(code=>{
     const st=indStat(store,code), ind=store[code];
     if(st.empty) return `<li><span class="verdict v-warn">No data</span>${ind.n} — no values reported for ${nm} in WDI.</li>`;
@@ -473,9 +494,11 @@ async function renderSDG(key){
 async function renderPolycrisis(){
   const iso=CURRENT, nm=DATA[iso]?DATA[iso].name:iso;
   const band=document.getElementById('polyBand'), grid=document.getElementById('polyGrid');
+  setSrc('polySrc', iso==="KEN"?'baked':(SDGCACHE[iso]?'live':'fetch'));
   if(iso!=="KEN"&&!SDGCACHE[iso]){ band.className="band"; band.innerHTML=`Fetching live World Bank data for ${nm}…`; grid.innerHTML=""; }
   const store=await ensureCountry(iso);
-  if(!hasData(store)){ band.className="band elev"; band.innerHTML=`Live data couldn't be loaded for ${nm} (offline or blocked). Kenya is built-in; any country runs via <code>cedar.py --polycrisis</code>.`; grid.innerHTML=""; return; }
+  if(!hasData(store)){ setSrc('polySrc','off'); band.className="band elev"; band.innerHTML=`Live data couldn't be loaded for ${nm} (offline or blocked). Kenya is built-in; any country runs via <code>cedar.py --polycrisis</code>.`; grid.innerHTML=""; return; }
+  setSrc('polySrc', iso==="KEN"?'baked':'live');
   const rows=POLY_DOMAINS.map(([dom,code])=>{
     const st=indStat(store,code), ind=store[code];
     if(st.empty) return {dom,ind,st,status:"no-data",stressed:false,empty:true};
