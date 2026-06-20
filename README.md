@@ -55,3 +55,25 @@ git branch -M main
 git remote add origin https://github.com/<your-username>/cedar.git
 git push -u origin main
 ```
+
+## Optional: enabling the LLM (prose polish only)
+CEDAR runs at **$0.00 with no model by default**. If you *want* an LLM to add a short, readable **executive summary** on top of the verified findings, set three environment variables and pass `--llm`. The LLM is given only the already-verified claims; a guardrail rejects its output if it introduces any number not in those claims, so it can never fabricate a figure. The cost meter then reports the real token cost.
+
+```bash
+# OpenAI
+export CEDAR_LLM_API_KEY="sk-..."
+python3 cedar.py --country KEN --theme child-survival --llm
+
+# Any OpenAI-compatible provider (OpenRouter, Together, etc.)
+export CEDAR_LLM_API_KEY="..."
+export CEDAR_LLM_BASE_URL="https://openrouter.ai/api/v1"
+export CEDAR_LLM_MODEL="meta-llama/llama-3.1-8b-instruct"
+python3 cedar.py --country KEN --theme child-survival --llm
+
+# Local & free (Ollama / LM Studio — keeps everything offline)
+export CEDAR_LLM_API_KEY="local"          # any non-empty value
+export CEDAR_LLM_BASE_URL="http://localhost:11434/v1"
+export CEDAR_LLM_MODEL="llama3.1"
+python3 cedar.py --country KEN --theme child-survival --llm
+```
+If the key is missing or the call fails, CEDAR silently falls back to the deterministic $0.00 narration — the brief, ledger, citations and numbers are identical either way. The LLM only ever rewrites prose; it never sits between a question and a number.
