@@ -149,6 +149,10 @@
   .msg{max-width:86%;padding:10px 13px;border-radius:10px;font-size:14px;line-height:1.55;white-space:pre-wrap}
   .msg.user{align-self:flex-end;background:var(--unblue);color:#fff;border-bottom-right-radius:3px}
   .msg.bot{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:3px;color:var(--ink)}
+  .msg.bot p{margin:0 0 8px} .msg.bot p:last-child{margin-bottom:0}
+  .msg.bot ol,.msg.bot ul{margin:6px 0 8px 20px;padding:0} .msg.bot li{margin:3px 0}
+  .msg.bot strong{color:var(--navy)} .msg.bot code{background:#eef2f4;border-radius:3px;padding:0 3px;font-size:12px}
+  .msg.bot .cur{display:inline-block;width:7px;height:14px;background:var(--unblue);vertical-align:-2px;animation:pulse 1s steps(2) infinite;margin-left:1px}
   .msg.tool{align-self:flex-start;background:#eef4f9;border:1px solid #cfe0ef;color:var(--mut);font-size:11px;font-family:var(--mono);white-space:normal}
   .msg .src{margin-top:8px;font-size:11px;color:var(--mut);border-top:1px solid var(--hair);padding-top:6px;white-space:normal}
   .msg .src a{color:var(--unblue);text-decoration:none} .msg .src a:hover{text-decoration:underline}
@@ -561,7 +565,7 @@ async function llmSummarize(claims,out,badge,btn){
       out.innerHTML=`<div class="llmblock"><b>Guardrail blocked the summary.</b> The model introduced figure(s) not in the verified findings: ${invented.join(', ')}. Output withheld — CEDAR will not show an ungrounded number.</div>`;
     }else{
       badge.className='src-badge live'; badge.innerHTML='<span class="ld"></span> LLM · '+model;
-      out.innerHTML=`<div class="llmsummary"><span class="tag">LLM-drafted · number-checked ✓</span>${text.replace(/</g,'&lt;')}
+      out.innerHTML=`<div class="llmsummary"><span class="tag">LLM-drafted · number-checked ✓</span>${mdToHtml(text)}
         <div class="llmmeta">${model} · ${(u.prompt_tokens||0)}+${(u.completion_tokens||0)} tokens · ~$${cost.toFixed(4)} · ${secs}s · every number verified against the findings.</div></div>`;
     }
   }catch(err){
@@ -645,6 +649,19 @@ function renderChatCtx(){
   const ch=document.getElementById('chatChips'); if(ch)ch.innerHTML=CHAT_CHIPS.map(q=>`<button onclick="chatChip(this)">${q.replace(/"/g,'&quot;')}</button>`).join('');
 }
 function chatChip(b){ const i=document.getElementById('chatInput'); i.value=b.textContent; chatSend(); }
+function mdToHtml(t){
+  let s=(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>');
+  s=s.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g,'$1<em>$2</em>');
+  const lines=s.split('\n'); let html='',ol=false,ul=false;
+  const close=()=>{ if(ol){html+='</ol>';ol=false;} if(ul){html+='</ul>';ul=false;} };
+  for(const ln of lines){ let m;
+    if(m=ln.match(/^\s*\d+\.\s+(.*)/)){ if(!ol){close();html+='<ol>';ol=true;} html+='<li>'+m[1]+'</li>'; continue; }
+    if(m=ln.match(/^\s*[-•]\s+(.*)/)){ if(!ul){close();html+='<ul>';ul=true;} html+='<li>'+m[1]+'</li>'; continue; }
+    close(); if(ln.trim()) html+='<p>'+ln+'</p>';
+  }
+  close(); return html;
+}
 async function chatSend(){
   const inp=document.getElementById('chatInput'), text=inp.value.trim(); if(!text) return;
   const key=document.getElementById('llmKey').value.trim();
@@ -652,60 +669,85 @@ async function chatSend(){
   inp.value=''; addMsg('user',text);
   const btn=document.getElementById('chatBtn'), badge=document.getElementById('chatBadge');
   btn.disabled=true; badge.className='src-badge live'; badge.innerHTML='<span class="ld"></span> Thinking…';
-  const typing=addMsg('bot','…'); typing.classList.add('typing');
   try{
-    const out=await runAgent(text);
-    typing.remove(); renderBotAnswer(out);
+    await runAgent(text);
     badge.className='src-badge live'; badge.innerHTML='<span class="ld"></span> Live · grounded';
-  }catch(err){ typing.remove(); addMsg('bot','⚠ '+String(err.message||err)); badge.className='src-badge off'; badge.textContent='Error'; }
+  }catch(err){ addMsg('bot','⚠ '+String(err.message||err)); badge.className='src-badge off'; badge.textContent='Error'; }
   finally{ btn.disabled=false; }
+}
+/* one streaming OpenAI call; assembles content + tool-call deltas from the SSE stream */
+async function streamOnce(messages,model,key,onContent){
+  const resp=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
+    headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
+    body:JSON.stringify({model,temperature:0,messages,tools:CHAT_TOOLS,tool_choice:'auto',stream:true,stream_options:{include_usage:true}})});
+  if(!resp.ok){ throw new Error('HTTP '+resp.status+' — '+(await resp.text()).slice(0,160)); }
+  const reader=resp.body.getReader(), dec=new TextDecoder(); let buf='';
+  let content='', tcalls=[], finish='', usage={prompt_tokens:0,completion_tokens:0};
+  while(true){ const {value,done}=await reader.read(); if(done)break; buf+=dec.decode(value,{stream:true});
+    let nl; while((nl=buf.indexOf('\n'))>=0){ const line=buf.slice(0,nl).trim(); buf=buf.slice(nl+1);
+      if(!line.startsWith('data:'))continue; const data=line.slice(5).trim(); if(data==='[DONE]')continue;
+      let j; try{j=JSON.parse(data);}catch(e){continue;}
+      if(j.usage)usage=j.usage;
+      const ch=j.choices&&j.choices[0]; if(!ch)continue; const dl=ch.delta||{};
+      if(dl.content){ content+=dl.content; onContent(content); }
+      if(dl.tool_calls){ for(const t of dl.tool_calls){ const i=t.index||0; tcalls[i]=tcalls[i]||{id:'',name:'',args:''};
+        if(t.id)tcalls[i].id=t.id; if(t.function){ if(t.function.name)tcalls[i].name+=t.function.name; if(t.function.arguments)tcalls[i].args+=t.function.arguments; } } }
+      if(ch.finish_reason)finish=ch.finish_reason;
+    }
+  }
+  return {content,tcalls:tcalls.filter(Boolean),finish,usage};
 }
 async function runAgent(userText){
   const key=document.getElementById('llmKey').value.trim(), model=document.getElementById('llmModel').value;
   const iso=CURRENT, nm=DATA[iso]?DATA[iso].name:iso;
-  const sys=`You are CEDAR's evidence assistant, helping a policy analyst explore ${nm} (${iso}). Rules: (1) NEVER state a statistic you did not obtain from a tool call; call get_indicator/compare_indicator to fetch data first. (2) For every figure, name the indicator and year. (3) If data is unavailable, say so plainly — never guess. (4) Be concise (≤120 words unless asked for a draft). (5) You may compute simple derived values (changes, ratios) from retrieved values and should show the inputs. Known indicator codes: ${Object.keys(META).join(', ')}. Country→ISO3: ${Object.entries(DATA).map(([i,d])=>d.name+'='+i).join('; ')}. For any other country/indicator use its ISO3 / World Bank code.`;
+  const sys=`You are CEDAR's evidence assistant, helping a policy analyst explore ${nm} (${iso}). Rules: (1) NEVER state a statistic you did not obtain from a tool call; call get_indicator/compare_indicator to fetch data first. (2) For every figure, name the indicator and year. (3) If data is unavailable, say so plainly — never guess. (4) Be concise (≤120 words unless asked for a draft). (5) You may compute simple derived values (changes, ratios) from retrieved values and should show the inputs. You may use light markdown (bold, numbered or bullet lists). Known indicator codes: ${Object.keys(META).join(', ')}. Country→ISO3: ${Object.entries(DATA).map(([i,d])=>d.name+'='+i).join('; ')}. For any other country/indicator use its ISO3 / World Bank code.`;
   chatMsgs.push({role:'user',content:userText});
   let messages=[{role:'system',content:sys},...chatMsgs];
-  const sources=[]; let tokIn=0,tokOut=0, final='';
+  const sources=[]; let tokIn=0,tokOut=0;
   for(let iter=0; iter<5; iter++){
-    const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
-      headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
-      body:JSON.stringify({model,temperature:0,messages,tools:CHAT_TOOLS,tool_choice:'auto'})});
-    if(!r.ok){ throw new Error('HTTP '+r.status+' — '+(await r.text()).slice(0,160)); }
-    const j=await r.json(); const m=j.choices[0].message, u=j.usage||{}; tokIn+=u.prompt_tokens||0; tokOut+=u.completion_tokens||0;
-    if(m.tool_calls&&m.tool_calls.length){
-      messages.push(m); chatMsgs.push(m);
-      for(const tc of m.tool_calls){
-        let args={}; try{args=JSON.parse(tc.function.arguments||'{}');}catch(e){}
-        const note=addMsg('tool','↳ '+tc.function.name+'('+Object.values(args).join(', ')+') …');
-        const result=await execTool(tc.function.name,args,sources);
-        note.textContent='↳ '+tc.function.name+'('+Object.values(args).join(', ')+') → '+toolSummary(tc.function.name,result);
-        const tmsg={role:'tool',tool_call_id:tc.id,content:JSON.stringify(result)};
+    let liveEl=null;
+    const res=await streamOnce(messages,model,key,(c)=>{
+      if(!liveEl) liveEl=addMsg('bot','');
+      liveEl.innerHTML=mdToHtml(c)+'<span class="cur"></span>';
+      document.getElementById('chatLog').scrollTop=1e9;
+    });
+    tokIn+=res.usage.prompt_tokens||0; tokOut+=res.usage.completion_tokens||0;
+    if(res.tcalls.length){
+      if(liveEl){ if(res.content.trim()) liveEl.innerHTML=mdToHtml(res.content); else liveEl.remove(); }
+      const asst={role:'assistant',content:res.content||null,tool_calls:res.tcalls.map(t=>({id:t.id,type:'function',function:{name:t.name,arguments:t.args}}))};
+      messages.push(asst); chatMsgs.push(asst);
+      for(const t of res.tcalls){
+        let args={}; try{args=JSON.parse(t.args||'{}');}catch(e){}
+        const note=addMsg('tool','↳ '+t.name+'('+Object.values(args).join(', ')+') …');
+        const result=await execTool(t.name,args,sources);
+        note.textContent='↳ '+t.name+'('+Object.values(args).join(', ')+') → '+toolSummary(t.name,result);
+        const tmsg={role:'tool',tool_call_id:t.id,content:JSON.stringify(result)};
         messages.push(tmsg); chatMsgs.push(tmsg);
       }
       renderMeter(); continue;
     }
-    final=m.content||''; messages.push(m); chatMsgs.push(m); break;
+    const finalText=res.content||'';
+    chatMsgs.push({role:'assistant',content:finalText});
+    if(!liveEl) liveEl=addMsg('bot','');
+    finalizeAnswer(liveEl, finalText, sources, tokIn, tokOut, model);
+    break;
   }
   const pr=LLM_PRICE[model]||[0.15,0.60];
   chatStats.ans++; chatStats.tokIn+=tokIn; chatStats.tokOut+=tokOut; chatStats.cost+=(tokIn/1e6*pr[0]+tokOut/1e6*pr[1]);
   renderMeter();
-  return {final,sources,tokIn,tokOut};
 }
-function renderBotAnswer(out){
-  const model=document.getElementById('llmModel').value, pr=LLM_PRICE[model]||[0.15,0.60];
-  const cost=(out.tokIn/1e6*pr[0]+out.tokOut/1e6*pr[1]);
-  const gstr=JSON.stringify(out.sources);
-  const ung=(out.final.match(/\d+(?:\.\d+)?/g)||[]).filter(x=>!gstr.includes(x));
-  const uniq={}; out.sources.forEach(s=>{const k=s.iso+'|'+s.code; if(!uniq[k])uniq[k]=s;});
-  const list=Object.values(uniq);
-  let html=out.final.replace(/</g,'&lt;');
+function finalizeAnswer(el,text,sources,tokIn,tokOut,model){
+  const pr=LLM_PRICE[model]||[0.15,0.60], cost=(tokIn/1e6*pr[0]+tokOut/1e6*pr[1]);
+  const gstr=JSON.stringify(sources);
+  const ung=(text.match(/\d+(?:\.\d+)?/g)||[]).filter(x=>!gstr.includes(x));
+  const uniq={}; sources.forEach(s=>{const k=s.iso+'|'+s.code; if(!uniq[k])uniq[k]=s;}); const list=Object.values(uniq);
+  let html=mdToHtml(text);
   html += list.length ? `<span class="gv ${ung.length?'warn':'ok'}">${ung.length?'⚠ contains derived/unverified figures — check sources':'✓ figures traced to retrieved data'}</span>` : '';
   if(list.length){ html+='<div class="src"><b>Sources</b><br>'+list.map(s=>{
      const lv=s.latest?` (${s.latest.year}: ${s.latest.value})`:''; return `${s.country||''} · ${s.name||s.code}${lv} — <a href="${s.query_url}" target="_blank">re-run ↗</a>`;
    }).join('<br>')+'</div>'; }
-  html+=`<div class="src" style="border-top:0;padding-top:2px">${model} · ${out.tokIn}+${out.tokOut} tok · ~$${cost.toFixed(4)}</div>`;
-  const el=addMsg('bot',''); el.innerHTML=html; document.getElementById('chatLog').scrollTop=1e9;
+  html+=`<div class="src" style="border-top:0;padding-top:2px">${model} · ${tokIn}+${tokOut} tok · ~$${cost.toFixed(4)}</div>`;
+  el.innerHTML=html; document.getElementById('chatLog').scrollTop=1e9;
 }
 function indStat(store,code){
   const d=store[code]||{obs:{}}; const ys=Object.keys(d.obs).map(Number).sort((a,b)=>a-b);
