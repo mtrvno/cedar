@@ -124,6 +124,24 @@
   .costgrid .c .v{font-size:22px;font-weight:700;color:var(--navy);margin-top:3px} .costgrid .c .v.g{color:var(--good)}
   .cmp{margin-top:16px}
   .cbar{height:24px;display:flex;align-items:center;padding:0 12px;font-size:12px;color:#fff;font-weight:600;border-radius:2px;margin-top:7px}
+  /* theme switcher */
+  .themebar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+  .themebar button{border:1px solid var(--line);background:#fff;color:var(--mut);padding:7px 12px;border-radius:5px;font-family:var(--sans);font-size:12.5px;cursor:pointer}
+  .themebar button:hover{color:var(--navy)}
+  .themebar button.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+  /* polycrisis */
+  .band{padding:14px 18px;border-radius:6px;margin-bottom:18px;font-weight:600;font-size:15px;border:1px solid}
+  .band.high{background:#f6e9e8;color:var(--bad);border-color:#e6c9c6}
+  .band.elev{background:#fbf2e2;color:var(--warn);border-color:#ecdcb6}
+  .band.low{background:#e7f1ec;color:var(--good);border-color:#c7e0d2}
+  .scoregrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+  .scorecard{border:1px solid var(--line);border-left-width:4px;border-radius:6px;padding:12px 14px;background:#fff}
+  .scorecard.bad{border-left-color:var(--bad)} .scorecard.good{border-left-color:var(--good)}
+  .scorecard .dom{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--faint)}
+  .scorecard .val{font-size:21px;font-weight:700;color:var(--navy);margin-top:4px;font-family:var(--serif)}
+  .scorecard .meta{font-size:11.5px;color:var(--mut);margin-top:3px}
+  .scorecard .st{font-size:11px;font-weight:700;margin-top:6px}
+  .scorecard .st.bad{color:var(--bad)} .scorecard .st.good{color:var(--good)}
   .foot{padding:18px 34px 30px;border-top:1px solid var(--line);font-size:11px;color:var(--faint)}
   @media(max-width:780px){
     .app{grid-template-columns:1fr}
@@ -156,8 +174,10 @@
     <nav class="nav" id="nav">
       <button class="active" data-tab="ov" onclick="showTab('ov')"><span class="ix">01</span> Overview</button>
       <button data-tab="map" onclick="showTab('map')"><span class="ix">02</span> Country map</button>
-      <button data-tab="eq" onclick="showTab('eq')"><span class="ix">03</span> Equity drill-down</button>
-      <button data-tab="ev" onclick="showTab('ev')"><span class="ix">04</span> Evidence &amp; cost</button>
+      <button data-tab="sdg" onclick="showTab('sdg')"><span class="ix">03</span> SDG briefs</button>
+      <button data-tab="poly" onclick="showTab('poly')"><span class="ix">04</span> Polycrisis</button>
+      <button data-tab="eq" onclick="showTab('eq')"><span class="ix">05</span> Equity drill-down</button>
+      <button data-tab="ev" onclick="showTab('ev')"><span class="ix">06</span> Evidence &amp; cost</button>
     </nav>
 
     <div class="railpick">
@@ -217,6 +237,30 @@
             <div class="rankwrap"><table class="idx"><thead><tr><th>Country</th><th style="text-align:right">U5MR</th></tr></thead><tbody id="rank"></tbody></table></div>
           </div>
         </div>
+      </section>
+
+      <!-- SDG BRIEFS -->
+      <section class="pane" id="pane-sdg">
+        <p class="lead">One grounded, benchmarked brief per SDG theme. Multi-SDG depth is wired for <b>Kenya</b> (the flagship) in this demo; any country runs live via the CLI.</p>
+        <div class="themebar" id="themebar"></div>
+        <div class="report">
+          <div>
+            <div class="colhead" id="sdgFindHead">Key findings</div>
+            <ol class="findings" id="sdgFindings"></ol>
+          </div>
+          <div>
+            <div class="colhead">Figure</div>
+            <figure><canvas id="chartSDG"></canvas><figcaption id="sdgCap"></figcaption></figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- POLYCRISIS -->
+      <section class="pane" id="pane-poly">
+        <p class="lead">A cross-SDG read for <b>Kenya</b>: one headline indicator per domain, each scored against its SDG benchmark, fused into a single risk picture.</p>
+        <div class="band" id="polyBand"></div>
+        <div class="scoregrid" id="polyGrid"></div>
+        <p class="note" style="color:var(--mut);font-size:12.5px;margin-top:16px">Off-track = latest value misses the published SDG benchmark; where no fixed benchmark exists, status reflects the trend. Every figure is real World Bank / UN data, generated with 0 LLM calls at $0.00. Full reproducible queries in the CLI brief (<code>cedar.py --polycrisis</code>).</p>
       </section>
 
       <!-- EQUITY -->
@@ -343,6 +387,85 @@ function showTab(id){
   document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('show',p.id==='pane-'+id));
   if(id==='map'){ if(!map){initMap();} setTimeout(()=>{if(map)map.invalidateSize();},60); }
   if(id==='ev'){ runChain(lastRes); }
+  if(id==='sdg'){ renderSDG(curTheme); }
+  if(id==='poly'){ renderPolycrisis(); }
+}
+
+/* ===== Multi-SDG (Kenya flagship) ===== */
+const KSDG={"SH.DYN.MORT":{"n":"Under-5 mortality rate","u":"per 1,000 live births","better":"lower","t":25,"d":"below","lin":"UN IGME (UNICEF-led) \u2192 WDI","obs":{"2010":53.1,"2011":51.7,"2012":50.7,"2013":49.4,"2014":48.3,"2015":46.8,"2016":45.5,"2017":44.7,"2018":43.7,"2019":42.7,"2020":42.1,"2021":41.3,"2022":40.5,"2023":39.6}},"SP.DYN.IMRT.IN":{"n":"Infant mortality rate","u":"per 1,000 live births","better":"lower","t":12,"d":"below","lin":"UN IGME (UNICEF-led) \u2192 WDI","obs":{"2015":38.9,"2016":38.4,"2017":38.2,"2018":37.5,"2019":37.0,"2020":36.5,"2021":36.0,"2022":35.5,"2023":34.7}},"SH.STA.STNT.ZS":{"n":"Stunting prevalence (under-5)","u":"% of children under 5","better":"lower","t":null,"d":"below","lin":"UNICEF/WHO/WB JME \u2192 WDI","obs":{"2014":26.2,"2016":28.6,"2022":17.6}},"SH.IMM.IDPT":{"n":"DPT immunization coverage","u":"% of children 12\u201323 mo","better":"higher","t":90,"d":"above","lin":"WHO/UNICEF (WUENIC) \u2192 WDI","obs":{"2014":92,"2015":89,"2016":88,"2017":81,"2018":91,"2019":93,"2020":93,"2021":95,"2022":94,"2023":93}},"SI.POV.DDAY":{"n":"Poverty rate ($3.00/day)","u":"% of population","better":"lower","t":3.0,"d":"below","lin":"World Bank PIP \u2192 WDI","obs":{"2005":44.6,"2015":37.7,"2020":44.4,"2021":46.4,"2022":45.5}},"NY.GDP.PCAP.CD":{"n":"GDP per capita","u":"current US$","better":"higher","t":null,"d":null,"lin":"WB national accounts \u2192 WDI","obs":{"2010":1092,"2011":1096,"2012":1285,"2013":1371,"2014":1483,"2015":1489,"2016":1554,"2017":1667,"2018":1836,"2019":1960,"2020":1928,"2021":2061,"2022":2110,"2023":1943}},"SL.UEM.TOTL.ZS":{"n":"Unemployment rate","u":"% of labour force","better":"lower","t":null,"d":null,"lin":"ILO modelled \u2192 WDI","obs":{"2010":2.8,"2011":2.7,"2012":2.7,"2013":2.8,"2014":2.8,"2015":2.8,"2016":2.8,"2017":3.5,"2018":4.3,"2019":5.0,"2020":5.6,"2021":5.7,"2022":5.6,"2023":5.4}},"SE.PRM.CMPT.ZS":{"n":"Primary completion rate","u":"% of relevant age","better":"higher","t":100,"d":"above","lin":"UNESCO UIS \u2192 WDI","obs":{"2005":87.8,"2014":99.0,"2015":101.3,"2016":102.2}},"SP.DYN.LE00.IN":{"n":"Life expectancy at birth","u":"years","better":"higher","t":null,"d":null,"lin":"UN WPP \u2192 WDI","obs":{"2010":60.9,"2011":61.3,"2012":61.5,"2013":61.7,"2014":62.0,"2015":62.3,"2016":62.5,"2017":62.7,"2018":62.8,"2019":62.9,"2020":61.6,"2021":61.2,"2022":63.5,"2023":63.6}},"SH.STA.MMRT":{"n":"Maternal mortality ratio","u":"per 100,000 live births","better":"lower","t":70,"d":"below","lin":"WHO/UN MMEIG \u2192 WDI","obs":{"2010":210,"2011":209,"2012":214,"2013":206,"2014":203,"2015":203,"2016":196,"2017":186,"2018":183,"2019":176,"2020":184,"2021":183,"2022":155,"2023":149}},"SH.H2O.BASW.ZS":{"n":"Basic drinking-water coverage","u":"% of population","better":"higher","t":100,"d":"above","lin":"WHO/UNICEF JMP \u2192 WDI","obs":{"2010":53.9,"2011":54.8,"2012":55.6,"2013":56.5,"2014":57.3,"2015":58.2,"2016":59.0,"2017":59.8,"2018":60.7,"2019":61.5,"2020":62.3,"2021":63.1,"2022":64.0,"2023":64.8}},"SH.STA.BASS.ZS":{"n":"Basic sanitation coverage","u":"% of population","better":"higher","t":100,"d":"above","lin":"WHO/UNICEF JMP \u2192 WDI","obs":{"2010":30.8,"2011":31.5,"2012":32.2,"2013":33.0,"2014":33.7,"2015":34.4,"2016":35.1,"2017":35.9,"2018":36.6,"2019":37.3,"2020":38.0,"2021":38.7,"2022":39.5,"2023":40.2}},"EG.ELC.ACCS.ZS":{"n":"Access to electricity","u":"% of population","better":"higher","t":100,"d":"above","lin":"WB/IEA Tracking SDG7 \u2192 WDI","obs":{"2010":19.2,"2011":36.2,"2012":38.1,"2013":40.1,"2014":36.0,"2015":41.6,"2016":53.1,"2017":55.8,"2018":61.2,"2019":69.7,"2020":71.5,"2021":76.5,"2022":76.0,"2023":76.2}},"EG.FEC.RNEW.ZS":{"n":"Renewable energy share","u":"% of final energy","better":"higher","t":null,"d":null,"lin":"WB/IEA \u2192 WDI","obs":{"2010":74.0,"2011":74.7,"2012":76.2,"2013":74.3,"2014":71.8,"2015":69.2,"2016":68.3,"2017":68.1,"2018":68.7,"2019":68.1,"2020":69.0,"2021":67.7}},"EN.GHG.CO2.PC.CE.AR5":{"n":"CO\u2082 emissions per capita","u":"t CO\u2082e/capita","better":"lower","t":null,"d":null,"lin":"EDGAR/WB \u2192 WDI","obs":{"2010":0.32,"2011":0.32,"2012":0.29,"2013":0.31,"2014":0.34,"2015":0.36,"2016":0.38,"2017":0.39,"2018":0.38,"2019":0.38,"2020":0.37,"2021":0.4,"2022":0.41,"2023":0.38}}};
+const THEMEDEFS=[
+ {key:"child-survival",label:"Child survival",sdg:"SDG 2.2 · 3.2",codes:["SH.DYN.MORT","SP.DYN.IMRT.IN","SH.IMM.IDPT","SH.STA.STNT.ZS"],headline:"SH.DYN.MORT"},
+ {key:"economy-poverty",label:"Economy & poverty",sdg:"SDG 1 · 8",codes:["SI.POV.DDAY","NY.GDP.PCAP.CD","SL.UEM.TOTL.ZS"],headline:"SI.POV.DDAY"},
+ {key:"education",label:"Education",sdg:"SDG 4",codes:["SE.PRM.CMPT.ZS"],headline:"SE.PRM.CMPT.ZS"},
+ {key:"health-system",label:"Health system",sdg:"SDG 3",codes:["SP.DYN.LE00.IN","SH.STA.MMRT","SH.DYN.MORT"],headline:"SH.STA.MMRT"},
+ {key:"wash",label:"Water & sanitation",sdg:"SDG 6",codes:["SH.H2O.BASW.ZS","SH.STA.BASS.ZS"],headline:"SH.H2O.BASW.ZS"},
+ {key:"energy-climate",label:"Energy & climate",sdg:"SDG 7 · 13",codes:["EG.ELC.ACCS.ZS","EG.FEC.RNEW.ZS","EN.GHG.CO2.PC.CE.AR5"],headline:"EG.ELC.ACCS.ZS"},
+];
+const POLY_DOMAINS=[["Child survival","SH.DYN.MORT"],["Nutrition","SH.STA.STNT.ZS"],["Maternal health","SH.STA.MMRT"],
+ ["Poverty","SI.POV.DDAY"],["Education","SE.PRM.CMPT.ZS"],["Water","SH.H2O.BASW.ZS"],["Energy access","EG.ELC.ACCS.ZS"]];
+let curTheme="child-survival";
+const fmt=v=>(Math.abs(v)>=1000?Math.round(v).toLocaleString():(v%1===0?v:v.toFixed(1)));
+function indStat(code){
+  const d=KSDG[code]; const ys=Object.keys(d.obs).map(Number).sort((a,b)=>a-b);
+  const first=d.obs[ys[0]], last=d.obs[ys[ys.length-1]], ly=ys[ys.length-1], fy=ys[0];
+  const pct=first?((last-first)/first*100):0;
+  const improving=(last<first&&d.better==="lower")||(last>first&&d.better==="higher");
+  let met=null,gap=null;
+  if(d.t!=null){met=(d.d==="below")?last<=d.t:last>=d.t; gap=Math.abs(last-d.t);}
+  const span=ly-fy+1, cov=ys.length/span;
+  const conf=(cov>=0.85&&ly>=2022)?"High":(cov>=0.5?"Medium":"Low");
+  return {d,ys,fy,ly,first,last,pct,improving,met,gap,conf};
+}
+function renderThemebar(){
+  document.getElementById('themebar').innerHTML=THEMEDEFS.map(t=>
+    `<button class="${t.key===curTheme?'active':''}" onclick="curTheme='${t.key}';renderSDG('${t.key}')">${t.label}</button>`).join('');
+}
+function renderSDG(key){
+  curTheme=key; renderThemebar();
+  const th=THEMEDEFS.find(t=>t.key===key);
+  document.getElementById('sdgFindHead').textContent=`Kenya · ${th.label} — ${th.sdg}`;
+  const items=th.codes.map(code=>{
+    const st=indStat(code), ind=KSDG[code];
+    const dir=st.last<st.first?"fell":(st.last>st.first?"rose":"held");
+    let verdict,cls;
+    if(ind.t!=null){verdict=st.met?["On track","v-good"]:["Off track","v-bad"]; cls=verdict;}
+    else{verdict=st.improving?["Improving","v-good"]:["Worsening","v-bad"];}
+    let txt=`${ind.n} ${dir} from ${fmt(st.first)} to ${fmt(st.last)} ${ind.u} (${st.fy}→${st.ly}, ${st.pct>=0?'+':''}${st.pct.toFixed(1)}%).`;
+    if(ind.t!=null) txt+=` ${st.met?'Meets':'Misses'} the SDG benchmark of ${fmt(ind.t)}${st.met?'':` (gap ${fmt(st.gap)})`}.`;
+    return `<li><span class="verdict ${verdict[1]}">${verdict[0]}</span>${txt} <span class="muted">· ${ind.lin} · ${st.conf} confidence</span></li>`;
+  }).join('');
+  document.getElementById('sdgFindings').innerHTML=items;
+  // headline chart
+  const hc=KSDG[th.headline], st=indStat(th.headline);
+  const labels=st.ys, data=st.ys.map(y=>hc.obs[y]);
+  if(window._sdgChart) window._sdgChart.destroy();
+  const ds=[{label:hc.n,data,borderColor:'#1763a6',backgroundColor:'rgba(23,99,166,.08)',fill:true,tension:.22,pointRadius:hc.obs && st.ys.length<6?3:0,borderWidth:2.5}];
+  if(hc.t!=null) ds.push({label:`SDG benchmark (${fmt(hc.t)})`,data:labels.map(()=>hc.t),borderColor:'#2f7d5b',borderDash:[6,4],pointRadius:0,borderWidth:1.3});
+  window._sdgChart=new Chart(document.getElementById('chartSDG'),{type:'line',data:{labels,datasets:ds},
+    options:{plugins:{legend:{position:'bottom',labels:{color:'#5d6b7a',boxWidth:14,font:{size:11},padding:12}}},
+     scales:{x:{ticks:{color:'#5d6b7a',maxTicksLimit:8},grid:{color:'#eef2f6'}},y:{ticks:{color:'#5d6b7a'},grid:{color:'#eef2f6'},beginAtZero:true}}}});
+  document.getElementById('sdgCap').innerHTML=`<b>Headline:</b> ${hc.n}, Kenya, ${st.fy}–${st.ly} (${hc.u}). Source: ${hc.lin}.`;
+}
+function renderPolycrisis(){
+  const rows=POLY_DOMAINS.map(([dom,code])=>{
+    const st=indStat(code), ind=KSDG[code];
+    let status,stressed;
+    if(ind.t!=null){status=st.met?"on-track":"off-track"; stressed=!st.met;}
+    else{status=st.improving?"improving":"worsening"; stressed=!st.improving;}
+    return {dom,code,ind,st,status,stressed};
+  });
+  const n=rows.length, sN=rows.filter(r=>r.stressed).length;
+  const band=sN>=4?["high","HIGH stress"]:(sN>=2?["elev","ELEVATED stress"]:["low","LOWER stress"]);
+  document.getElementById('polyBand').className="band "+band[0];
+  document.getElementById('polyBand').innerHTML=`Kenya — <b>${band[1]}</b>: ${sN} of ${n} SDG fronts off-track or worsening.`;
+  const stt={"off-track":["Off track","bad"],"worsening":["Worsening","bad"],"on-track":["On track","good"],"improving":["Improving","good"]};
+  document.getElementById('polyGrid').innerHTML=rows.map(r=>{
+    const s=stt[r.status], bench=r.ind.t!=null?`benchmark ${fmt(r.ind.t)}`:"trend";
+    return `<div class="scorecard ${r.stressed?'bad':'good'}"><div class="dom">${r.dom}</div>
+      <div class="val">${fmt(r.st.last)} <span class="meta">${r.ind.u}</span></div>
+      <div class="meta">${r.ind.n} · ${bench} · ${r.st.ly}</div>
+      <div class="st ${s[1]}">${s[0]} · ${r.st.conf} confidence</div></div>`;
+  }).join('');
 }
 
 function analyse(iso){
