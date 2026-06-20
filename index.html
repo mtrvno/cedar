@@ -405,8 +405,27 @@ const POLY_DOMAINS=[["Child survival","SH.DYN.MORT"],["Nutrition","SH.STA.STNT.Z
  ["Poverty","SI.POV.DDAY"],["Education","SE.PRM.CMPT.ZS"],["Water","SH.H2O.BASW.ZS"],["Energy access","EG.ELC.ACCS.ZS"]];
 let curTheme="child-survival";
 const fmt=v=>(Math.abs(v)>=1000?Math.round(v).toLocaleString():(v%1===0?v:v.toFixed(1)));
-function indStat(code){
-  const d=KSDG[code]; const ys=Object.keys(d.obs).map(Number).sort((a,b)=>a-b);
+// Indicator metadata is country-independent; reuse it for any country fetched live.
+const META={}; Object.keys(KSDG).forEach(c=>{const k=KSDG[c];META[c]={n:k.n,u:k.u,better:k.better,t:k.t,d:k.d,lin:k.lin};});
+const SDGCACHE={KEN:KSDG};   // Kenya baked-in (instant/offline); other countries fetched live & cached
+function wbSeries(iso,code){
+  return fetch(`https://api.worldbank.org/v2/country/${iso}/indicator/${code}?format=json&per_page=80&date=2005:2023`)
+    .then(r=>r.json()).then(j=>{const obs={};(j[1]||[]).forEach(o=>{if(o.value!=null)obs[+o.date]=o.value;});
+      return Object.assign({},META[code],{obs});})
+    .catch(()=>Object.assign({},META[code],{obs:{}}));
+}
+async function ensureCountry(iso){
+  if(SDGCACHE[iso]) return SDGCACHE[iso];
+  const codes=Object.keys(META);
+  const res=await Promise.all(codes.map(c=>wbSeries(iso,c)));
+  const obj={}; codes.forEach((c,i)=>obj[c]=res[i]);
+  if(Object.values(obj).some(d=>Object.keys(d.obs).length)) SDGCACHE[iso]=obj;  // cache only if usable
+  return obj;
+}
+function hasData(store){return store&&Object.values(store).some(d=>d.obs&&Object.keys(d.obs).length);}
+function indStat(store,code){
+  const d=store[code]||{obs:{}}; const ys=Object.keys(d.obs).map(Number).sort((a,b)=>a-b);
+  if(!ys.length) return {d,ys,empty:true};
   const first=d.obs[ys[0]], last=d.obs[ys[ys.length-1]], ly=ys[ys.length-1], fy=ys[0];
   const pct=first?((last-first)/first*100):0;
   const improving=(last<first&&d.better==="lower")||(last>first&&d.better==="higher");
@@ -414,52 +433,64 @@ function indStat(code){
   if(d.t!=null){met=(d.d==="below")?last<=d.t:last>=d.t; gap=Math.abs(last-d.t);}
   const span=ly-fy+1, cov=ys.length/span;
   const conf=(cov>=0.85&&ly>=2022)?"High":(cov>=0.5?"Medium":"Low");
-  return {d,ys,fy,ly,first,last,pct,improving,met,gap,conf};
+  return {d,ys,fy,ly,first,last,pct,improving,met,gap,conf,empty:false};
 }
 function renderThemebar(){
   document.getElementById('themebar').innerHTML=THEMEDEFS.map(t=>
     `<button class="${t.key===curTheme?'active':''}" onclick="curTheme='${t.key}';renderSDG('${t.key}')">${t.label}</button>`).join('');
 }
-function renderSDG(key){
+async function renderSDG(key){
   curTheme=key; renderThemebar();
   const th=THEMEDEFS.find(t=>t.key===key);
-  document.getElementById('sdgFindHead').textContent=`Kenya · ${th.label} — ${th.sdg}`;
-  const items=th.codes.map(code=>{
-    const st=indStat(code), ind=KSDG[code];
+  const iso=CURRENT, nm=DATA[iso]?DATA[iso].name:iso;
+  const head=document.getElementById('sdgFindHead'), fnd=document.getElementById('sdgFindings');
+  head.textContent=`${nm} · ${th.label} — ${th.sdg}`;
+  if(iso!=="KEN"&&!SDGCACHE[iso]) fnd.innerHTML=`<li style="border:0;padding-left:0;color:var(--mut)">Fetching live World Bank data for ${nm}…</li>`;
+  const store=await ensureCountry(iso);
+  if(!hasData(store)){ fnd.innerHTML=`<li style="border:0;padding-left:0;color:var(--mut)">Live data couldn't be loaded for ${nm} (offline or blocked). Kenya is built-in; any country runs via <code>cedar.py</code>.</li>`;
+    if(window._sdgChart)window._sdgChart.destroy(); document.getElementById('sdgCap').innerHTML=""; return; }
+  fnd.innerHTML=th.codes.map(code=>{
+    const st=indStat(store,code), ind=store[code];
+    if(st.empty) return `<li><span class="verdict v-warn">No data</span>${ind.n} — no values reported for ${nm} in WDI.</li>`;
     const dir=st.last<st.first?"fell":(st.last>st.first?"rose":"held");
-    let verdict,cls;
-    if(ind.t!=null){verdict=st.met?["On track","v-good"]:["Off track","v-bad"]; cls=verdict;}
-    else{verdict=st.improving?["Improving","v-good"]:["Worsening","v-bad"];}
+    const verdict=(ind.t!=null)?(st.met?["On track","v-good"]:["Off track","v-bad"]):(st.improving?["Improving","v-good"]:["Worsening","v-bad"]);
     let txt=`${ind.n} ${dir} from ${fmt(st.first)} to ${fmt(st.last)} ${ind.u} (${st.fy}→${st.ly}, ${st.pct>=0?'+':''}${st.pct.toFixed(1)}%).`;
     if(ind.t!=null) txt+=` ${st.met?'Meets':'Misses'} the SDG benchmark of ${fmt(ind.t)}${st.met?'':` (gap ${fmt(st.gap)})`}.`;
     return `<li><span class="verdict ${verdict[1]}">${verdict[0]}</span>${txt} <span class="muted">· ${ind.lin} · ${st.conf} confidence</span></li>`;
   }).join('');
-  document.getElementById('sdgFindings').innerHTML=items;
-  // headline chart
-  const hc=KSDG[th.headline], st=indStat(th.headline);
-  const labels=st.ys, data=st.ys.map(y=>hc.obs[y]);
+  const hc=store[th.headline], st=indStat(store,th.headline);
   if(window._sdgChart) window._sdgChart.destroy();
-  const ds=[{label:hc.n,data,borderColor:'#1763a6',backgroundColor:'rgba(23,99,166,.08)',fill:true,tension:.22,pointRadius:hc.obs && st.ys.length<6?3:0,borderWidth:2.5}];
-  if(hc.t!=null) ds.push({label:`SDG benchmark (${fmt(hc.t)})`,data:labels.map(()=>hc.t),borderColor:'#2f7d5b',borderDash:[6,4],pointRadius:0,borderWidth:1.3});
-  window._sdgChart=new Chart(document.getElementById('chartSDG'),{type:'line',data:{labels,datasets:ds},
-    options:{plugins:{legend:{position:'bottom',labels:{color:'#5d6b7a',boxWidth:14,font:{size:11},padding:12}}},
-     scales:{x:{ticks:{color:'#5d6b7a',maxTicksLimit:8},grid:{color:'#eef2f6'}},y:{ticks:{color:'#5d6b7a'},grid:{color:'#eef2f6'},beginAtZero:true}}}});
-  document.getElementById('sdgCap').innerHTML=`<b>Headline:</b> ${hc.n}, Kenya, ${st.fy}–${st.ly} (${hc.u}). Source: ${hc.lin}.`;
+  if(!st.empty){
+    const labels=st.ys, data=st.ys.map(y=>hc.obs[y]);
+    const ds=[{label:hc.n,data,borderColor:'#1763a6',backgroundColor:'rgba(23,99,166,.08)',fill:true,tension:.22,pointRadius:st.ys.length<6?3:0,borderWidth:2.5}];
+    if(hc.t!=null) ds.push({label:`SDG benchmark (${fmt(hc.t)})`,data:labels.map(()=>hc.t),borderColor:'#2f7d5b',borderDash:[6,4],pointRadius:0,borderWidth:1.3});
+    window._sdgChart=new Chart(document.getElementById('chartSDG'),{type:'line',data:{labels,datasets:ds},
+      options:{plugins:{legend:{position:'bottom',labels:{color:'#5d6b7a',boxWidth:14,font:{size:11},padding:12}}},
+       scales:{x:{ticks:{color:'#5d6b7a',maxTicksLimit:8},grid:{color:'#eef2f6'}},y:{ticks:{color:'#5d6b7a'},grid:{color:'#eef2f6'},beginAtZero:true}}}});
+    document.getElementById('sdgCap').innerHTML=`<b>Headline:</b> ${hc.n}, ${nm}, ${st.fy}–${st.ly} (${hc.u}). Source: ${hc.lin}.`;
+  } else { document.getElementById('sdgCap').innerHTML=`No headline series available for ${nm}.`; }
 }
-function renderPolycrisis(){
+async function renderPolycrisis(){
+  const iso=CURRENT, nm=DATA[iso]?DATA[iso].name:iso;
+  const band=document.getElementById('polyBand'), grid=document.getElementById('polyGrid');
+  if(iso!=="KEN"&&!SDGCACHE[iso]){ band.className="band"; band.innerHTML=`Fetching live World Bank data for ${nm}…`; grid.innerHTML=""; }
+  const store=await ensureCountry(iso);
+  if(!hasData(store)){ band.className="band elev"; band.innerHTML=`Live data couldn't be loaded for ${nm} (offline or blocked). Kenya is built-in; any country runs via <code>cedar.py --polycrisis</code>.`; grid.innerHTML=""; return; }
   const rows=POLY_DOMAINS.map(([dom,code])=>{
-    const st=indStat(code), ind=KSDG[code];
+    const st=indStat(store,code), ind=store[code];
+    if(st.empty) return {dom,ind,st,status:"no-data",stressed:false,empty:true};
     let status,stressed;
     if(ind.t!=null){status=st.met?"on-track":"off-track"; stressed=!st.met;}
     else{status=st.improving?"improving":"worsening"; stressed=!st.improving;}
-    return {dom,code,ind,st,status,stressed};
+    return {dom,ind,st,status,stressed,empty:false};
   });
-  const n=rows.length, sN=rows.filter(r=>r.stressed).length;
-  const band=sN>=4?["high","HIGH stress"]:(sN>=2?["elev","ELEVATED stress"]:["low","LOWER stress"]);
-  document.getElementById('polyBand').className="band "+band[0];
-  document.getElementById('polyBand').innerHTML=`Kenya — <b>${band[1]}</b>: ${sN} of ${n} SDG fronts off-track or worsening.`;
+  const scored=rows.filter(r=>!r.empty), n=scored.length, sN=scored.filter(r=>r.stressed).length;
+  const bv=sN>=4?["high","HIGH stress"]:(sN>=2?["elev","ELEVATED stress"]:["low","LOWER stress"]);
+  band.className="band "+bv[0];
+  band.innerHTML=`${nm} — <b>${bv[1]}</b>: ${sN} of ${n} SDG fronts off-track or worsening.`;
   const stt={"off-track":["Off track","bad"],"worsening":["Worsening","bad"],"on-track":["On track","good"],"improving":["Improving","good"]};
-  document.getElementById('polyGrid').innerHTML=rows.map(r=>{
+  grid.innerHTML=rows.map(r=>{
+    if(r.empty) return `<div class="scorecard"><div class="dom">${r.dom}</div><div class="val">—</div><div class="meta">${r.ind.n}</div><div class="st">No data for ${nm}</div></div>`;
     const s=stt[r.status], bench=r.ind.t!=null?`benchmark ${fmt(r.ind.t)}`:"trend";
     return `<div class="scorecard ${r.stressed?'bad':'good'}"><div class="dom">${r.dom}</div>
       <div class="val">${fmt(r.st.last)} <span class="meta">${r.ind.u}</span></div>
@@ -590,6 +621,9 @@ function selectCountry(iso){
   document.getElementById('m_time').textContent=(0.002+Math.random()*0.01).toFixed(3)+'s';
   document.querySelectorAll('#rank tr').forEach(r=>r.classList.remove('sel'));
   const rk=document.getElementById('rk_'+iso); if(rk)rk.classList.add('sel');
+  // keep the country-aware panels in sync when the selection changes while they are open
+  if(document.getElementById('pane-sdg').classList.contains('show')) renderSDG(curTheme);
+  if(document.getElementById('pane-poly').classList.contains('show')) renderPolycrisis();
 }
 
 window.addEventListener('load',()=>{ buildLists(); selectCountry('KEN'); });
