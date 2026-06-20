@@ -94,4 +94,8 @@ python3 cedar.py --country KEN --theme child-survival --llm
 ```
 If the key is missing or the call fails, CEDAR silently falls back to the deterministic $0.00 narration — the brief, ledger, citations and numbers are identical either way. The LLM only ever rewrites prose; it never sits between a question and a number.
 
-**In the web UI:** the Overview tab has an optional "Executive summary" card — paste an OpenAI key, pick a model, and it drafts a summary in-browser from the verified findings, with the same number guardrail (it blocks and reports any figure the model invents) plus a live token/cost readout. The key is kept in memory only (never stored, logged, or committed). Because a static page exposes keys client-side, use a scoped/temporary key for the demo and a server-side proxy in production.
+**In the web UI:** the Overview and Polycrisis tabs each have an optional "Executive summary" card — paste an OpenAI key, pick a model, and it drafts a summary in-browser from the verified findings, with the same number guardrail (it blocks and reports any figure the model invents) plus a live token/cost readout.
+
+The **"Ask CEDAR"** tab is an **agentic, function-calling chat**: the model is given tools (`get_indicator`, `compare_indicator`, `list_indicators`) and must call them to fetch authoritative World Bank series — for the selected country or any other — before answering. It cites the indicator + year for every figure, lists re-runnable "Sources" under each answer, flags any derived/unverified number, and shows a per-message token/cost tally. It never states a statistic it didn't retrieve via a tool.
+
+The key is kept in memory only (never stored, logged, or committed). Because a static page exposes keys client-side, use a scoped/temporary key for the demo and a server-side proxy in production.
