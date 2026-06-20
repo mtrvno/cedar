@@ -34,3 +34,24 @@ Outputs land in `./output/`: the cited brief (`.md`), the evidence ledger (`.csv
 The same evidence chain re-runs at finer granularity. Click a country in the demo (or run `--drilldown wealth`) to break a national figure down by **household wealth quintile** — exposing the disparity the average hides. Real example: in Nigeria (2018) the poorest fifth of children are stunted at **55.4%** vs **16.8%** in the richest — a **3.3× gap** the 36.8% national average conceals. Live for Kenya, Nigeria and India; the architecture extends to urban/rural, mother's education and subnational regions via the UNICEF SDMX / DHS connectors.
 
 All figures are real World Bank / UN IGME / DHS-MICS data — Kenya's full four-indicator brief, under-5 mortality for 36 countries on the map, and wealth-quintile equity for 3 countries — retrieved 2026-06-18 (sources updated 2022–2026). Open-source and reproducible.
+
+## Live demo & deployment (GitHub Pages)
+The front-end is a single static file (`index.html`) with no build step, so it deploys on **GitHub Pages** for free:
+
+1. Push this repo to GitHub (see below).
+2. On GitHub: **Settings → Pages → Build and deployment → Source: Deploy from a branch → `main` / `/ (root)` → Save.**
+3. Your live demo appears at `https://<your-username>.github.io/<repo>/` within ~1 minute.
+
+The map and charts load Leaflet and Chart.js from CDN over HTTPS, so they work on Pages with no server. The `cedar.py` CLI is a standalone, dependency-free tool (Python 3.8+) and is not part of the web deployment.
+
+## Push to GitHub
+This folder is already an initialized git repo with an initial commit. Connect your remote and push:
+```bash
+# Option A — GitHub CLI (simplest; creates the repo and pushes)
+gh repo create cedar --public --source=. --remote=origin --push
+
+# Option B — manual (create an empty repo named "cedar" on github.com first, no README)
+git branch -M main
+git remote add origin https://github.com/<your-username>/cedar.git
+git push -u origin main
+```
