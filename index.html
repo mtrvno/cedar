@@ -355,7 +355,7 @@
       <!-- ASK CEDAR (agentic chat) -->
       <section class="pane" id="pane-chat">
         <p class="lead">Ask about the selected country. The assistant answers <b>only from authoritative data</b> — it calls tools to fetch World Bank indicators on demand and cites every figure. <span id="chatCtx" class="muted"></span></p>
-        <div style="margin-bottom:10px"><span class="src-badge baked" id="chatBadge">Idle</span><span class="chatreset" onclick="resetChat()">Reset session</span></div>
+        <div style="margin-bottom:10px"><span class="src-badge baked" id="chatBadge">Idle</span><span class="chatreset" onclick="exportBrief()">Export brief ↓</span><span class="chatreset" onclick="resetChat()">Reset session</span></div>
         <div class="chatmeter" id="chatMeter"></div>
         <div class="chatwrap">
           <div class="chatlog" id="chatLog"></div>
@@ -584,6 +584,7 @@ function genPolySummary(){
 
 /* ===== Agentic chat: function-calling assistant grounded in the World Bank API ===== */
 let chatMsgs=[];
+let chatTurns=[], chatAllSources=[];
 let chatStats={ans:0,tool:0,tokIn:0,tokOut:0,cost:0,inds:new Set(),ctys:new Set()};
 function renderMeter(){
   const s=chatStats, tot=s.tokIn+s.tokOut, inPct=tot?Math.round(s.tokIn/tot*100):0;
@@ -597,9 +598,32 @@ function renderMeter(){
       `<div class="tokleg">${tot.toLocaleString()} tokens — ${s.tokIn.toLocaleString()} in · ${s.tokOut.toLocaleString()} out</div></div>`;
 }
 function resetChat(){
-  chatMsgs=[]; chatStats={ans:0,tool:0,tokIn:0,tokOut:0,cost:0,inds:new Set(),ctys:new Set()};
+  chatMsgs=[]; chatTurns=[]; chatAllSources=[]; chatStats={ans:0,tool:0,tokIn:0,tokOut:0,cost:0,inds:new Set(),ctys:new Set()};
   document.getElementById('chatLog').innerHTML=''; renderMeter();
   const b=document.getElementById('chatBadge'); b.className='src-badge baked'; b.textContent='Idle';
+}
+function exportBrief(){
+  if(!chatTurns.length){ alert('Ask a question first, then export the conversation as a cited brief.'); return; }
+  const nm=DATA[CURRENT]?DATA[CURRENT].name:CURRENT, now=new Date().toISOString().slice(0,10), s=chatStats;
+  const L=[];
+  L.push(`# CEDAR conversation brief — ${nm}`,'');
+  L.push(`*Generated ${now} from an Ask CEDAR session. Every figure below was retrieved from authoritative APIs during the conversation; the consolidated evidence ledger and re-runnable queries are listed at the end.*`,'');
+  L.push('## Conversation','');
+  chatTurns.forEach((t,i)=>{ L.push(`**Q${i+1}. ${t.q}**`,'',(t.a||'(no answer)'),''); });
+  const uniq={}; chatAllSources.forEach(x=>{const k=x.iso+'|'+x.code; if(!uniq[k])uniq[k]=x;}); const list=Object.values(uniq);
+  L.push('## Evidence ledger','');
+  if(list.length){
+    L.push('| Country | Indicator | Latest | Source (lineage) | Query |','|---|---|---|---|---|');
+    list.forEach(x=>{ const lv=x.latest?`${x.latest.year}: ${x.latest.value}`:''; L.push(`| ${x.country||x.iso} | ${x.name||x.code} (\`${x.code}\`) | ${lv} | ${x.source||'World Bank WDI'} | [link](${x.query_url}) |`); });
+  } else L.push('_No data lookups were made in this session._');
+  L.push('','## Session cost & transparency','');
+  L.push(`- Answers: ${s.ans} · WB data lookups: ${s.tool} · indicators: ${s.inds.size} · countries: ${s.ctys.size}`);
+  L.push(`- Tokens: ${(s.tokIn+s.tokOut).toLocaleString()} (${s.tokIn.toLocaleString()} in / ${s.tokOut.toLocaleString()} out) · estimated LLM cost: $${s.cost.toFixed(4)}`);
+  L.push(`- The export itself is deterministic and free ($0.00); answers were number-checked against retrieved data during the chat.`);
+  L.push('','---','*Produced by CEDAR — Cited Evidence & Data Analytic Reporting. Figures sourced from the World Bank Open Data API (re-publishing UN IGME / WHO–UNICEF / UNESCO / ILO estimates). Not an official United Nations product.*');
+  const blob=new Blob([L.join('\n')],{type:'text/markdown'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`cedar-brief-${CURRENT}-${now}.md`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
 }
 const CHAT_CHIPS=["Is it on track for child survival?","How has poverty changed since 2015?","Compare under-5 mortality with a neighbour","What's the biggest SDG risk here?","Draft a one-paragraph donor memo"];
 const CHAT_TOOLS=[
@@ -730,6 +754,8 @@ async function runAgent(userText){
     chatMsgs.push({role:'assistant',content:finalText});
     if(!liveEl) liveEl=addMsg('bot','');
     finalizeAnswer(liveEl, finalText, sources, tokIn, tokOut, model);
+    chatTurns.push({q:userText,a:finalText});         // record for export
+    sources.forEach(x=>chatAllSources.push(x));
     break;
   }
   const pr=LLM_PRICE[model]||[0.15,0.60];
