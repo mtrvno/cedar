@@ -11,6 +11,7 @@ CEDAR turns a plain-language policy question into a **decision-ready evidence br
 python3 cedar.py --country KEN --theme child-survival --offline  # a themed SDG brief, $0.00
 python3 cedar.py --country KEN --theme energy-climate --offline  # another SDG theme
 python3 cedar.py --country KEN --polycrisis --offline            # cross-SDG composite risk read
+python3 cedar.py --country KEN --blindspots --offline            # blind-spot radar: which indicators lack recent data
 python3 cedar.py --country NGA --drilldown wealth --offline      # within-country equity drill-down
 python3 cedar.py --list                                          # show all themes + indicators
 ```
@@ -40,6 +41,11 @@ Outputs land in `./output/`: the cited brief (`.md`), the evidence ledger (`.csv
 | `CEDAR_Pitch.pptx` | Judge-facing pitch deck |
 | `data/cache_worldbank.json` | Real World Bank WDI values (offline cache) |
 | `output/` | Example generated brief, ledger, and provenance |
+
+## What makes it original (vs a generic copilot)
+- **Blind-spot radar** — CEDAR treats *missing data* as a headline finding: it scans the core SDG indicators for a country and flags what's **missing or stale**. The most important number is often the one that isn't there — a priority for a statistics agency, and the opposite of a tool that only answers when data exists.
+- **Time-to-SDG-target** — every off-track indicator gets a forward projection: "at the recent pace the target is reached around **2037 — 7 years late**." Decision intelligence, not just back-reporting.
+- Plus the core stance below: the analytic core never lets an LLM produce a number, runs at **$0.00**, and the chat copilot proves its grounding (cited tool calls, blocked fabrications).
 
 ## The three ideas that win
 1. **Visible evidence chain** — a 7-stage state machine, each step an inspectable artifact, not a hidden chat reasoning.
