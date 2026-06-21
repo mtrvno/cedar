@@ -177,6 +177,38 @@
   .tokbar i{display:block;height:100%} .tokbar .tin{background:var(--unblue)} .tokbar .tout{background:var(--good)}
   .tokleg{font-size:9.5px;color:var(--faint);margin-top:4px}
   .chatreset{font-size:11px;margin-left:10px;color:var(--link);cursor:pointer}
+  /* copilot workspace */
+  .copilotgrid{display:grid;grid-template-columns:1.3fr .9fr;gap:22px}
+  @media(max-width:920px){.copilotgrid{grid-template-columns:1fr}}
+  .tsbar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:6px 0 20px}
+  @media(max-width:760px){.tsbar{grid-template-columns:repeat(2,1fr)}}
+  .tscard{border:1px solid var(--line);border-radius:6px;padding:11px 13px;background:#fff}
+  .tscard .t{font-weight:600;color:var(--navy);font-size:13px}
+  .tscard .d{font-size:11px;color:var(--mut);margin-top:3px;line-height:1.35}
+  .tscard .st{font-size:10px;font-weight:700;margin-top:8px;display:inline-flex;align-items:center;gap:5px;letter-spacing:.3px}
+  .tscard .st.ok{color:var(--good)} .tscard .st.opt{color:var(--faint)}
+  .tsdot{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+  .kpi{border:1px solid var(--line);border-radius:6px;padding:15px 17px;margin-bottom:14px}
+  .kpi .lbl{font-size:11px;color:var(--mut)}
+  .kpi .big{font-family:var(--serif);font-size:32px;font-weight:700;color:var(--navy);line-height:1.05;margin-top:4px}
+  .kpi .delta{font-size:13px;font-weight:600;margin-left:6px} .kpi .delta.good{color:var(--good)} .kpi .delta.bad{color:var(--bad)}
+  .kpi .yr{font-size:11px;color:var(--faint);margin-top:5px}
+  .intv{border:1px solid var(--line);border-radius:6px;padding:15px 17px;margin-bottom:14px}
+  .intv h3{font-family:var(--serif);font-size:15px;margin:0 0 2px;color:var(--navy)}
+  .intvbars{display:flex;flex-direction:column;gap:6px;margin:12px 0}
+  .intvrow{display:flex;align-items:center;gap:8px;font-size:12px}
+  .intvrow .lab{width:62px;color:var(--mut);text-align:right}
+  .intvrow .barwrap{flex:1;background:#eef2f4;border-radius:3px;height:14px;overflow:hidden}
+  .intvrow .bar{height:100%;border-radius:3px}
+  .intvrow .ct{width:14px;font-weight:700;color:var(--navy)}
+  .intvlist{list-style:none;margin:6px 0 0;padding:0}
+  .intvlist li{padding:8px 0;border-top:1px solid var(--hair);font-size:12.5px;line-height:1.45}
+  .badge2{font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;margin-right:6px;text-transform:uppercase;letter-spacing:.3px}
+  .b-high{background:rgba(23,99,166,.12);color:var(--unblue)} .b-mod{background:rgba(47,125,91,.12);color:var(--good)} .b-lim{background:rgba(154,106,22,.14);color:var(--warn)}
+  .intvlist .why{color:var(--mut)} .intvlist a{color:var(--link);text-decoration:none}
+  .disc{font-size:10.5px;color:var(--faint);margin-top:10px;line-height:1.45}
+  ul.insights{list-style:none;margin:0;padding:0} ul.insights li{padding:7px 0;border-top:1px solid var(--hair);font-size:13px;display:flex;gap:8px}
+  ul.insights li:first-child{border-top:0} .insights .ic{color:var(--unblue);font-weight:700}
   /* data-source badge */
   .src-badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 10px;border-radius:20px;border:1px solid}
   .src-badge.live{background:#eaf4fb;color:var(--unblue);border-color:#cfe0ef}
@@ -228,11 +260,11 @@
 
     <div class="railsec">Workspace</div>
     <nav class="nav" id="nav">
-      <button class="active" data-tab="ov" onclick="showTab('ov')"><span class="ix">01</span> Overview</button>
-      <button data-tab="map" onclick="showTab('map')"><span class="ix">02</span> Country map</button>
-      <button data-tab="sdg" onclick="showTab('sdg')"><span class="ix">03</span> SDG briefs</button>
-      <button data-tab="poly" onclick="showTab('poly')"><span class="ix">04</span> Polycrisis</button>
-      <button data-tab="chat" onclick="showTab('chat')"><span class="ix">05</span> Ask CEDAR</button>
+      <button class="active" data-tab="chat" onclick="showTab('chat')"><span class="ix">01</span> Copilot</button>
+      <button data-tab="ov" onclick="showTab('ov')"><span class="ix">02</span> Overview</button>
+      <button data-tab="map" onclick="showTab('map')"><span class="ix">03</span> Country map</button>
+      <button data-tab="sdg" onclick="showTab('sdg')"><span class="ix">04</span> SDG briefs</button>
+      <button data-tab="poly" onclick="showTab('poly')"><span class="ix">05</span> Polycrisis</button>
       <button data-tab="eq" onclick="showTab('eq')"><span class="ix">06</span> Equity drill-down</button>
       <button data-tab="ev" onclick="showTab('ev')"><span class="ix">07</span> Evidence &amp; cost</button>
     </nav>
@@ -251,14 +283,14 @@
   <!-- ===== MAIN ===== -->
   <div class="main">
     <div class="masthead">
-      <div class="eyebrow" id="eyebrow">Child survival · under-5 mortality</div>
+      <div class="eyebrow" id="eyebrow">AI Evidence Copilot · grounded, cited analytics</div>
       <h1 id="selName">Kenya <span class="tagstatus" id="selBadge"></span></h1>
       <div class="dek" id="selSub"></div>
     </div>
 
     <div class="content">
       <!-- OVERVIEW -->
-      <section class="pane show" id="pane-ov">
+      <section class="pane" id="pane-ov">
         <div class="report">
           <div>
             <div class="colhead">Key findings</div>
@@ -279,17 +311,8 @@
             <span class="colhead" style="border:0;padding:0;margin:0">Executive summary <span class="muted" style="text-transform:none;letter-spacing:0">— optional LLM polish</span></span>
             <span class="src-badge baked" id="llmBadge">Off · deterministic</span>
           </div>
-          <p class="muted" style="margin:8px 0 12px">The model only rewrites the verified findings above into prose. A guardrail blocks any number it introduces that isn't already in those findings — it never invents figures. Default output stays $0.00; this is optional.</p>
-          <div class="llmrow">
-            <input id="llmKey" type="password" placeholder="OpenAI API key (sk-…)" autocomplete="off" spellcheck="false">
-            <select id="llmModel">
-              <option value="gpt-4o-mini">gpt-4o-mini (cheapest)</option>
-              <option value="gpt-4o">gpt-4o</option>
-              <option value="gpt-4.1-mini">gpt-4.1-mini</option>
-            </select>
-            <button id="llmBtn" onclick="genSummary()">Generate summary</button>
-          </div>
-          <div class="llmnote">🔒 Your key is used only for this in-browser request to OpenAI and is <b>never stored, logged, or committed</b> (kept in memory for this tab only). Because a static page exposes keys in the browser, use a scoped/temporary key here and a server-side proxy in production.</div>
+          <p class="muted" style="margin:8px 0 12px">The model only rewrites the verified findings above into prose. A guardrail blocks any number it introduces that isn't already in those findings — it never invents figures. Default output stays $0.00; this is optional. Set your OpenAI key once on the <b>Copilot</b> tab.</p>
+          <div class="llmrow"><button id="llmBtn" onclick="genSummary()">Generate summary</button></div>
           <div id="llmOut"></div>
         </div>
       </section>
@@ -352,21 +375,53 @@
         </div>
       </section>
 
-      <!-- ASK CEDAR (agentic chat) -->
-      <section class="pane" id="pane-chat">
-        <p class="lead">Ask about the selected country. The assistant answers <b>only from authoritative data</b> — it calls tools to fetch World Bank indicators on demand and cites every figure. <span id="chatCtx" class="muted"></span></p>
-        <div style="margin-bottom:10px"><span class="src-badge baked" id="chatBadge">Idle</span><span class="chatreset" onclick="exportBrief()">Export brief ↓</span><span class="chatreset" onclick="resetChat()">Reset session</span></div>
-        <div class="chatmeter" id="chatMeter"></div>
-        <div class="chatwrap">
-          <div class="chatlog" id="chatLog"></div>
-          <div class="chips" id="chatChips"></div>
-          <div class="chatinput">
-            <input id="chatInput" placeholder="Ask about this country…" autocomplete="off"
-                   onkeydown="if(event.key==='Enter'){event.preventDefault();chatSend();}">
-            <button id="chatBtn" onclick="chatSend()">Send</button>
+      <!-- COPILOT (primary workspace) -->
+      <section class="pane show" id="pane-chat">
+        <div class="colhead">Trusted sources · verified · public</div>
+        <div class="tsbar" id="tsbar"></div>
+
+        <div class="copilotgrid">
+          <!-- chat (center/primary) -->
+          <div class="copleft">
+            <p class="lead" style="margin-bottom:10px">Ask CEDAR about any country and topic. It answers <b>only from authoritative data</b> — calling the live World Bank API on demand and citing every figure. <span id="chatCtx" class="muted"></span></p>
+            <div style="margin-bottom:10px"><span class="src-badge baked" id="chatBadge">Idle</span><span class="chatreset" onclick="exportBrief()">Export brief ↓</span><span class="chatreset" onclick="resetChat()">Reset session</span></div>
+            <div class="chatmeter" id="chatMeter"></div>
+            <div class="chatwrap">
+              <div class="chatlog" id="chatLog"></div>
+              <div class="chips" id="chatChips"></div>
+              <div class="chatinput">
+                <input id="chatInput" placeholder="Ask about this country or topic…" autocomplete="off"
+                       onkeydown="if(event.key==='Enter'){event.preventDefault();chatSend();}">
+                <button id="chatBtn" onclick="chatSend()">Send</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- decision-ready outputs (right rail) -->
+          <div class="copright">
+            <div class="colhead">Decision-ready outputs</div>
+            <div style="display:flex;gap:8px;align-items:center;margin:0 0 12px">
+              <label class="muted" style="font-size:10px;text-transform:uppercase;letter-spacing:1px">Topic</label>
+              <select id="copTheme" onchange="copThemeChange(this.value)" style="flex:1"></select>
+            </div>
+            <div id="kpiCard"></div>
+            <div id="intvCard"></div>
+            <div id="insightsCard"></div>
+            <div class="block" style="margin-top:14px">
+              <h3 style="font-size:14px">AI engine <span class="muted" style="font-weight:400;font-size:11px">— optional</span></h3>
+              <div class="note">Add an OpenAI key to enable the chat and the executive summaries. Default analytics run with no model at $0.00.</div>
+              <div class="llmrow" style="margin-top:10px">
+                <input id="llmKey" type="password" placeholder="OpenAI API key (sk-…)" autocomplete="off" spellcheck="false">
+                <select id="llmModel">
+                  <option value="gpt-4o-mini">gpt-4o-mini (cheapest)</option>
+                  <option value="gpt-4o">gpt-4o</option>
+                  <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                </select>
+              </div>
+              <div class="llmnote">🔒 Used only for in-browser requests to OpenAI; <b>never stored, logged, or committed</b> (memory only). A static page exposes keys client-side — use a scoped/temporary key here and a server-side proxy in production.</div>
+            </div>
           </div>
         </div>
-        <p class="llmnote" style="margin-top:8px">Uses the OpenAI key from the <b>Overview</b> tab (kept in memory only). The assistant may call the live World Bank API to retrieve indicators it doesn't already hold; figures in each answer are traced to the retrieved data and listed under “Sources”.</p>
       </section>
 
       <!-- EQUITY -->
@@ -495,7 +550,7 @@ function showTab(id){
   if(id==='ev'){ runChain(lastRes); }
   if(id==='sdg'){ renderSDG(curTheme); }
   if(id==='poly'){ renderPolycrisis(); }
-  if(id==='chat'){ renderChatCtx(); renderMeter(); setTimeout(()=>{const i=document.getElementById('chatInput'); if(i)i.focus();},60); }
+  if(id==='chat'){ renderCopilot(); renderMeter(); setTimeout(()=>{const i=document.getElementById('chatInput'); if(i)i.focus();},60); }
 }
 
 /* ===== Multi-SDG (Kenya flagship) ===== */
@@ -511,6 +566,63 @@ const THEMEDEFS=[
 const POLY_DOMAINS=[["Child survival","SH.DYN.MORT"],["Nutrition","SH.STA.STNT.ZS"],["Maternal health","SH.STA.MMRT"],
  ["Poverty","SI.POV.DDAY"],["Education","SE.PRM.CMPT.ZS"],["Water","SH.H2O.BASW.ZS"],["Energy access","EG.ELC.ACCS.ZS"]];
 let curTheme="child-survival";
+
+/* ===== Trusted sources (what CEDAR is actually connected to) ===== */
+const TRUSTED=[
+ {t:"Public data",d:"Official statistics & open datasets (World Bank WDI; UN IGME, WHO/UNICEF, UNESCO, ILO, JMP upstream).",st:"Verified",ok:true},
+ {t:"Metadata",d:"Indicator catalogue, units, lineage & SDG targets/benchmarks.",st:"Verified",ok:true},
+ {t:"APIs",d:"World Bank Open Data API — queried live, results re-runnable.",st:"Connected",ok:true},
+ {t:"AI engine",d:"OpenAI (optional) — polishes prose & powers chat. Off by default.",st:"Optional",ok:false},
+];
+/* ===== Effective interventions by evidence strength (curated synthesis of published reviews) =====
+   Illustrative grading from authoritative evidence bodies — NOT live API data; each carries its source. */
+const EVID_SRC={WHO:"https://www.who.int",Cochrane:"https://www.cochrane.org","J-PAL":"https://www.povertyactionlab.org",
+ "World Bank":"https://www.worldbank.org",ILO:"https://www.ilo.org",UNICEF:"https://data.unicef.org",
+ "UNESCO GEM":"https://www.unesco.org/gem-report",IEA:"https://www.iea.org",WFP:"https://www.wfp.org","3ie":"https://www.3ieimpact.org"};
+const INTERVENTIONS={
+ "child-survival":[
+  {n:"Childhood immunisation programmes",s:"High",why:"Among the most cost-effective ways to prevent child deaths.",src:"WHO"},
+  {n:"Skilled birth attendance & antenatal care",s:"High",why:"Reduces neonatal and maternal mortality.",src:"WHO"},
+  {n:"Insecticide-treated nets & malaria control",s:"High",why:"Large reductions in child mortality in endemic settings.",src:"Cochrane"},
+  {n:"Oral rehydration & zinc for diarrhoea",s:"High",why:"Cheap, proven reduction in diarrhoeal deaths.",src:"UNICEF"},
+  {n:"Exclusive breastfeeding promotion",s:"Moderate",why:"Improves infant survival; effect varies by setting.",src:"WHO"},
+  {n:"Conditional cash transfers",s:"Moderate",why:"Improve care-seeking & nutrition; impact context-dependent.",src:"J-PAL"},
+ ],
+ "economy-poverty":[
+  {n:"Cash transfers & social protection",s:"High",why:"Robust evidence for reducing poverty and vulnerability.",src:"World Bank"},
+  {n:"Skills training + apprenticeships",s:"Moderate",why:"Best results when demand-led and employer-linked (youth).",src:"ILO"},
+  {n:"Active labour-market programmes",s:"Moderate",why:"Job-search & matching help; effects modest on average.",src:"J-PAL"},
+  {n:"Wage / hiring subsidies",s:"Moderate",why:"Can boost youth hiring; risk of displacement.",src:"ILO"},
+  {n:"Entrepreneurship grants",s:"Moderate",why:"Help microenterprises; mixed on sustained jobs.",src:"J-PAL"},
+  {n:"Digital inclusion / connectivity",s:"Limited",why:"Promising but thin causal evidence for jobs so far.",src:"World Bank"},
+ ],
+ "education":[
+  {n:"Structured pedagogy & teacher coaching",s:"High",why:"Consistent gains in learning outcomes.",src:"UNESCO GEM"},
+  {n:"Teaching at the right level",s:"High",why:"Strong, replicated learning gains.",src:"J-PAL"},
+  {n:"School feeding",s:"Moderate",why:"Improves attendance & nutrition; learning effects vary.",src:"WFP"},
+  {n:"Cash transfers for enrolment",s:"Moderate",why:"Raise enrolment & attendance.",src:"World Bank"},
+  {n:"Reducing class size",s:"Limited",why:"Costly; inconsistent effects on learning.",src:"3ie"},
+ ],
+ "health-system":[
+  {n:"Emergency obstetric care",s:"High",why:"Core to cutting maternal deaths.",src:"WHO"},
+  {n:"Skilled birth attendance",s:"High",why:"Reduces maternal & neonatal mortality.",src:"WHO"},
+  {n:"Community health workers",s:"Moderate",why:"Extend coverage; quality & support are key.",src:"WHO"},
+  {n:"Health-financing / UHC reforms",s:"Moderate",why:"Improve access; design-dependent.",src:"World Bank"},
+ ],
+ "wash":[
+  {n:"Improved water supply",s:"High",why:"Reduces diarrhoeal disease.",src:"Cochrane"},
+  {n:"Handwashing / hygiene promotion",s:"High",why:"Effective at cutting diarrhoea.",src:"Cochrane"},
+  {n:"Sanitation (community-led total sanitation)",s:"Moderate",why:"Reduces open defecation; effects vary.",src:"3ie"},
+  {n:"Household water treatment",s:"Moderate",why:"Works with sustained use.",src:"Cochrane"},
+ ],
+ "energy-climate":[
+  {n:"Grid extension / electrification",s:"High",why:"Direct gains in access where affordable.",src:"World Bank"},
+  {n:"Off-grid solar & mini-grids",s:"Moderate",why:"Reach remote areas; financing is the constraint.",src:"IEA"},
+  {n:"Clean cooking programmes",s:"Moderate",why:"Health & climate gains; adoption is the challenge.",src:"WHO"},
+  {n:"Energy-efficiency standards",s:"Moderate",why:"Cost-effective emissions cuts.",src:"IEA"},
+ ],
+};
+const STRENGTH_BADGE={High:["b-high","High"],Moderate:["b-mod","Moderate"],Limited:["b-lim","Limited"]};
 const fmt=v=>(Math.abs(v)>=1000?Math.round(v).toLocaleString():(v%1===0?v:v.toFixed(1)));
 // Indicator metadata is country-independent; reuse it for any country fetched live.
 const META={}; Object.keys(KSDG).forEach(c=>{const k=KSDG[c];META[c]={n:k.n,u:k.u,better:k.better,t:k.t,d:k.d,lin:k.lin};});
@@ -625,7 +737,7 @@ function exportBrief(){
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download=`cedar-brief-${CURRENT}-${now}.md`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
 }
-const CHAT_CHIPS=["Is it on track for child survival?","How has poverty changed since 2015?","Compare under-5 mortality with a neighbour","What's the biggest SDG risk here?","Draft a one-paragraph donor memo"];
+const CHAT_CHIPS=["What's the biggest SDG risk here?","What drives youth unemployment, and what interventions work?","How has poverty changed since 2015?","Compare under-5 mortality with a neighbour","Draft a one-paragraph donor memo"];
 const CHAT_TOOLS=[
  {type:"function",function:{name:"get_indicator",description:"Authoritative time series for one indicator in one country from the World Bank. Returns yearly values, latest, earliest, SDG target, source and a re-runnable query URL.",
    parameters:{type:"object",properties:{iso:{type:"string",description:"ISO3 country code e.g. KEN, NGA, IND"},code:{type:"string",description:"World Bank indicator code e.g. SH.DYN.MORT"}},required:["iso","code"]}}},
@@ -673,6 +785,60 @@ function renderChatCtx(){
   const ch=document.getElementById('chatChips'); if(ch)ch.innerHTML=CHAT_CHIPS.map(q=>`<button onclick="chatChip(this)">${q.replace(/"/g,'&quot;')}</button>`).join('');
 }
 function chatChip(b){ const i=document.getElementById('chatInput'); i.value=b.textContent; chatSend(); }
+/* ===== Copilot decision-ready rail ===== */
+function renderTrustedSources(){
+  const el=document.getElementById('tsbar'); if(!el) return;
+  el.innerHTML=TRUSTED.map(s=>`<div class="tscard"><div class="t">${s.t}</div><div class="d">${s.d}</div>
+    <div class="st ${s.ok?'ok':'opt'}"><span class="tsdot"></span>${s.st}</div></div>`).join('');
+}
+function copThemeChange(v){ curTheme=v; renderCopilot(); }
+function renderKpi(theme,store){
+  const th=THEMEDEFS.find(t=>t.key===theme), code=th.headline, nm=DATA[CURRENT]?DATA[CURRENT].name:CURRENT;
+  const el=document.getElementById('kpiCard'), st=indStat(store,code), ind=store[code];
+  if(!ind||st.empty){ el.innerHTML=`<div class="kpi"><div class="lbl">${nm}</div><div class="big">—</div><div class="yr">No headline data for ${nm}.</div></div>`; return; }
+  const ys=st.ys, li=ys.length-1, prev=li>0?ind.obs[ys[li-1]]:null; let deltaHtml='';
+  if(prev!=null){ const d=st.last-prev, improving=(d<0&&ind.better==='lower')||(d>0&&ind.better==='higher'), arrow=d<0?'↓':(d>0?'↑':'→');
+    deltaHtml=` <span class="delta ${improving?'good':'bad'}">${arrow} ${Math.abs(d).toFixed(1)} vs ${ys[li-1]}</span>`; }
+  el.innerHTML=`<div class="kpi"><div class="lbl">${ind.n} — ${nm}</div>
+    <div class="big">${fmt(st.last)} <span class="lbl" style="font-size:13px">${ind.u}</span>${deltaHtml}</div>
+    <div class="yr">${st.ly} · latest available · ${ind.lin}</div></div>`;
+}
+function renderInterventions(theme){
+  const el=document.getElementById('intvCard'); if(!el) return;
+  const list=INTERVENTIONS[theme]||[], counts={High:0,Moderate:0,Limited:0}; list.forEach(i=>counts[i.s]++);
+  const max=Math.max(1,counts.High,counts.Moderate,counts.Limited), col={High:'#1763a6',Moderate:'#2f7d5b',Limited:'#9a6a16'};
+  const bars=['High','Moderate','Limited'].map(k=>`<div class="intvrow"><span class="lab">${k}</span>
+     <span class="barwrap"><span class="bar" style="width:${counts[k]/max*100}%;background:${col[k]}"></span></span><span class="ct">${counts[k]}</span></div>`).join('');
+  const items=list.map(i=>{ const b=STRENGTH_BADGE[i.s], u=EVID_SRC[i.src]||'#';
+    return `<li><span class="badge2 ${b[0]}">${b[1]}</span><b>${i.n}</b> — <span class="why">${i.why}</span> <a href="${u}" target="_blank">${i.src} ↗</a></li>`; }).join('');
+  el.innerHTML=`<div class="intv"><h3>Effective interventions by evidence strength</h3>
+    <div class="note">What works for this topic, graded by strength of published evidence.</div>
+    <div class="intvbars">${bars}</div><ul class="intvlist">${items}</ul>
+    <div class="disc">Evidence synthesis (illustrative) from published reviews by the cited bodies — distinct from the live indicator data, and not a statistical estimate.</div></div>`;
+}
+function renderInsights(theme,store){
+  const th=THEMEDEFS.find(t=>t.key===theme), el=document.getElementById('insightsCard'), nm=DATA[CURRENT]?DATA[CURRENT].name:CURRENT, items=[];
+  const hs=indStat(store,th.headline), hi=store[th.headline];
+  if(hi&&!hs.empty){ let stat; if(hi.t!=null) stat=(hi.d==='below'?hs.last<=hi.t:hs.last>=hi.t)?'meets its SDG benchmark':'is off-track for its SDG benchmark'; else stat=hs.improving?'is improving':'is worsening';
+    items.push(`${hi.n} in ${nm} ${stat} (${fmt(hs.last)} ${hi.u}, ${hs.ly}).`); }
+  let off=0,tot=0; th.codes.forEach(c=>{ const s=indStat(store,c), ind=store[c]; if(!ind||s.empty)return; tot++;
+    if(ind.t!=null){ if(!(ind.d==='below'?s.last<=ind.t:s.last>=ind.t)) off++; } else if(!s.improving) off++; });
+  if(tot) items.push(`${off} of ${tot} indicators in this theme are off-track or worsening.`);
+  const best=(INTERVENTIONS[theme]||[]).find(i=>i.s==='High');
+  if(best) items.push(`Best-supported action: <b>${best.n}</b> (High evidence · ${best.src}).`);
+  el.innerHTML=`<div class="intv"><h3>Key insights</h3><ul class="insights">${items.map(t=>`<li><span class="ic">›</span><span>${t}</span></li>`).join('')}</ul></div>`;
+}
+async function renderCopilot(){
+  renderTrustedSources();
+  const sel=document.getElementById('copTheme');
+  if(sel){ if(!sel.dataset.built){ sel.innerHTML=THEMEDEFS.map(t=>`<option value="${t.key}">${t.label}</option>`).join(''); sel.dataset.built='1'; } sel.value=curTheme; }
+  renderChatCtx(); renderInterventions(curTheme);
+  const kpi=document.getElementById('kpiCard'); if(kpi)kpi.innerHTML='<div class="kpi"><div class="lbl">Loading…</div></div>';
+  const ins=document.getElementById('insightsCard'); if(ins)ins.innerHTML='';
+  const store=await ensureCountry(CURRENT);
+  if(!hasData(store)){ if(kpi)kpi.innerHTML=`<div class="kpi"><div class="lbl">Live data unavailable</div><div class="yr">Kenya is built-in; other countries load from the World Bank API.</div></div>`; return; }
+  renderKpi(curTheme,store); renderInsights(curTheme,store);
+}
 function mdToHtml(t){
   let s=(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>');
@@ -985,11 +1151,12 @@ function selectCountry(iso){
   resetLLM();   // clear any prior country's LLM summary
   renderChatCtx();   // update the chat's country context + suggested prompts (history kept)
   // keep the country-aware panels in sync when the selection changes while they are open
+  if(document.getElementById('pane-chat').classList.contains('show')) renderCopilot();
   if(document.getElementById('pane-sdg').classList.contains('show')) renderSDG(curTheme);
   if(document.getElementById('pane-poly').classList.contains('show')) renderPolycrisis();
 }
 
-window.addEventListener('load',()=>{ buildLists(); selectCountry('KEN'); });
+window.addEventListener('load',()=>{ buildLists(); selectCountry('KEN'); renderCopilot(); });
 </script>
 </body>
 </html>

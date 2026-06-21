@@ -35,7 +35,7 @@ Outputs land in `./output/`: the cited brief (`.md`), the evidence ledger (`.csv
 | File | What it is |
 |---|---|
 | `cedar.py` | The agentic engine: Discover → Retrieve → Verify → Analyse → Narrate → Review → Output |
-| `index.html` | Self-contained interactive demo (open in any browser): **world map of 36 countries**, a **theme switcher** across six SDG briefs, a **polycrisis scorecard**, the equity drill-down, evidence chain, ledger and cost meter. |
+| `index.html` | Self-contained interactive demo (open in any browser). Primary workspace is an **AI Evidence Copilot** (Trusted Sources rail · agentic chat · topic-driven decision-ready outputs incl. KPI, **effective interventions by evidence strength**, and key insights). Plus a **world map of 36 countries**, a **theme switcher** across six SDG briefs, a **polycrisis scorecard**, the equity drill-down, evidence chain, ledger and cost meter. |
 | `CONCEPT_AND_ARCHITECTURE.md` | Full concept, architecture, judging-criteria mapping, production roadmap |
 | `CEDAR_Pitch.pptx` | Judge-facing pitch deck |
 | `data/cache_worldbank.json` | Real World Bank WDI values (offline cache) |
