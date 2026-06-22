@@ -58,7 +58,7 @@ def brief(country, theme, offline=False):
     inds = []
     for code in spec["indicators"]:
         s = retr.fetch(code, country)
-        if not s:
+        if not s or not any(v is not None for v in s["obs"].values()):
             inds.append({"code": code, "name": cedar.CATALOG[code]["name"], "available": False}); continue
         v = ver.assess(s)
         claims = an.analyse(s, comparator=(comparator if code == spec["headline"] else None))
@@ -224,6 +224,53 @@ def interventions(theme):
             "note": "Illustrative evidence synthesis from published reviews by the cited bodies; "
                     "distinct from the live indicator data and not a statistical estimate."}
 
+def interventions_all():
+    return {"themes": {t: interventions(t) for t in INTERVENTIONS}}
+
+# ----------------------------------------------------------------------------- evidence chain
+EVIDENCE_CHAIN = [
+    {"id": "discover", "step": "Discover", "agent": "Agent 1",
+     "description": "Resolve indicator & country codes and metadata for the question."},
+    {"id": "retrieve", "step": "Retrieve", "agent": "Agent 1",
+     "description": "Fetch authoritative series; stamp provenance on every datapoint."},
+    {"id": "verify", "step": "Verify", "agent": "Agent 2",
+     "description": "Check coverage, recency & data gaps; assign confidence; raise caveats."},
+    {"id": "analyse", "step": "Analyse", "agent": "Agent 3",
+     "description": "Compute trend, gap-to-target and projection deterministically (no LLM)."},
+    {"id": "narrate", "step": "Narrate", "agent": "Agent 4",
+     "description": "Render the verified claims to prose; every figure carries a citation."},
+    {"id": "review", "step": "Review", "agent": "Agent 5",
+     "description": "Refuse to ship any number that lacks a supporting datapoint."},
+    {"id": "output", "step": "Output", "agent": "—",
+     "description": "Emit the brief + evidence ledger + provenance graph + cost report."},
+]
+
+def evidence_chain():
+    """The canonical 7-step pipeline definition (static)."""
+    return {"steps": EVIDENCE_CHAIN,
+            "note": "Every CEDAR output moves through these steps; nothing downstream uses a value an earlier step did not verify."}
+
+def evidence_chain_run(country, theme="child-survival", offline=False):
+    """The chain with live per-step status computed from an actual brief run (for the UI stepper)."""
+    b = brief(country, theme, offline)
+    if "error" in b:
+        return b
+    avail = [i for i in b["indicators"] if i.get("available")]
+    datapoints = sum(len([v for v in i["obs"].values() if v is not None]) for i in avail)
+    caveats = sum(len(i["verification"]["caveats"]) for i in avail)
+    claims = sum(len(i["claims"]) for i in avail)
+    review_ok = all(c.get("datapoints") for i in avail for c in i["claims"])
+    detail = {"discover": f"{len(b['indicators'])} indicators",
+              "retrieve": f"{datapoints} datapoints",
+              "verify": (f"{caveats} caveat(s)" if caveats else "clean"),
+              "analyse": f"{claims} claims",
+              "narrate": f"{claims} cited",
+              "review": "passed" if review_ok else "blocked",
+              "output": "ready"}
+    steps = [{**s, "status": "done", "detail": detail[s["id"]]} for s in EVIDENCE_CHAIN]
+    return {"country": country, "theme": theme, "steps": steps,
+            "review_passed": review_ok, "cost": b["cost"]}
+
 # ----------------------------------------------------------------------------- optional LLM (gated by mode in api.py)
 CHAT_TOOLS = [
  {"type": "function", "function": {"name": "get_indicator",
@@ -264,9 +311,47 @@ def _chat_exec(name, args, offline, sources):
         return {"code": args.get("code"), "results": out}
     return {"error": "unknown tool"}
 
+def _tool_detail(name, res):
+    if isinstance(res, dict) and res.get("error"):
+        return "no data"
+    if name == "get_indicator" and isinstance(res, dict):
+        lt = res.get("latest")
+        return f"{len(res.get('series', {}))} values · {lt['year']}: {lt['value']}" if lt else "ok"
+    if name == "compare_indicator" and isinstance(res, dict):
+        return f"{len([x for x in res.get('results', []) if not x.get('error')])} countries"
+    if name == "list_indicators":
+        return f"{len(res)} indicators"
+    return "done"
+
+def _chat_chain(tool_log, sources, final, invented):
+    """Build a per-prompt evidence chain reflecting what THIS answer actually did."""
+    inds = {s.get("code") for s in sources if s.get("code")}
+    ctys = {s.get("iso") for s in sources if s.get("iso")}
+    datapoints = sum(len(s.get("series", {})) for s in sources)
+    grounded = not invented
+    spec = [
+        ("discover", "Discover", "Agent 1", "Interpret the prompt; choose indicators/countries to fetch.",
+         f"{len(tool_log)} tool call(s) · {len(inds)} indicator(s), {len(ctys)} country(ies)"),
+        ("retrieve", "Retrieve", "Agent 1", "Call the World Bank API; stamp provenance on every datapoint.",
+         f"{len(sources)} series · {datapoints} datapoints"),
+        ("verify", "Verify", "Agent 2", "Confirm the retrieved data is present and usable.",
+         f"{len(sources)} grounded source(s)"),
+        ("analyse", "Analyse", "Agent 3", "Reason over the retrieved values to address the prompt.",
+         "computed from retrieved data"),
+        ("narrate", "Narrate", "Agent 4", "Compose the answer, citing each figure.",
+         f"{len(final.split())} words"),
+        ("review", "Review", "Agent 5", "Number-check the answer against the retrieved data.",
+         "passed — all figures grounded" if grounded else f"flagged {len(invented)} unverified figure(s): {', '.join(invented)}"),
+        ("output", "Output", "—", "Return the answer with its sources and cost.",
+         f"{len(sources)} source(s) cited"),
+    ]
+    return [{"id": a, "step": b, "agent": c, "description": d,
+             "status": "done" if (a != "review" or grounded) else "warn", "detail": e}
+            for a, b, c, d, e in spec]
+
 def llm_chat(messages, country, api_key, model="gpt-4o-mini", offline=False, base_url="https://api.openai.com/v1"):
     """Agentic, tool-grounded answer. The model must call tools to obtain any number; the result is
-    number-checked against retrieved data. Returns answer + sources + token usage (non-streaming)."""
+    number-checked against retrieved data. Returns answer + sources + per-prompt evidence chain + cost."""
     import urllib.request
     inds = ", ".join(cedar.CATALOG.keys())
     cmap = "; ".join(f"{c['name']}={c['iso3']}" for c in countries())
@@ -277,7 +362,7 @@ def llm_chat(messages, country, api_key, model="gpt-4o-mini", offline=False, bas
          "unavailable, say so plainly. Be concise. You may use light markdown. "
          f"Known indicator codes: {inds}. Country->ISO3: {cmap}. For other countries/indicators use ISO3 / WB codes.")}
     msgs = [sysmsg] + [{"role": m["role"], "content": m.get("content", "")} for m in messages]
-    sources, tin, tout, final = [], 0, 0, ""
+    sources, tool_log, tin, tout, final = [], [], 0, 0, ""
     for _ in range(5):
         body = json.dumps({"model": model, "temperature": 0, "messages": msgs,
                            "tools": CHAT_TOOLS, "tool_choice": "auto"}).encode()
@@ -295,7 +380,9 @@ def llm_chat(messages, country, api_key, model="gpt-4o-mini", offline=False, bas
                     args = json.loads(tc["function"].get("arguments") or "{}")
                 except Exception:
                     args = {}
-                res = _chat_exec(tc["function"]["name"], args, offline, sources)
+                name = tc["function"]["name"]
+                res = _chat_exec(name, args, offline, sources)
+                tool_log.append({"name": name, "args": args, "detail": _tool_detail(name, res)})
                 msgs.append({"role": "tool", "tool_call_id": tc["id"], "content": json.dumps(res)})
             continue
         final = m.get("content") or ""; break
@@ -308,6 +395,8 @@ def llm_chat(messages, country, api_key, model="gpt-4o-mini", offline=False, bas
             "sources": [{"country": s.get("country"), "iso": s.get("iso"), "code": s.get("code"),
                          "name": s.get("name"), "latest": s.get("latest"), "query_url": s.get("query_url")}
                         for s in uniq.values()],
+            "tool_calls": tool_log,
+            "evidence_chain": _chat_chain(tool_log, sources, final, invented),
             "tokens": {"in": tin, "out": tout}, "model": model}
 
 def llm_summary(claims_text, api_key, model="gpt-4o-mini", base_url="https://api.openai.com/v1"):

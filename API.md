@@ -48,7 +48,10 @@ server — it is passed per request via the `X-OpenAI-Key` header (or an `OPENAI
 | GET | `/polycrisis/{country}` | — | cross-SDG composite risk read |
 | GET | `/blindspots/{country}` | — | blind-spot radar (missing/stale data) |
 | GET | `/project/{country}/{code}` | — | time-to-SDG-target projection |
-| GET | `/interventions/{theme}` | — | effective interventions by evidence strength |
+| GET | `/interventions` | — | interventions by evidence strength, **all themes** |
+| GET | `/interventions/{theme}` | — | interventions by evidence strength for one theme |
+| GET | `/evidence-chain` | — | the 7-step pipeline definition (static) |
+| GET | `/evidence-chain/{country}` | — | the chain with live per-step status for a run |
 | POST | `/copilot/summary` | copilot + key | guardrailed executive summary |
 | POST | `/copilot/chat` | copilot + key | agentic, tool-grounded chat |
 
@@ -56,7 +59,9 @@ server — it is passed per request via the `X-OpenAI-Key` header (or an `OPENAI
 indicator code (e.g. `SH.DYN.MORT`); `{theme}` ∈ `child-survival, economy-poverty, education, health-system, wash, energy-climate`.
 Common query param `offline` (bool) forces the bundled cache. LLM endpoints require header `X-OpenAI-Key`
 (or `OPENAI_API_KEY` env) **and** `mode=copilot`. All responses are JSON. Error shape: `{"detail": "..."}`
-with status 400 (bad input), 403 (LLM disabled), 404 (no data), 502 (LLM upstream error).
+with status 400 (bad input), 403 (LLM disabled), 404 (no data for `/series` and `/drilldown`), 502 (LLM upstream error).
+Note: `/brief`, `/polycrisis`, `/blindspots`, `/project` never 500 on missing data — they return **200** and flag the
+gap (`available:false`, `status:"missing"`, or `projectable:false`). Treating absent data as a result, not an error, is intentional.
 
 ---
 
@@ -127,7 +132,19 @@ with status 400 (bad input), 403 (LLM disabled), 404 (no data), 502 (LLM upstrea
             "llm_calls":0, "cedar_llm_cost_usd":0.0, "naive_single_big_model_cost_usd":0.097,
             "cost_reduction_vs_naive":"100%", "runs_with_zero_llm":true } }
 ```
-Indicators with no data appear as `{ "code":…, "name":…, "available": false }`.
+**Data availability.** Any indicator that is missing **or returns an all-null series** (e.g. Afghanistan
+has no recent poverty data in WDI) is reported as `{ "code":…, "name":…, "available": false }` — with no
+`obs`/`verification`/`claims`. The endpoint still returns **200**; the front-end should branch on
+`available` and render "no data" for those. If *every* indicator in a theme is unavailable you simply get
+an `indicators` array where all entries are `available:false` (still 200). Example — `GET /brief/AFG?theme=economy-poverty`:
+```json
+{ "country":"AFG", "theme":"economy-poverty", "label":"Economy & poverty (SDG 1, 8)",
+  "generated_at":"…",
+  "indicators":[ { "code":"SI.POV.DDAY", "name":"Poverty rate ($3.00/day, 2021 PPP)", "available":false },
+                 { "code":"NY.GDP.PCAP.CD", "name":"GDP per capita", "available":false },
+                 { "code":"SL.UEM.TOTL.ZS", "name":"Unemployment rate", "available":false } ],
+  "cost": { "...": "cost report" } }
+```
 
 ### GET `/drilldown/{country}`
 **Input:** path `country`; query `dimension` (default `wealth`), `offline?`. 404 if the country has no wealth-disaggregated data. **Output:**
@@ -174,13 +191,55 @@ Indicators with no data appear as `{ "code":…, "name":…, "available": false 
 If the indicator has no target or no data: `{ "projectable": false, "reason": "no target" | "no data" }`. If the trend moves away from the target: `{ "diverging": true, "reach_year": null, "years_late": null }`. If already met: `{ "met": true, "reach_year": <latest_year>, "years_late": 0 }`.
 
 ### GET `/interventions/{theme}`
-**Input:** path `theme`. **Output:**
+**Input:** path `theme` (one of the six theme keys — **required**; call `/interventions` for all themes at once). **Output:**
 ```json
 { "theme":"economy-poverty", "counts": { "High":1, "Moderate":4, "Limited":1 },
   "interventions": [ { "name":"Cash transfers & social protection", "evidence_strength":"High",
       "rationale":"Robust evidence for reducing poverty and vulnerability.",
       "source":"World Bank", "source_url":"https://www.worldbank.org" } ],
   "note":"Illustrative evidence synthesis from published reviews …; distinct from the live indicator data." }
+```
+`evidence_strength` ∈ `High` | `Moderate` | `Limited`. Returns 400 with `{themes:[…]}` for an unknown theme.
+
+### GET `/interventions`
+**Input:** none. **Output:** every theme's interventions in one payload (same per-theme shape as above):
+```json
+{ "themes": {
+    "child-survival":  { "theme":"child-survival",  "counts":{…}, "interventions":[…], "note":"…" },
+    "economy-poverty": { "theme":"economy-poverty", "counts":{…}, "interventions":[…], "note":"…" }
+} }
+```
+
+### GET `/evidence-chain`
+**Input:** none. **Output:** the static 7-step pipeline definition (for rendering the chain UI):
+```json
+{ "steps": [
+    { "id":"discover", "step":"Discover", "agent":"Agent 1", "description":"Resolve indicator & country codes and metadata for the question." },
+    { "id":"retrieve", "step":"Retrieve", "agent":"Agent 1", "description":"Fetch authoritative series; stamp provenance on every datapoint." },
+    { "id":"verify",   "step":"Verify",   "agent":"Agent 2", "description":"Check coverage, recency & data gaps; assign confidence; raise caveats." },
+    { "id":"analyse",  "step":"Analyse",  "agent":"Agent 3", "description":"Compute trend, gap-to-target and projection deterministically (no LLM)." },
+    { "id":"narrate",  "step":"Narrate",  "agent":"Agent 4", "description":"Render the verified claims to prose; every figure carries a citation." },
+    { "id":"review",   "step":"Review",   "agent":"Agent 5", "description":"Refuse to ship any number that lacks a supporting datapoint." },
+    { "id":"output",   "step":"Output",   "agent":"—",       "description":"Emit the brief + evidence ledger + provenance graph + cost report." }
+  ],
+  "note":"Every CEDAR output moves through these steps; nothing downstream uses a value an earlier step did not verify." }
+```
+
+### GET `/evidence-chain/{country}`
+**Input:** path `country`; query `theme` (default `child-survival`), `offline?`. **Output:** the same 7 steps,
+each annotated with a live `status` and a `detail` derived from an actual brief run — ideal for animating the stepper:
+```json
+{ "country":"KEN", "theme":"child-survival", "review_passed": true,
+  "steps": [
+    { "id":"discover", "step":"Discover", "agent":"Agent 1", "description":"…", "status":"done", "detail":"4 indicators" },
+    { "id":"retrieve", "step":"Retrieve", "agent":"Agent 1", "description":"…", "status":"done", "detail":"36 datapoints" },
+    { "id":"verify",   "step":"Verify",   "agent":"Agent 2", "description":"…", "status":"done", "detail":"1 caveat(s)" },
+    { "id":"analyse",  "step":"Analyse",  "agent":"Agent 3", "description":"…", "status":"done", "detail":"10 claims" },
+    { "id":"narrate",  "step":"Narrate",  "agent":"Agent 4", "description":"…", "status":"done", "detail":"10 cited" },
+    { "id":"review",   "step":"Review",   "agent":"Agent 5", "description":"…", "status":"done", "detail":"passed" },
+    { "id":"output",   "step":"Output",   "agent":"—",       "description":"…", "status":"done", "detail":"ready" }
+  ],
+  "cost": { "...": "cost report" } }
 ```
 
 ### POST `/copilot/summary`  *(mode = copilot)*
@@ -205,16 +264,29 @@ If the model emits a figure not in the claims, it is withheld: `{ "summary": nul
   "messages":[ { "role":"user", "content":"Is Kenya on track for child survival, and what works?" } ],
   "model":"gpt-4o-mini" }
 ```
-`messages` is the conversation so far (`role` ∈ `user`|`assistant`, plus any prior turns). **Output:**
+`messages` is the conversation so far (`role` ∈ `user`|`assistant`, plus any prior turns). **Output** — note the
+**per-prompt `evidence_chain`** and the raw `tool_calls`, both reflecting what *this* answer actually did:
 ```json
 { "answer":"Kenya's under-5 mortality is 39.6 per 1,000 (2023), down from 53.1 (2010) but above the SDG target of 25 …",
   "grounded":true, "unverified_numbers":[],
   "sources":[ { "country":"Kenya", "iso":"KEN", "code":"SH.DYN.MORT", "name":"Under-5 mortality rate",
                 "latest":{ "year":2023, "value":39.6 },
                 "query_url":"https://api.worldbank.org/v2/country/KEN/indicator/SH.DYN.MORT?format=json" } ],
+  "tool_calls":[ { "name":"get_indicator", "args":{ "iso":"KEN","code":"SH.DYN.MORT" }, "detail":"14 values · 2023: 39.6" } ],
+  "evidence_chain":[
+    { "id":"discover", "step":"Discover", "agent":"Agent 1", "status":"done", "detail":"1 tool call(s) · 1 indicator(s), 1 country(ies)", "description":"…" },
+    { "id":"retrieve", "step":"Retrieve", "agent":"Agent 1", "status":"done", "detail":"1 series · 14 datapoints", "description":"…" },
+    { "id":"verify",   "step":"Verify",   "agent":"Agent 2", "status":"done", "detail":"1 grounded source(s)", "description":"…" },
+    { "id":"analyse",  "step":"Analyse",  "agent":"Agent 3", "status":"done", "detail":"computed from retrieved data", "description":"…" },
+    { "id":"narrate",  "step":"Narrate",  "agent":"Agent 4", "status":"done", "detail":"22 words", "description":"…" },
+    { "id":"review",   "step":"Review",   "agent":"Agent 5", "status":"done", "detail":"passed — all figures grounded", "description":"…" },
+    { "id":"output",   "step":"Output",   "agent":"—",       "status":"done", "detail":"1 source(s) cited", "description":"…" }
+  ],
   "tokens":{ "in":1320, "out":180 }, "model":"gpt-4o-mini" }
 ```
-`grounded` is `false` (and `unverified_numbers` non-empty) when the answer contains a figure not found in the tool-retrieved data. Returns 403 if not in copilot mode, 400 if no key/empty messages.
+- `evidence_chain` is computed **per prompt** from the agent's actual run (tool calls, datapoints fetched, grounding result), so the UI can render a chain specific to each answer (not the generic `/evidence-chain` definition).
+- When the answer contains a figure not found in the retrieved data, `grounded` is `false`, `unverified_numbers` lists them, and the `review` step has `status:"warn"` with a `detail` naming the flagged figures.
+- Returns 403 if not in copilot mode, 400 if no key/empty messages.
 
 ## Typed clients for the front-end (TypeScript)
 FastAPI publishes a full OpenAPI schema at **`/openapi.json`**, so the web team gets typed clients for free:
@@ -238,7 +310,10 @@ curl localhost:8000/brief/KEN?theme=child-survival
 curl localhost:8000/polycrisis/KEN
 curl localhost:8000/blindspots/NGA
 curl localhost:8000/project/KEN/SH.DYN.MORT      # -> reach_year 2037, years_late 7
+curl localhost:8000/interventions                # all themes
 curl localhost:8000/interventions/economy-poverty
+curl localhost:8000/evidence-chain               # static 7-step definition
+curl localhost:8000/evidence-chain/KEN?theme=child-survival   # steps with live status
 ```
 
 ## Response shape notes

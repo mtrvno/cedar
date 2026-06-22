@@ -55,7 +55,8 @@ def root():
             "endpoints": ["/mode", "/catalog", "/countries", "/series/{country}/{code}",
                           "/brief/{country}", "/drilldown/{country}", "/polycrisis/{country}",
                           "/blindspots/{country}", "/project/{country}/{code}",
-                          "/interventions/{theme}", "/copilot/summary", "/copilot/chat"],
+                          "/interventions", "/interventions/{theme}", "/evidence-chain",
+                          "/evidence-chain/{country}", "/copilot/summary", "/copilot/chat"],
             "openapi": "/openapi.json"}
 
 @app.get("/health", tags=["meta"])
@@ -123,9 +124,24 @@ def blindspots(country: str, cutoff: int = Query(2022), offline: Optional[bool] 
 def project(country: str, code: str, offline: Optional[bool] = Query(None)):
     return svc.project(country.upper(), code, _off(offline))
 
+@app.get("/interventions", tags=["procedures"])
+def interventions_all():
+    return svc.interventions_all()
+
 @app.get("/interventions/{theme}", tags=["procedures"])
 def interventions(theme: str):
     r = svc.interventions(theme)
+    if "error" in r:
+        raise HTTPException(400, r["error"])
+    return r
+
+@app.get("/evidence-chain", tags=["procedures"])
+def evidence_chain():
+    return svc.evidence_chain()
+
+@app.get("/evidence-chain/{country}", tags=["procedures"])
+def evidence_chain_run(country: str, theme: str = Query("child-survival"), offline: Optional[bool] = Query(None)):
+    r = svc.evidence_chain_run(country.upper(), theme, _off(offline))
     if "error" in r:
         raise HTTPException(400, r["error"])
     return r

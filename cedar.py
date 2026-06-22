@@ -530,7 +530,7 @@ def run(country, theme, offline=False, use_llm=False):
     for code in spec["indicators"]:
         print(f"  [discover] indicator {code} -> {CATALOG[code]['name']}")
         series = retr.fetch(code, country)
-        if not series:
+        if not series or not any(v is not None for v in series["obs"].values()):
             print(f"  [skip] no data for {code}/{country}")
             continue
         mode = series["provenance"]["retrieval_mode"]
