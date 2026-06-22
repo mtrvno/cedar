@@ -2,6 +2,9 @@
 import { ref, watch, computed, onMounted } from 'vue'
 import { getCountries, getBrief, getPolycrisis, getBlindspots, getDrilldown } from '@/api/cedar'
 import type { Country, BriefResponse, BriefIndicator, PolycrisisResponse, BlindspotsResponse, DrilldownResponse } from '@/types/api'
+import { useEvidenceLedger } from '@/composables/useEvidenceLedger'
+
+const { setLedger } = useEvidenceLedger()
 
 const THEMES = [
   { key: 'child-survival', label: 'Child Survival' },
@@ -77,6 +80,9 @@ async function fetchBrief() {
   brief.value = null
   try {
     brief.value = await getBrief(selectedIso.value, selectedTheme.value)
+    if (brief.value) {
+      setLedger(selectedIso.value, selectedCountryName.value, selectedTheme.value, brief.value.indicators, brief.value.cost)
+    }
   } catch (e) {
     errorBrief.value = e instanceof Error ? e.message : 'Failed to load brief'
   } finally {

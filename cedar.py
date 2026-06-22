@@ -39,6 +39,21 @@ CACHE_PATH = os.path.join(HERE, "data", "cache_worldbank.json")
 OUT_DIR = os.path.join(HERE, "output")
 WB_BASE = "https://api.worldbank.org/v2"
 
+# Module-level singletons — JSON loaded once per process, not per request
+_CACHE_SINGLETON = None
+_INDEX_SINGLETON = None
+
+def _load_cache():
+    global _CACHE_SINGLETON, _INDEX_SINGLETON
+    if _CACHE_SINGLETON is None:
+        with open(CACHE_PATH) as f:
+            _CACHE_SINGLETON = json.load(f)
+        _INDEX_SINGLETON = {
+            (s["indicator_code"], s["ref_area"]): s
+            for s in _CACHE_SINGLETON["series"]
+        }
+    return _CACHE_SINGLETON, _INDEX_SINGLETON
+
 # --------------------------------------------------------------------------------------
 # OPTIONAL LLM  (narrative polish only — never produces or edits a number).
 # Configured by environment variables so it works with ANY OpenAI-compatible endpoint:
@@ -219,31 +234,31 @@ class Retriever:
     def __init__(self, meter, offline=False):
         self.meter = meter
         self.offline = offline
-        with open(CACHE_PATH) as f:
-            self.cache = json.load(f)
-        self._index = {(s["indicator_code"], s["ref_area"]): s for s in self.cache["series"]}
+        self.cache, self._index = _load_cache()
 
     def fetch(self, code, area):
-        """Return a provenance-stamped series. Tries live API, falls back to bundled cache."""
+        """Return a provenance-stamped series. Prefers bundled cache; goes live only if missing."""
+        # Cache-first: instant, no network
+        s = self._index.get((code, area))
+        if s:
+            self.meter.cache()
+            obs = {int(y): v for y, v in s["obs"].items()}
+            return self._stamp(code, area, s["ref_area_name"], obs, s["query_url"],
+                               self.cache["_meta"]["source_last_updated"], "bundled-cache", s.get("upstream_source"))
+
+        # Not in bundled cache — try live API if online
         if not self.offline:
             url = f"{WB_BASE}/country/{area}/indicator/{code}?format=json&date=2010:2023"
             try:
                 req = urllib.request.Request(url, headers={"User-Agent": "CEDAR/1.0"})
-                with urllib.request.urlopen(req, timeout=15) as r:
+                with urllib.request.urlopen(req, timeout=10) as r:
                     payload = json.loads(r.read().decode())
                 self.meter.api()
                 return self._parse_live(payload, code, area, url)
             except Exception as e:
-                sys.stderr.write(f"  [retriever] live fetch failed ({e.__class__.__name__}); "
-                                 f"using bundled cache for {code}/{area}\n")
-        # offline / fallback
-        s = self._index.get((code, area))
-        if not s:
-            return None
-        self.meter.cache()
-        obs = {int(y): v for y, v in s["obs"].items()}
-        return self._stamp(code, area, s["ref_area_name"], obs, s["query_url"],
-                           self.cache["_meta"]["source_last_updated"], "bundled-cache", s.get("upstream_source"))
+                sys.stderr.write(f"  [retriever] live fetch failed ({e.__class__.__name__}) for {code}/{area}\n")
+
+        return None
 
     def _parse_live(self, payload, code, area, url):
         if not isinstance(payload, list) or len(payload) < 2 or payload[1] is None:
