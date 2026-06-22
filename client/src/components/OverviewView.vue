@@ -1,6 +1,15 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue'
-import { getCountries, getBrief, getPolycrisis, getBlindspots, getDrilldown } from '@/api/cedar'
+import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import {
+  getCountries,
+  getBrief,
+  getPolycrisis,
+  getBlindspots,
+  getDrilldown,
+  getClimateRisk,
+} from '@/api/cedar'
 import type {
   Country,
   BriefResponse,
@@ -14,8 +23,14 @@ import { useEvidenceLedger } from '@/composables/useEvidenceLedger'
 const { setLedger } = useEvidenceLedger()
 
 interface HazardPoint {
-  iso3: string; name: string; lat: number; lon: number; ccri: number; type: 'high' | 'medium' | 'low'
-  alertlevel?: string; type_name?: string
+  iso3: string
+  name: string
+  lat: number
+  lon: number
+  ccri: number
+  type: 'high' | 'medium' | 'low'
+  alertlevel?: string
+  type_name?: string
 }
 const hazardPoints = ref<HazardPoint[]>([])
 
@@ -88,18 +103,21 @@ function initMap() {
   })
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>',
+    attribution:
+      '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>',
     subdomains: 'abcd',
     maxZoom: 19,
   }).addTo(leafletMap)
 
   for (const pt of hazardPoints.value) {
-    const alertColor = TYPE_COLOR[pt.type]
+    const alertColor = TYPE_COLOR[pt.type] ?? '#2f6b4f'
     const strokeColor = ccriColor(pt.ccri)
     const icon = hazardDivIcon(pt.type_name ?? '', alertColor, strokeColor)
     const marker = L.marker([pt.lat, pt.lon], { icon }).addTo(leafletMap)
 
-    const hazardLine = pt.type_name ? `${pt.type_name} · GDACS <span style="color:${alertColor}">${pt.alertlevel ?? ''}</span>` : `${pt.type} risk`
+    const hazardLine = pt.type_name
+      ? `${pt.type_name} · GDACS <span style="color:${alertColor}">${pt.alertlevel ?? ''}</span>`
+      : `${pt.type} risk`
     marker.bindTooltip(
       `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.6;">
         <strong style="font-size:12px;color:#1b1e23;">${pt.name}</strong><br>
@@ -144,7 +162,10 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  if (leafletMap) { leafletMap.remove(); leafletMap = null }
+  if (leafletMap) {
+    leafletMap.remove()
+    leafletMap = null
+  }
 })
 
 const THEMES = [
@@ -186,6 +207,15 @@ const loadingDrill = ref(false)
 const collapsedPoly = ref(false)
 const collapsedGaps = ref(false)
 const collapsedDrill = ref(false)
+
+const compareIso = ref('')
+const compareSearch = ref('')
+const compareDropdownOpen = ref(false)
+const brief2 = ref<BriefResponse | null>(null)
+const polycrisis2 = ref<PolycrisisResponse | null>(null)
+const loadingBrief2 = ref(false)
+const loadingPoly2 = ref(false)
+const errorBrief2 = ref<string | null>(null)
 
 const filteredCountries = computed(() => {
   const q = countrySearch.value.toLowerCase().trim()
@@ -589,6 +619,15 @@ const compareRows = computed(() => {
         </div>
       </div>
 
+      <!-- Compare active tag -->
+      <div v-if="isComparing" class="compare-tag">
+        <span
+          style="width: 7px; height: 7px; border-radius: 50%; background: #9db1c2; flex: none"
+        ></span>
+        {{ compareName }}
+        <button @click="clearCompare" class="compare-clear-btn" title="Remove comparison">×</button>
+      </div>
+
       <!-- Theme tabs: only when country selected -->
       <div v-if="selectedIso" class="theme-tabs">
         <button
@@ -606,39 +645,282 @@ const compareRows = computed(() => {
 
     <!-- Content -->
     <div class="overview-body">
-
       <!-- Hazard map (shown until country selected) -->
       <div v-show="!selectedIso" class="map-container">
-        <div ref="mapEl" style="width:100%;height:100%;"></div>
+        <div ref="mapEl" style="width: 100%; height: 100%"></div>
         <!-- Legend -->
         <div class="map-legend">
           <div class="map-legend-title">Fill — GDACS Alert</div>
-          <div class="map-legend-row"><span class="map-legend-dot" style="background:#2f6b4f"></span><span>Green (underestimated)</span></div>
-          <div class="map-legend-row"><span class="map-legend-dot" style="background:#e67e22"></span><span>Orange (underestimated)</span></div>
-          <div class="map-legend-row"><span class="map-legend-dot" style="background:#c0392b"></span><span>Red</span></div>
-          <div class="map-legend-title" style="margin-top:10px;">Border — CCRI (0–10)</div>
-          <div class="map-legend-row"><span class="map-legend-dot" style="background:#fff;border:3px solid #c0392b;box-sizing:border-box;"></span><span>≥ 7 Extremely High</span></div>
-          <div class="map-legend-row"><span class="map-legend-dot" style="background:#fff;border:3px solid #e6a817;box-sizing:border-box;"></span><span>4–7 High</span></div>
-          <div class="map-legend-row"><span class="map-legend-dot" style="background:#fff;border:3px solid #2f6b4f;box-sizing:border-box;"></span><span>&lt; 4 Medium/Low</span></div>
-          <div class="map-legend-title" style="margin-top:10px;">Hazard Type</div>
-          <div class="map-legend-row"><span class="map-legend-icon">〰</span><span>Earthquake</span></div>
-          <div class="map-legend-row"><span class="map-legend-icon">🌊</span><span>Flood</span></div>
-          <div class="map-legend-row"><span class="map-legend-icon">🌀</span><span>Cyclone</span></div>
-          <div class="map-legend-row"><span class="map-legend-icon">☀</span><span>Drought</span></div>
-          <div class="map-legend-row"><span class="map-legend-icon">🌋</span><span>Volcano</span></div>
-          <div style="margin-top:8px;color:#9a9f97;font-size:9px;line-height:1.5;">
+          <div class="map-legend-row">
+            <span class="map-legend-dot" style="background: #2f6b4f"></span
+            ><span>Green (underestimated)</span>
+          </div>
+          <div class="map-legend-row">
+            <span class="map-legend-dot" style="background: #e67e22"></span
+            ><span>Orange (underestimated)</span>
+          </div>
+          <div class="map-legend-row">
+            <span class="map-legend-dot" style="background: #c0392b"></span><span>Red</span>
+          </div>
+          <div class="map-legend-title" style="margin-top: 10px">Border — CCRI (0–10)</div>
+          <div class="map-legend-row">
+            <span
+              class="map-legend-dot"
+              style="background: #fff; border: 3px solid #c0392b; box-sizing: border-box"
+            ></span
+            ><span>≥ 7 Extremely High</span>
+          </div>
+          <div class="map-legend-row">
+            <span
+              class="map-legend-dot"
+              style="background: #fff; border: 3px solid #e6a817; box-sizing: border-box"
+            ></span
+            ><span>4–7 High</span>
+          </div>
+          <div class="map-legend-row">
+            <span
+              class="map-legend-dot"
+              style="background: #fff; border: 3px solid #2f6b4f; box-sizing: border-box"
+            ></span
+            ><span>&lt; 4 Medium/Low</span>
+          </div>
+          <div class="map-legend-title" style="margin-top: 10px">Hazard Type</div>
+          <div class="map-legend-row">
+            <span class="map-legend-icon">〰</span><span>Earthquake</span>
+          </div>
+          <div class="map-legend-row">
+            <span class="map-legend-icon">🌊</span><span>Flood</span>
+          </div>
+          <div class="map-legend-row">
+            <span class="map-legend-icon">🌀</span><span>Cyclone</span>
+          </div>
+          <div class="map-legend-row">
+            <span class="map-legend-icon">☀</span><span>Drought</span>
+          </div>
+          <div class="map-legend-row">
+            <span class="map-legend-icon">🌋</span><span>Volcano</span>
+          </div>
+          <div style="margin-top: 8px; color: #9a9f97; font-size: 9px; line-height: 1.5">
             GDACS alert in tooltip · Click to select
           </div>
         </div>
         <!-- Subtitle pill -->
         <div class="map-subtitle">
-          Underestimated GDACS alerts (Green/Orange) in CCRI > 7 countries · {{ hazardPoints.length }} alerts live
+          Underestimated GDACS alerts (Green/Orange) in CCRI > 7 countries ·
+          {{ hazardPoints.length }} alerts live
         </div>
       </div>
 
-      <!-- Split layout: country selected -->
-      <div v-if="selectedIso" class="content-layout">
+      <!-- Comparison view -->
+      <div v-if="isComparing" class="compare-body">
+        <!-- Country summary header -->
+        <div class="compare-summary">
+          <div class="compare-summary-card compare-summary-card--a">
+            <div class="compare-summary-name">{{ selectedCountryName }}</div>
+            <div
+              v-if="polycrisis"
+              class="compare-poly-band"
+              :style="'color:' + (BAND_COLOR[polycrisis.band] ?? '')"
+            >
+              {{ BAND_LABEL[polycrisis.band] }}
+            </div>
+            <div
+              v-else-if="loadingPoly"
+              style="font-size: 11px; color: #bfc2b9; font-family: 'IBM Plex Mono', monospace"
+            >
+              Loading…
+            </div>
+          </div>
+          <div class="compare-vs-label">vs</div>
+          <div class="compare-summary-card compare-summary-card--b">
+            <div class="compare-summary-name">{{ compareName }}</div>
+            <div
+              v-if="polycrisis2"
+              class="compare-poly-band"
+              :style="'color:' + (BAND_COLOR[polycrisis2.band] ?? '')"
+            >
+              {{ BAND_LABEL[polycrisis2.band] }}
+            </div>
+            <div
+              v-else-if="loadingPoly2"
+              style="font-size: 11px; color: #bfc2b9; font-family: 'IBM Plex Mono', monospace"
+            >
+              Loading…
+            </div>
+          </div>
+        </div>
 
+        <!-- Loading -->
+        <div v-if="loadingBrief || loadingBrief2" class="loading-state">
+          <div class="loading-dots"><span></span><span></span><span></span></div>
+          <div
+            style="
+              font-family: 'IBM Plex Mono', monospace;
+              font-size: 11px;
+              color: #9a9f97;
+              letter-spacing: 0.05em;
+            "
+          >
+            Loading comparison…
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div v-else-if="errorBrief || errorBrief2" class="error-state">
+          <svg width="16" height="16" viewBox="0 0 16 16" style="flex: none; color: #c0392b">
+            <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3" fill="none" />
+            <path
+              d="M8 4.5v4M8 10.5v1"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+            />
+          </svg>
+          <span>{{ errorBrief || errorBrief2 }}</span>
+        </div>
+
+        <!-- Comparison table -->
+        <div v-else-if="compareRows.length" class="compare-table-wrap">
+          <div class="compare-table-header">
+            <div class="ctcol ctcol--label">{{ themeLabel }}</div>
+            <div class="ctcol ctcol--heading ctcol--heading-a">{{ selectedCountryName }}</div>
+            <div class="ctcol ctcol--heading ctcol--heading-b">{{ compareName }}</div>
+          </div>
+          <div v-for="row in compareRows" :key="row.code" class="compare-row">
+            <!-- Indicator name -->
+            <div class="ctcol ctcol--name-cell">
+              <div class="compare-ind-name">{{ row.name }}</div>
+              <div
+                style="
+                  font-family: 'IBM Plex Mono', monospace;
+                  font-size: 9px;
+                  color: #bfc2b9;
+                  margin-top: 2px;
+                "
+              >
+                {{ row.code }}
+              </div>
+            </div>
+            <!-- Country A -->
+            <div class="ctcol ctcol--data">
+              <template v-if="row.a?.available && row.a.lo">
+                <div class="compare-cell-value">
+                  {{ row.a.lo.value.toLocaleString('en-US', { maximumFractionDigits: 1 }) }}
+                  <span class="compare-cell-unit">{{ row.unit }}</span>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-top: 4px;
+                    gap: 8px;
+                  "
+                >
+                  <span
+                    style="
+                      font-family: 'IBM Plex Mono', monospace;
+                      font-size: 9.5px;
+                      color: #a7aaa2;
+                    "
+                    >{{ row.a.lo.year }}</span
+                  >
+                  <svg
+                    v-if="row.a.sp"
+                    viewBox="0 0 100 26"
+                    style="width: 68px; height: 19px; flex: none"
+                  >
+                    <path :d="row.a.sp.area" style="fill: #eef2f5; stroke: none" />
+                    <path
+                      :d="row.a.sp.line"
+                      style="
+                        fill: none;
+                        stroke: #2c4a63;
+                        stroke-width: 1.4px;
+                        stroke-linejoin: round;
+                        stroke-linecap: round;
+                      "
+                    />
+                    <circle :cx="row.a.sp.dotX" :cy="row.a.sp.dotY" r="2" style="fill: #2c4a63" />
+                  </svg>
+                </div>
+                <span
+                  v-if="row.a.verification?.confidence_tier"
+                  :style="
+                    tierStyle(row.a.verification.confidence_tier) +
+                    'display:inline-block;padding:2px 5px;border-radius:2px;font-family:IBM Plex Mono,monospace;font-size:9px;margin-top:6px'
+                  "
+                  >{{ tierLabel(row.a.verification.confidence_tier) }} confidence</span
+                >
+              </template>
+              <span v-else style="font-size: 11px; color: #bfc2b9">No data</span>
+            </div>
+            <!-- Country B -->
+            <div class="ctcol ctcol--data">
+              <template v-if="row.b?.available && row.b.lo">
+                <div class="compare-cell-value">
+                  {{ row.b.lo.value.toLocaleString('en-US', { maximumFractionDigits: 1 }) }}
+                  <span class="compare-cell-unit">{{ row.unit }}</span>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-top: 4px;
+                    gap: 8px;
+                  "
+                >
+                  <span
+                    style="
+                      font-family: 'IBM Plex Mono', monospace;
+                      font-size: 9.5px;
+                      color: #a7aaa2;
+                    "
+                    >{{ row.b.lo.year }}</span
+                  >
+                  <svg
+                    v-if="row.b.sp"
+                    viewBox="0 0 100 26"
+                    style="width: 68px; height: 19px; flex: none"
+                  >
+                    <path :d="row.b.sp.area" style="fill: #eef2f5; stroke: none" />
+                    <path
+                      :d="row.b.sp.line"
+                      style="
+                        fill: none;
+                        stroke: #9db1c2;
+                        stroke-width: 1.4px;
+                        stroke-linejoin: round;
+                        stroke-linecap: round;
+                      "
+                    />
+                    <circle :cx="row.b.sp.dotX" :cy="row.b.sp.dotY" r="2" style="fill: #9db1c2" />
+                  </svg>
+                </div>
+                <span
+                  v-if="row.b.verification?.confidence_tier"
+                  :style="
+                    tierStyle(row.b.verification.confidence_tier) +
+                    'display:inline-block;padding:2px 5px;border-radius:2px;font-family:IBM Plex Mono,monospace;font-size:9px;margin-top:6px'
+                  "
+                  >{{ tierLabel(row.b.verification.confidence_tier) }} confidence</span
+                >
+              </template>
+              <span v-else style="font-size: 11px; color: #bfc2b9">No data</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty -->
+        <div v-else class="empty-state" style="margin-top: 6vh">
+          <div class="empty-title">No comparable indicators</div>
+          <div class="empty-desc">Both countries lack data for this theme.</div>
+        </div>
+      </div>
+
+      <!-- Split layout: country selected (not comparing) -->
+      <div v-else-if="selectedIso" class="content-layout">
         <!-- Main col: brief + KPI cards -->
         <div class="main-col">
           <!-- Loading -->
@@ -776,7 +1058,7 @@ const compareRows = computed(() => {
                 <!-- Provenance link -->
                 <div v-if="ind.provenance?.query_url" style="margin-top: 8px">
                   <a
-                    :href="ind.provenance.query_url"
+                    :href="String(ind.provenance.query_url)"
                     target="_blank"
                     rel="noopener"
                     class="prov-link"
@@ -839,7 +1121,7 @@ const compareRows = computed(() => {
                 v-if="polycrisis"
                 :style="
                   'margin-left:4px;font-family:IBM Plex Mono,monospace;font-size:10px;color:' +
-                  BAND_COLOR[polycrisis.band]
+                  (BAND_COLOR[polycrisis.band] ?? '')
                 "
               >
                 {{ BAND_LABEL[polycrisis.band] }}
@@ -876,9 +1158,12 @@ const compareRows = computed(() => {
               <div v-else-if="polycrisis">
                 <div
                   class="poly-band-rail"
-                  :style="'border-left-color:' + BAND_COLOR[polycrisis.band]"
+                  :style="'border-left-color:' + (BAND_COLOR[polycrisis.band] ?? '')"
                 >
-                  <div class="poly-band-label" :style="'color:' + BAND_COLOR[polycrisis.band]">
+                  <div
+                    class="poly-band-label"
+                    :style="'color:' + (BAND_COLOR[polycrisis.band] ?? '')"
+                  >
                     {{ BAND_LABEL[polycrisis.band] }}
                   </div>
                   <div style="font-size: 11.5px; color: #5a6068; margin-top: 2px">
@@ -894,7 +1179,7 @@ const compareRows = computed(() => {
                     <span
                       :style="
                         'width:6px;height:6px;border-radius:50%;flex:none;display:inline-block;background:' +
-                        (d.stressed ? BAND_COLOR.high : '#cfe0d4')
+                        (d.stressed ? (BAND_COLOR.high ?? '#c0392b') : '#cfe0d4')
                       "
                     ></span>
                     <span style="flex: 1; font-size: 11.5px; color: #33373d">{{ d.domain }}</span>
@@ -1089,7 +1374,7 @@ const compareRows = computed(() => {
                         class="drill-bar-fill"
                         :style="
                           'width:' +
-                          (q.value != null && drilldown.quintiles[0].value != null
+                          (q.value != null && drilldown.quintiles[0]?.value != null
                             ? Math.min(
                                 100,
                                 (q.value /
@@ -1891,7 +2176,7 @@ export default {
   background: #fff !important;
   border: 1px solid #e3e1da !important;
   border-radius: 4px !important;
-  box-shadow: 0 2px 10px rgba(0,0,0,.1) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
   padding: 8px 11px !important;
 }
 .cedar-map-tooltip::before {
