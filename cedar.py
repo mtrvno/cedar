@@ -326,6 +326,8 @@ class Analyst:
         obs = {y: v for y, v in series["obs"].items() if v is not None}
         code = series["indicator_code"]
         years = sorted(obs)
+        if not years:
+            return []
         first_y, last_y = years[0], years[-1]
         first_v, last_v = obs[first_y], obs[last_y]
         better = CATALOG[code]["better"]

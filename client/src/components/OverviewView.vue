@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue'
-import { getCountries, getBrief, getPolycrisis, getBlindspots } from '@/api/cedar'
-import type { Country, BriefResponse, BriefIndicator, PolycrisisResponse, BlindspotsResponse } from '@/types/api'
+import { getCountries, getBrief, getPolycrisis, getBlindspots, getDrilldown } from '@/api/cedar'
+import type { Country, BriefResponse, BriefIndicator, PolycrisisResponse, BlindspotsResponse, DrilldownResponse } from '@/types/api'
 
 const THEMES = [
   { key: 'child-survival', label: 'Child Survival' },
@@ -37,6 +37,11 @@ const loadingPoly = ref(false)
 const loadingBlind = ref(false)
 const errorBrief = ref<string | null>(null)
 const errorPoly = ref<string | null>(null)
+const drilldown = ref<DrilldownResponse | null>(null)
+const loadingDrill = ref(false)
+const collapsedPoly = ref(false)
+const collapsedGaps = ref(false)
+const collapsedDrill = ref(false)
 
 onMounted(async () => {
   try {
@@ -107,10 +112,27 @@ async function fetchBlindspots() {
 }
 
 watch([selectedIso, selectedTheme], () => {
+  if (selectedIso.value) fetchBrief()
+})
+
+async function fetchDrilldown() {
+  if (!selectedIso.value) return
+  loadingDrill.value = true
+  drilldown.value = null
+  try {
+    drilldown.value = await getDrilldown(selectedIso.value)
+  } catch {
+    // not all countries have equity data — silent fail
+  } finally {
+    loadingDrill.value = false
+  }
+}
+
+watch(selectedIso, () => {
   if (selectedIso.value) {
-    fetchBrief()
     fetchPolycrisis()
     fetchBlindspots()
+    fetchDrilldown()
   }
 })
 
@@ -272,198 +294,243 @@ const themeLabel = computed(
         </div>
       </div>
 
-      <!-- Loading -->
-      <div v-else-if="loadingBrief" class="loading-state">
-        <div class="loading-dots">
-          <span></span><span></span><span></span>
-        </div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#9a9f97;letter-spacing:.05em;">Querying verified sources…</div>
-      </div>
+      <!-- Split layout: country selected -->
+      <div v-else class="content-layout">
 
-      <!-- Error -->
-      <div v-else-if="errorBrief" class="error-state">
-        <svg width="16" height="16" viewBox="0 0 16 16" style="flex:none;color:#c0392b;">
-          <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3" fill="none" />
-          <path d="M8 4.5v4M8 10.5v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-        </svg>
-        <span>{{ errorBrief }}</span>
-      </div>
-
-      <!-- Data -->
-      <div v-else-if="brief" class="data-grid">
-
-        <!-- Brief header -->
-        <div class="brief-header">
-          <div>
-            <div class="brief-label">{{ brief.label }}</div>
-            <div class="brief-country">{{ selectedCountryName }} · {{ themeLabel }}</div>
+        <!-- Main col: brief + KPI cards -->
+        <div class="main-col">
+          <!-- Loading -->
+          <div v-if="loadingBrief" class="loading-state">
+            <div class="loading-dots"><span></span><span></span><span></span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#9a9f97;letter-spacing:.05em;">Querying verified sources…</div>
           </div>
-          <div class="brief-meta">
-            <span>{{ availableIndicators.length }} of {{ brief.indicators.length }} indicators available</span>
+
+          <!-- Error -->
+          <div v-else-if="errorBrief" class="error-state">
+            <svg width="16" height="16" viewBox="0 0 16 16" style="flex:none;color:#c0392b;">
+              <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3" fill="none" />
+              <path d="M8 4.5v4M8 10.5v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            </svg>
+            <span>{{ errorBrief }}</span>
           </div>
-        </div>
 
-        <!-- KPI cards -->
-        <div class="kpi-grid">
-          <div
-            v-for="ind in availableIndicators"
-            :key="ind.code"
-            class="kpi-card"
-          >
-            <div class="kpi-name">{{ ind.name }}</div>
-
-            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:10px;">
+          <!-- Data -->
+          <div v-else-if="brief" class="data-grid">
+            <!-- Brief header -->
+            <div class="brief-header">
               <div>
-                <div v-if="ind.lo" class="kpi-value">
-                  {{ ind.lo.value.toLocaleString('en-US', { maximumFractionDigits: 1 }) }}
-                  <span class="kpi-unit">{{ ind.unit }}</span>
+                <div class="brief-label">{{ brief.label }}</div>
+                <div class="brief-country">{{ selectedCountryName }} · {{ themeLabel }}</div>
+              </div>
+              <div class="brief-meta">
+                <span>{{ availableIndicators.length }} of {{ brief.indicators.length }} indicators available</span>
+              </div>
+            </div>
+
+            <!-- KPI cards -->
+            <div class="kpi-grid">
+              <div v-for="ind in availableIndicators" :key="ind.code" class="kpi-card">
+                <div class="kpi-name">{{ ind.name }}</div>
+
+                <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:10px;">
+                  <div>
+                    <div v-if="ind.lo" class="kpi-value">
+                      {{ ind.lo.value.toLocaleString('en-US', { maximumFractionDigits: 1 }) }}
+                      <span class="kpi-unit">{{ ind.unit }}</span>
+                    </div>
+                    <div v-if="ind.lo" class="kpi-year">{{ ind.lo.year }}</div>
+                  </div>
+                  <svg v-if="ind.sp" viewBox="0 0 100 26" style="width:100px;height:26px;display:block;flex:none;">
+                    <path :d="ind.sp.area" style="fill:#eef2f5;stroke:none;" />
+                    <path :d="ind.sp.line" style="fill:none;stroke:#2c4a63;stroke-width:1.4px;stroke-linejoin:round;stroke-linecap:round;" />
+                    <circle :cx="ind.sp.dotX" :cy="ind.sp.dotY" r="2" style="fill:#2c4a63;" />
+                  </svg>
                 </div>
-                <div v-if="ind.lo" class="kpi-year">{{ ind.lo.year }}</div>
+
+                <!-- Claims row -->
+                <div style="margin-top:11px;padding-top:10px;border-top:1px solid #f0ece4;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+                  <span :style="tierStyle(ind.verification?.confidence_tier) + 'display:inline-block;padding:2px 6px;border-radius:2px;font-family:IBM Plex Mono,monospace;font-size:9.5px;letter-spacing:.03em;'">
+                    {{ tierLabel(ind.verification?.confidence_tier) }}
+                  </span>
+                  <template v-if="ind.claims">
+                    <span
+                      v-for="cl in ind.claims.slice(0, 2)"
+                      :key="cl.id"
+                      class="verdict-chip"
+                      :style="'color:' + verdictIcon(cl.verdict).color"
+                    >
+                      <span style="font-size:10px;">{{ verdictIcon(cl.verdict).symbol }}</span>
+                      {{ cl.verdict === 'improving' ? 'Improving' : cl.verdict === 'off-track' ? 'Off-track' : cl.verdict === 'on-track' ? 'On-track' : cl.verdict }}
+                    </span>
+                  </template>
+                </div>
+
+                <!-- Headline claim -->
+                <div v-if="ind.claims && ind.claims[0]" class="kpi-claim">{{ ind.claims[0].text }}</div>
+
+                <!-- Provenance link -->
+                <div v-if="ind.provenance?.query_url" style="margin-top:8px;">
+                  <a :href="ind.provenance.query_url" target="_blank" rel="noopener" class="prov-link">Source ↗</a>
+                </div>
               </div>
 
-              <svg v-if="ind.sp" viewBox="0 0 100 26" style="width:100px;height:26px;display:block;flex:none;">
-                <path :d="ind.sp.area" style="fill:#eef2f5;stroke:none;" />
-                <path :d="ind.sp.line" style="fill:none;stroke:#2c4a63;stroke-width:1.4px;stroke-linejoin:round;stroke-linecap:round;" />
-                <circle :cx="ind.sp.dotX" :cy="ind.sp.dotY" r="2" style="fill:#2c4a63;" />
+              <!-- Unavailable -->
+              <div v-for="ind in unavailableIndicators" :key="ind.code" class="kpi-card kpi-card--empty">
+                <div class="kpi-name">{{ ind.name }}</div>
+                <div style="margin-top:8px;font-size:11.5px;color:#a7aaa2;display:flex;align-items:center;gap:6px;">
+                  <svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" stroke="#cfccc1" stroke-width="1" fill="none"/><path d="M5 3v2.5M5 6.5v.5" stroke="#cfccc1" stroke-width="1" stroke-linecap="round"/></svg>
+                  No data available
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right sidebar: country-level, persists across theme changes -->
+        <aside class="country-rail">
+          <div class="rail-country-name">{{ selectedCountryName }}</div>
+
+          <!-- Polycrisis -->
+          <div class="rail-section">
+            <button class="rail-section-head" @click="collapsedPoly = !collapsedPoly">
+              <svg width="13" height="13" viewBox="0 0 14 14" style="flex:none;">
+                <path d="M7 1l1.8 3.6L13 5.6l-3 2.9.7 4.1L7 10.5l-3.7 2.1.7-4.1L1 5.6l4.2-.6L7 1z" stroke="#2c4a63" stroke-width="1.1" fill="none" stroke-linejoin="round" />
               </svg>
+              <span class="section-label">Polycrisis Risk</span>
+              <span v-if="polycrisis" :style="'margin-left:4px;font-family:IBM Plex Mono,monospace;font-size:10px;color:' + BAND_COLOR[polycrisis.band]">
+                {{ BAND_LABEL[polycrisis.band] }}
+              </span>
+              <svg class="rail-chevron" :class="{ 'rail-chevron--open': !collapsedPoly }" width="10" height="10" viewBox="0 0 10 10">
+                <path d="M2 3.5l3 3 3-3" stroke="#9a9f97" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+
+            <div v-show="!collapsedPoly">
+              <div v-if="loadingPoly" style="height:48px;display:flex;align-items:center;justify-content:center;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#bfc2b9;">Loading…</span>
+              </div>
+
+              <div v-else-if="polycrisis">
+                <div class="poly-band-rail" :style="'border-left-color:' + BAND_COLOR[polycrisis.band]">
+                  <div class="poly-band-label" :style="'color:' + BAND_COLOR[polycrisis.band]">{{ BAND_LABEL[polycrisis.band] }}</div>
+                  <div style="font-size:11.5px;color:#5a6068;margin-top:2px;">
+                    {{ polycrisis.stressed }}/{{ polycrisis.scored }} domains stressed
+                  </div>
+                </div>
+                <div class="poly-domain-list">
+                  <div
+                    v-for="d in polycrisis.domains.filter(x => x.available)"
+                    :key="d.indicator"
+                    class="rail-domain"
+                  >
+                    <span :style="'width:6px;height:6px;border-radius:50%;flex:none;display:inline-block;background:' + (d.stressed ? BAND_COLOR.high : '#cfe0d4')"></span>
+                    <span style="flex:1;font-size:11.5px;color:#33373d;">{{ d.domain }}</span>
+                    <span v-if="d.value != null" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#9a9f97;">
+                      {{ d.value.toLocaleString('en-US', { maximumFractionDigits: 1 }) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
 
-            <!-- Claims row -->
-            <div style="margin-top:11px;padding-top:10px;border-top:1px solid #f0ece4;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
-              <span
-                :style="tierStyle(ind.verification?.confidence_tier) + 'display:inline-block;padding:2px 6px;border-radius:2px;font-family:IBM Plex Mono,monospace;font-size:9.5px;letter-spacing:.03em;'"
-              >{{ tierLabel(ind.verification?.confidence_tier) }}</span>
+          <!-- Data gaps -->
+          <div class="rail-section">
+            <button class="rail-section-head" @click="collapsedGaps = !collapsedGaps">
+              <svg width="13" height="13" viewBox="0 0 14 14" style="flex:none;">
+                <circle cx="7" cy="7" r="5.5" stroke="#2c4a63" stroke-width="1.1" fill="none"/>
+                <path d="M7 4v3.5M7 9v.5" stroke="#2c4a63" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+              <span class="section-label">Data Gaps</span>
+              <span v-if="blindspots" style="margin-left:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#9a9f97;">
+                {{ blindspots.gaps }}/{{ blindspots.total }}
+              </span>
+              <svg class="rail-chevron" :class="{ 'rail-chevron--open': !collapsedGaps }" width="10" height="10" viewBox="0 0 10 10">
+                <path d="M2 3.5l3 3 3-3" stroke="#9a9f97" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
 
-              <template v-if="ind.claims">
-                <span
-                  v-for="cl in ind.claims.slice(0, 2)"
-                  :key="cl.id"
-                  class="verdict-chip"
-                  :style="'color:' + verdictIcon(cl.verdict).color"
+            <div v-show="!collapsedGaps">
+              <div v-if="loadingBlind" style="height:40px;display:flex;align-items:center;justify-content:center;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#bfc2b9;">Loading…</span>
+              </div>
+
+              <div v-else-if="blindspots" class="gap-list">
+                <div
+                  v-for="g in blindspots.indicators"
+                  :key="g.indicator"
+                  class="rail-gap"
                 >
-                  <span style="font-size:10px;">{{ verdictIcon(cl.verdict).symbol }}</span>
-                  {{ cl.verdict === 'improving' ? 'Improving' : cl.verdict === 'off-track' ? 'Off-track' : cl.verdict === 'on-track' ? 'On-track' : cl.verdict }}
-                </span>
-              </template>
-            </div>
-
-            <!-- Headline claim -->
-            <div v-if="ind.claims && ind.claims[0]" class="kpi-claim">
-              {{ ind.claims[0].text }}
-            </div>
-
-            <!-- Provenance link -->
-            <div v-if="ind.provenance?.query_url" style="margin-top:8px;">
-              <a :href="ind.provenance.query_url" target="_blank" rel="noopener" class="prov-link">
-                Source ↗
-              </a>
-            </div>
-          </div>
-
-          <!-- Unavailable indicators -->
-          <div
-            v-for="ind in unavailableIndicators"
-            :key="ind.code"
-            class="kpi-card kpi-card--empty"
-          >
-            <div class="kpi-name">{{ ind.name }}</div>
-            <div style="margin-top:8px;font-size:11.5px;color:#a7aaa2;display:flex;align-items:center;gap:6px;">
-              <svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" stroke="#cfccc1" stroke-width="1" fill="none"/><path d="M5 3v2.5M5 6.5v.5" stroke="#cfccc1" stroke-width="1" stroke-linecap="round"/></svg>
-              No data available
-            </div>
-          </div>
-        </div>
-
-        <!-- Polycrisis band -->
-        <div v-if="polycrisis" class="poly-section">
-          <div class="section-head">
-            <svg width="13" height="13" viewBox="0 0 14 14" style="flex:none;">
-              <path d="M7 1l1.8 3.6L13 5.6l-3 2.9.7 4.1L7 10.5l-3.7 2.1.7-4.1L1 5.6l4.2-.6L7 1z" stroke="#2c4a63" stroke-width="1.1" fill="none" stroke-linejoin="round" />
-            </svg>
-            <span class="section-label">Polycrisis Risk</span>
-          </div>
-
-          <div class="poly-card">
-            <div class="poly-band" :style="'border-left-color:' + BAND_COLOR[polycrisis.band]">
-              <div>
-                <div class="poly-band-label" :style="'color:' + BAND_COLOR[polycrisis.band]">
-                  {{ BAND_LABEL[polycrisis.band] }}
-                </div>
-                <div style="font-size:12.5px;color:#5a6068;margin-top:3px;">
-                  {{ polycrisis.stressed }} of {{ polycrisis.scored }} scored domains under stress
-                </div>
-              </div>
-              <div class="poly-score">
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:500;color:#1b1e23;line-height:1;">{{ polycrisis.stressed }}</span>
-                <span style="font-size:11px;color:#9a9f97;">/ {{ polycrisis.scored }}</span>
-              </div>
-            </div>
-
-            <div class="poly-domains">
-              <div
-                v-for="d in polycrisis.domains.filter(x => x.available)"
-                :key="d.indicator"
-                class="poly-domain"
-                :class="{ 'poly-domain--stressed': d.stressed }"
-              >
-                <div style="display:flex;align-items:center;gap:7px;">
-                  <span
-                    :style="'width:7px;height:7px;border-radius:50%;flex:none;background:' + (d.stressed ? BAND_COLOR.high : '#cfe0d4')"
-                  ></span>
-                  <span style="font-size:12px;font-weight:500;color:#33373d;">{{ d.domain }}</span>
-                </div>
-                <div v-if="d.value != null" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#5a6068;margin-top:3px;padding-left:14px;">
-                  {{ d.value.toLocaleString('en-US', { maximumFractionDigits: 1 }) }}
-                  <span style="color:#a7aaa2;margin-left:2px;">{{ d.unit }}</span>
-                  <span style="color:#bfc2b9;margin-left:5px;">{{ d.year }}</span>
+                  <span class="rail-gap-dot" :class="'rail-gap-dot--' + g.status"></span>
+                  <span style="flex:1;font-size:11.5px;color:#33373d;line-height:1.3;">{{ g.name }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#bfc2b9;flex:none;">
+                    {{ g.latest ?? '—' }}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+          <!-- Equity drilldown -->
+          <div v-if="drilldown || loadingDrill" class="rail-section">
+            <button class="rail-section-head" @click="collapsedDrill = !collapsedDrill">
+              <svg width="13" height="13" viewBox="0 0 14 14" style="flex:none;">
+                <rect x="1" y="8" width="3" height="5" rx="0.5" stroke="#2c4a63" stroke-width="1.1" fill="none"/>
+                <rect x="5.5" y="5" width="3" height="8" rx="0.5" stroke="#2c4a63" stroke-width="1.1" fill="none"/>
+                <rect x="10" y="2" width="3" height="11" rx="0.5" stroke="#2c4a63" stroke-width="1.1" fill="none"/>
+              </svg>
+              <span class="section-label">Equity Drilldown</span>
+              <span v-if="drilldown" style="margin-left:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#9a9f97;">
+                {{ drilldown.year }}
+              </span>
+              <svg class="rail-chevron" :class="{ 'rail-chevron--open': !collapsedDrill }" width="10" height="10" viewBox="0 0 10 10">
+                <path d="M2 3.5l3 3 3-3" stroke="#9a9f97" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
 
-        <!-- Polycrisis loading -->
-        <div v-else-if="loadingPoly" class="poly-section">
-          <div class="section-head">
-            <span class="section-label">Polycrisis Risk</span>
-          </div>
-          <div style="height:60px;display:flex;align-items:center;justify-content:center;">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#bfc2b9;">Loading…</span>
-          </div>
-        </div>
+            <div v-show="!collapsedDrill">
+              <div v-if="loadingDrill" style="height:48px;display:flex;align-items:center;justify-content:center;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#bfc2b9;">Loading…</span>
+              </div>
 
-        <!-- Data gaps / Blindspot radar -->
-        <div v-if="blindspots || loadingBlind" class="poly-section">
-          <div class="section-head">
-            <svg width="13" height="13" viewBox="0 0 14 14" style="flex:none;">
-              <circle cx="7" cy="7" r="5.5" stroke="#2c4a63" stroke-width="1.1" fill="none"/>
-              <path d="M7 4v3.5M7 9v.5" stroke="#2c4a63" stroke-width="1.3" stroke-linecap="round"/>
-            </svg>
-            <span class="section-label">Data Gaps</span>
-            <span v-if="blindspots" style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#9a9f97;">
-              {{ blindspots.gaps }} gap{{ blindspots.gaps !== 1 ? 's' : '' }} of {{ blindspots.total }}
-            </span>
-          </div>
+              <div v-else-if="drilldown">
+                <!-- Gap summary -->
+                <div v-if="drilldown.gap_points != null" class="drill-summary">
+                  <span style="font-size:11.5px;color:#5a6068;">Poorest vs richest gap</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#c0392b;">
+                    {{ drilldown.gap_points > 0 ? '+' : '' }}{{ drilldown.gap_points.toFixed(1) }} pp
+                  </span>
+                </div>
 
-          <div v-if="loadingBlind" style="height:40px;display:flex;align-items:center;justify-content:center;">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#bfc2b9;">Loading…</span>
-          </div>
+                <!-- Quintile bars -->
+                <div class="drill-bars">
+                  <div
+                    v-for="(q, i) in drilldown.quintiles"
+                    :key="q.code"
+                    class="drill-bar-row"
+                  >
+                    <div class="drill-bar-label">Q{{ i + 1 }}</div>
+                    <div class="drill-bar-track">
+                      <div
+                        class="drill-bar-fill"
+                        :style="'width:' + (q.value != null && drilldown.quintiles[0].value != null ? Math.min(100, (q.value / Math.max(...drilldown.quintiles.map(x => x.value ?? 0))) * 100) : 0) + '%;background:' + (i === 0 ? '#c0392b' : i === 4 ? '#2f6b4f' : '#2c4a63')"
+                      ></div>
+                    </div>
+                    <div class="drill-bar-val">
+                      {{ q.value != null ? q.value.toFixed(1) : '—' }}
+                    </div>
+                  </div>
+                </div>
 
-          <div v-else-if="blindspots" class="gap-grid">
-            <div
-              v-for="g in blindspots.indicators"
-              :key="g.indicator"
-              class="gap-card"
-              :class="'gap-card--' + g.status"
-            >
-              <div class="gap-name">{{ g.name }}</div>
-              <div class="gap-status" :class="'gap-status--' + g.status">
-                {{ g.status === 'recent' ? 'Current' : g.status === 'stale' ? 'Stale' : 'No data' }}
-                <span v-if="g.latest" style="color:#bfc2b9;margin-left:4px;">{{ g.latest }}</span>
+                <!-- National reference -->
+                <div v-if="drilldown.national != null" class="drill-national">
+                  National avg: <strong>{{ drilldown.national.toFixed(1) }}</strong>
+                </div>
+
+                <div style="font-size:10px;color:#a7aaa2;margin-top:6px;line-height:1.4;">Stunting rate (%) by wealth quintile</div>
               </div>
             </div>
           </div>
-        </div>
+        </aside>
 
       </div>
     </div>
@@ -625,8 +692,168 @@ export default {
 /* Overview body */
 .overview-body {
   flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Two-column layout when country selected */
+.content-layout {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Main column: scrollable brief content */
+.main-col {
+  flex: 1;
+  min-width: 0;
   overflow-y: auto;
   padding: 24px 24px 48px;
+}
+
+/* Right sidebar: country-level data, fixed width */
+.country-rail {
+  width: 268px;
+  flex: none;
+  border-left: 1px solid #e3e1da;
+  background: #faf9f6;
+  overflow-y: auto;
+  padding: 16px 14px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.rail-country-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1b1e23;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e3e1da;
+}
+
+.rail-section {
+  margin-bottom: 20px;
+}
+
+.poly-band-rail {
+  border-left: 3px solid transparent;
+  padding: 9px 10px;
+  background: #fff;
+  border-radius: 0 4px 4px 0;
+  margin-bottom: 10px;
+  border: 1px solid #e3e1da;
+  border-left-width: 3px;
+}
+
+.poly-domain-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rail-domain {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 6px;
+  border-radius: 3px;
+}
+.rail-domain:hover {
+  background: #f0ece4;
+}
+
+.gap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rail-gap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 6px;
+  border-radius: 3px;
+}
+.rail-gap:hover {
+  background: #f0ece4;
+}
+
+.rail-gap-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+}
+.rail-gap-dot--recent  { background: #2f6b4f; }
+.rail-gap-dot--stale   { background: #9a6a16; }
+.rail-gap-dot--missing { background: #c0392b; }
+
+/* Equity drilldown */
+.drill-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 8px;
+  background: #fff;
+  border: 1px solid #e3e1da;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.drill-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.drill-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.drill-bar-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: #9a9f97;
+  width: 16px;
+  flex: none;
+}
+
+.drill-bar-track {
+  flex: 1;
+  height: 8px;
+  background: #f0ece4;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.drill-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.drill-bar-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: #5a6068;
+  width: 32px;
+  text-align: right;
+  flex: none;
+}
+
+.drill-national {
+  font-size: 11px;
+  color: #6a6f68;
+  padding: 5px 0;
+  border-top: 1px solid #f0ece4;
 }
 
 /* Empty / loading / error */
@@ -793,11 +1020,6 @@ export default {
   padding-left: 9px;
 }
 
-/* Polycrisis section */
-.poly-section {
-  margin-top: 8px;
-}
-
 .section-head {
   display: flex;
   align-items: center;
@@ -813,47 +1035,37 @@ export default {
   font-weight: 500;
 }
 
-.poly-card {
-  background: #fff;
-  border: 1px solid #e3e1da;
-  border-radius: 5px;
-  overflow: hidden;
-}
-
-.poly-band {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 18px;
-  border-bottom: 1px solid #f0ece4;
-  border-left: 4px solid transparent;
-}
-
 .poly-band-label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.01em;
 }
 
-.poly-score {
+.rail-section-head {
   display: flex;
-  align-items: baseline;
-  gap: 3px;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 6px 4px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  text-align: left;
+}
+.rail-section-head:hover {
+  background: #ece9e1;
 }
 
-.poly-domains {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1px;
-  background: #f0ece4;
+.rail-chevron {
+  margin-left: auto;
+  flex: none;
+  transition: transform 0.18s ease;
+  transform: rotate(-90deg);
 }
-
-.poly-domain {
-  background: #faf9f6;
-  padding: 10px 14px;
-}
-.poly-domain--stressed {
-  background: #fff8f7;
+.rail-chevron--open {
+  transform: rotate(0deg);
 }
 
 .prov-link {
@@ -868,40 +1080,4 @@ export default {
   text-decoration: underline;
 }
 
-/* Blindspots / data gaps */
-.gap-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.gap-card {
-  background: #fff;
-  border: 1px solid #e3e1da;
-  border-left-width: 3px;
-  border-radius: 4px;
-  padding: 9px 12px;
-}
-.gap-card--recent { border-left-color: #2f6b4f; }
-.gap-card--stale  { border-left-color: #9a6a16; }
-.gap-card--missing { border-left-color: #c0392b; }
-
-.gap-name {
-  font-size: 12px;
-  font-weight: 500;
-  color: #33373d;
-  line-height: 1.3;
-}
-
-.gap-status {
-  margin-top: 5px;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-.gap-status--recent  { color: #2f6b4f; }
-.gap-status--stale   { color: #9a6a16; }
-.gap-status--missing { color: #c0392b; }
 </style>

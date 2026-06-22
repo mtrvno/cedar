@@ -130,6 +130,25 @@ export interface ChatResponse {
   model: string
 }
 
+export interface DrilldownQuintile {
+  code: string
+  quintile: string
+  value: number | null
+  query_url: string | null
+}
+
+export interface DrilldownResponse {
+  country: string
+  dimension: string
+  indicator: string
+  year: number
+  national: number | null
+  quintiles: DrilldownQuintile[]
+  ratio_poorest_to_richest: number | null
+  gap_points: number | null
+  cost: Record<string, unknown>
+}
+
 export interface ProjectResponse {
   country: string
   indicator: string

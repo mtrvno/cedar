@@ -4,6 +4,7 @@ import type {
   BriefResponse,
   PolycrisisResponse,
   BlindspotsResponse,
+  DrilldownResponse,
   ChatRequest,
   ChatResponse,
   ProjectResponse,
@@ -46,6 +47,10 @@ export function getPolycrisis(country: string): Promise<PolycrisisResponse> {
 
 export function getBlindspots(country: string, cutoff = 2022): Promise<BlindspotsResponse> {
   return req(`/blindspots/${country}?cutoff=${cutoff}`)
+}
+
+export function getDrilldown(country: string): Promise<DrilldownResponse> {
+  return req(`/drilldown/${country}`)
 }
 
 export function getProject(country: string, code: string): Promise<ProjectResponse> {
