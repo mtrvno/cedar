@@ -278,7 +278,8 @@ function spark(values: number[]) {
   const w = 124,
     h = 30,
     p = 3
-  const vals = values && values.length ? values : [0, 0]
+  const vals = (values && values.length ? values : []).filter((v) => v != null && isFinite(v))
+  if (vals.length < 2) return { line: '', area: '', dotX: '0', dotY: '0' }
   const n = vals.length
   let mn = Math.min(...vals),
     mx = Math.max(...vals)
@@ -566,9 +567,9 @@ async function ask(text: string) {
         ? brief.indicators
             .filter((i) => i.available && i.obs && Object.keys(i.obs).length > 0)
             .map((i) => {
-              const entries = Object.entries(i.obs as Record<string, number>).sort(
-                ([a], [b]) => Number(a) - Number(b),
-              )
+              const entries = Object.entries(i.obs as Record<string, number | null>)
+                .sort(([a], [b]) => Number(a) - Number(b))
+                .filter(([, v]) => v != null) as [string, number][]
               const values = entries.map(([, v]) => v)
               const [latestYear, latestVal] = entries[entries.length - 1] ?? ['', 0]
               const tier = i.verification?.confidence_tier ?? 'Low'
