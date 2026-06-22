@@ -3,7 +3,7 @@ import { onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const goApp = () => router.push('/app')
+const goApp = () => router.push('/loading')
 
 let observer: IntersectionObserver | null = null
 
