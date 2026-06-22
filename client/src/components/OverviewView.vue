@@ -14,12 +14,12 @@ import { useEvidenceLedger } from '@/composables/useEvidenceLedger'
 const { setLedger } = useEvidenceLedger()
 
 const THEMES = [
-  { key: 'child-survival', label: 'Child Survival' },
-  { key: 'economy-poverty', label: 'Economy & Poverty' },
-  { key: 'education', label: 'Education' },
-  { key: 'health-system', label: 'Health System' },
-  { key: 'wash', label: 'Water & Sanitation' },
-  { key: 'energy-climate', label: 'Energy & Climate' },
+  { key: 'child-survival', label: 'Child Survival', color: '#E2B341' },
+  { key: 'economy-poverty', label: 'Economy & Poverty', color: '#9E1B43' },
+  { key: 'education', label: 'Education', color: '#C22033' },
+  { key: 'health-system', label: 'Health System', color: '#4D9E45' },
+  { key: 'wash', label: 'Water & Sanitation', color: '#29BCE0' },
+  { key: 'energy-climate', label: 'Energy & Climate', color: '#f7c82d' },
 ]
 
 const BAND_LABEL: Record<string, string> = {
@@ -489,6 +489,7 @@ const compareRows = computed(() => {
           :key="th.key"
           class="theme-tab"
           :class="{ 'theme-tab--active': th.key === selectedTheme }"
+          :style="th.key === selectedTheme ? { color: th.color, borderColor: th.color } : null"
           @click="selectedTheme = th.key"
         >
           {{ th.label }}
