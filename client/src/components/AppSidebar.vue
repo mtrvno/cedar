@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useCedar } from '@/composables/useCedar'
 import { useMode } from '@/composables/useMode'
 import { useEvidenceLedger } from '@/composables/useEvidenceLedger'
 
+const router = useRouter()
 const { state, historyGroups, tokenInfo, sources, hasData, newQuery } = useCedar()
 const { isCopilot, isEvidence, hasKey, state: openKeyModal, clearApiKey } = useMode()
 const { countryName, theme, indicators, cost, retrievedAt } = useEvidenceLedger()
@@ -41,7 +43,7 @@ const apiCalls = computed(() => {
   <!-- Sidebar open -->
   <aside v-if="state.sidebarOpen" class="sidebar sidebar--open">
     <div class="sidebar__header">
-      <div class="cedar-logo">
+      <div class="cedar-logo" style="cursor: pointer" @click="router.push('/')">
         <div class="cedar-logo__dot"></div>
       </div>
       <div class="sidebar__title">CEDAR</div>
@@ -430,7 +432,7 @@ const apiCalls = computed(() => {
 
   <!-- Sidebar collapsed -->
   <aside v-else class="sidebar sidebar--closed">
-    <div class="cedar-logo" style="margin-top: 17px">
+    <div class="cedar-logo" style="margin-top: 17px; cursor: pointer" @click="router.push('/')">
       <div class="cedar-logo__dot"></div>
     </div>
     <button @click="newQuery" class="icon-btn" style="margin-top: 18px">
