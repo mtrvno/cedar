@@ -4,14 +4,31 @@ __pycache__/
 .venv/
 venv/
 .ipynb_checkpoints/
+*.egg-info/
+
+# Environment / secrets
+.env
+.env.local
+*.env
+
+# Generated output (cedar.py writes here)
+output/
 
 # OS / editor
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+.cursorrules
 
 # Build / conversion scratch
 *.pdf
 slide-*.jpg
 *.log
+
+# Client
+client/node_modules/
+client/dist/
+client/.vite/
+client/.env.local
+client/.env.*.local

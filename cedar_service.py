@@ -155,9 +155,11 @@ def climate_risk(offline=False, levels=("Green", "Orange")):
         cc = e.get("ccri")
         if not cc or e.get("alertlevel") not in levels or cc["ccri"] <= HIGH_CCRI:
             continue
+        coords = e.get("coordinates")  # [lon, lat] GeoJSON order
         item = {"id": e["id"], "type_name": e["type_name"], "alertlevel": e["alertlevel"],
                 "country": e["country"], "iso3": e["iso3"], "severity": e.get("severity"),
                 "severity_text": e.get("severity_text"), "from": e.get("from"), "url": e.get("url"),
+                "coordinates": coords, "lat": coords[1] if coords else None, "lon": coords[0] if coords else None,
                 "ccri": cc["ccri"], "exposure": cc["exposure"], "vulnerability": cc["vulnerability"],
                 "tier": cc["tier"],
                 "why": ("GDACS graded this %s (low/medium priority), but %s is an 'extremely high' child-risk "
