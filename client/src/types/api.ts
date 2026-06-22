@@ -160,6 +160,48 @@ export interface DrilldownResponse {
   cost: Record<string, unknown>
 }
 
+export interface ClimateRiskAlert {
+  id: number
+  type_name: string
+  alertlevel: string
+  country: string
+  iso3: string
+  severity: number | null
+  lat: number | null
+  lon: number | null
+  ccri: number
+  exposure: number
+  vulnerability: number
+  tier: string
+  why: string
+  url: string | null
+}
+
+export interface ClimateRiskFocus {
+  iso3: string
+  country: string
+  ccri: number
+  exposure: number
+  vulnerability: number
+  tier: string
+  n_alerts: number
+  alert_levels: string[]
+  hazards: string[]
+  max_severity: number | null
+}
+
+export interface ClimateRiskResponse {
+  generated_at: string
+  headline: string
+  global_scope: {
+    total_alerts: number
+    flagged_alerts: number
+    focus_countries: number
+  }
+  underestimated_alerts: ClimateRiskAlert[]
+  where_to_focus: ClimateRiskFocus[]
+}
+
 export interface ProjectResponse {
   country: string
   indicator: string

@@ -8,6 +8,7 @@ import type {
   ChatRequest,
   ChatResponse,
   ProjectResponse,
+  ClimateRiskResponse,
 } from '@/types/api'
 
 const BASE = '/api'
@@ -55,6 +56,10 @@ export function getDrilldown(country: string): Promise<DrilldownResponse> {
 
 export function getProject(country: string, code: string): Promise<ProjectResponse> {
   return req(`/project/${country}/${code}`)
+}
+
+export function getClimateRisk(levels = 'Green,Orange'): Promise<ClimateRiskResponse> {
+  return req(`/climate-risk?levels=${encodeURIComponent(levels)}`)
 }
 
 export function postCopilotChat(payload: ChatRequest, apiKey: string): Promise<ChatResponse> {

@@ -2,48 +2,70 @@
 import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { getCountries, getBrief, getPolycrisis, getBlindspots, getDrilldown } from '@/api/cedar'
+import { getCountries, getBrief, getPolycrisis, getBlindspots, getDrilldown, getClimateRisk } from '@/api/cedar'
 import type { Country, BriefResponse, BriefIndicator, PolycrisisResponse, BlindspotsResponse, DrilldownResponse } from '@/types/api'
 import { useEvidenceLedger } from '@/composables/useEvidenceLedger'
 
 const { setLedger } = useEvidenceLedger()
 
-// ponytail: mock data — will be replaced by /api/hazard-points when ready
 interface HazardPoint {
   iso3: string; name: string; lat: number; lon: number; ccri: number; type: 'high' | 'medium' | 'low'
+  alertlevel?: string; type_name?: string
 }
-const HAZARD_POINTS: HazardPoint[] = [
-  { iso3: 'AFG', name: 'Afghanistan',   lat: 33.9,  lon: 67.7,  ccri: 6.8, type: 'high'   },
-  { iso3: 'SOM', name: 'Somalia',        lat: 5.2,   lon: 46.2,  ccri: 7.2, type: 'high'   },
-  { iso3: 'TCD', name: 'Chad',           lat: 15.5,  lon: 18.7,  ccri: 6.3, type: 'high'   },
-  { iso3: 'NER', name: 'Niger',          lat: 17.6,  lon: 8.1,   ccri: 6.1, type: 'high'   },
-  { iso3: 'MLI', name: 'Mali',           lat: 17.6,  lon: -4.0,  ccri: 5.8, type: 'high'   },
-  { iso3: 'BFA', name: 'Burkina Faso',   lat: 12.4,  lon: -1.6,  ccri: 5.6, type: 'high'   },
-  { iso3: 'SDN', name: 'Sudan',          lat: 12.9,  lon: 30.2,  ccri: 5.9, type: 'high'   },
-  { iso3: 'HTI', name: 'Haiti',          lat: 18.9,  lon: -72.3, ccri: 5.4, type: 'high'   },
-  { iso3: 'NGA', name: 'Nigeria',        lat: 9.1,   lon: 8.7,   ccri: 5.2, type: 'high'   },
-  { iso3: 'MOZ', name: 'Mozambique',     lat: -17.3, lon: 35.5,  ccri: 4.9, type: 'high'   },
-  { iso3: 'KEN', name: 'Kenya',          lat: -0.02, lon: 37.9,  ccri: 4.8, type: 'high'   },
-  { iso3: 'MWI', name: 'Malawi',         lat: -13.3, lon: 34.3,  ccri: 4.7, type: 'high'   },
-  { iso3: 'ETH', name: 'Ethiopia',       lat: 9.1,   lon: 40.5,  ccri: 5.5, type: 'high'   },
-  { iso3: 'PAK', name: 'Pakistan',       lat: 30.4,  lon: 69.3,  ccri: 4.3, type: 'high'   },
-  { iso3: 'CMR', name: 'Cameroon',       lat: 3.8,   lon: 11.5,  ccri: 4.2, type: 'medium' },
-  { iso3: 'BGD', name: 'Bangladesh',     lat: 23.7,  lon: 90.4,  ccri: 4.1, type: 'medium' },
-  { iso3: 'ZMB', name: 'Zambia',         lat: -13.1, lon: 27.8,  ccri: 4.1, type: 'medium' },
-  { iso3: 'UGA', name: 'Uganda',         lat: 1.4,   lon: 32.3,  ccri: 4.0, type: 'medium' },
-  { iso3: 'MMR', name: 'Myanmar',        lat: 21.9,  lon: 95.9,  ccri: 3.9, type: 'medium' },
-  { iso3: 'IND', name: 'India',          lat: 20.6,  lon: 79.0,  ccri: 3.8, type: 'medium' },
-  { iso3: 'TZA', name: 'Tanzania',       lat: -6.4,  lon: 35.0,  ccri: 3.7, type: 'medium' },
-  { iso3: 'SEN', name: 'Senegal',        lat: 14.5,  lon: -14.5, ccri: 3.5, type: 'medium' },
-  { iso3: 'RWA', name: 'Rwanda',         lat: -1.9,  lon: 29.9,  ccri: 3.6, type: 'medium' },
-  { iso3: 'GHA', name: 'Ghana',          lat: 7.9,   lon: -1.0,  ccri: 3.2, type: 'medium' },
-  { iso3: 'KHM', name: 'Cambodia',       lat: 12.6,  lon: 104.9, ccri: 3.0, type: 'low'    },
-]
+const hazardPoints = ref<HazardPoint[]>([])
 
 const TYPE_COLOR: Record<string, string> = {
   high: '#c0392b',
   medium: '#e67e22',
   low: '#2f6b4f',
+}
+
+function ccriColor(ccri: number): string {
+  if (ccri >= 7) return '#c0392b'
+  if (ccri >= 4) return '#e6a817'
+  return '#2f6b4f'
+}
+
+// SVG inner paths (24×24 viewBox, white stroke on transparent)
+const HAZARD_PATHS: Record<string, string> = {
+  Earthquake:
+    '<polyline points="2,12 6,6 9,16 12,4 15,14 18,8 22,12" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  Flood:
+    '<path d="M3 10 Q6 6 9 10 Q12 14 15 10 Q18 6 21 10" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+    '<path d="M3 16 Q6 12 9 16 Q12 20 15 16 Q18 12 21 16" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>',
+  'Tropical cyclone':
+    '<path d="M12 12 m-7 0 a7 7 0 1 0 14 0" stroke="white" stroke-width="2" fill="none"/>' +
+    '<path d="M12 5 Q17 7 19 12 Q17 17 12 19 Q7 17 5 12 Q7 7 12 5" stroke="white" stroke-width="1.5" fill="none"/>' +
+    '<circle cx="12" cy="12" r="2" fill="white"/>',
+  Drought:
+    '<circle cx="12" cy="12" r="4" stroke="white" stroke-width="2" fill="none"/>' +
+    '<line x1="12" y1="3" x2="12" y2="6" stroke="white" stroke-width="2" stroke-linecap="round"/>' +
+    '<line x1="12" y1="18" x2="12" y2="21" stroke="white" stroke-width="2" stroke-linecap="round"/>' +
+    '<line x1="3" y1="12" x2="6" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/>' +
+    '<line x1="18" y1="12" x2="21" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/>' +
+    '<line x1="5.6" y1="5.6" x2="7.8" y2="7.8" stroke="white" stroke-width="2" stroke-linecap="round"/>' +
+    '<line x1="16.2" y1="16.2" x2="18.4" y2="18.4" stroke="white" stroke-width="2" stroke-linecap="round"/>',
+  Volcano:
+    '<path d="M12 3 L20 21 H4 Z" stroke="white" stroke-width="2" fill="none" stroke-linejoin="round"/>' +
+    '<path d="M9 12 L12 8 L15 12" stroke="white" stroke-width="1.5" fill="none" stroke-linejoin="round"/>',
+  Wildfire:
+    '<path d="M12 21 C8 21 5 18 5 14 C5 10 8 8 10 6 C10 9 12 10 12 10 C12 10 14 7 13 4 C16 6 19 10 19 14 C19 18 16 21 12 21 Z" stroke="white" stroke-width="2" fill="none"/>',
+}
+const HAZARD_PATHS_DEFAULT =
+  '<path d="M12 3 L21 20 H3 Z" stroke="white" stroke-width="2" fill="none" stroke-linejoin="round"/>' +
+  '<line x1="12" y1="10" x2="12" y2="14" stroke="white" stroke-width="2" stroke-linecap="round"/>' +
+  '<circle cx="12" cy="17.5" r="1" fill="white"/>'
+
+function hazardDivIcon(typeName: string, fillColor: string, strokeColor: string): L.DivIcon {
+  const paths = HAZARD_PATHS[typeName] ?? HAZARD_PATHS_DEFAULT
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">${paths}</svg>`
+  return L.divIcon({
+    html: `<div style="width:32px;height:32px;border-radius:50%;background:${fillColor};border:3px solid ${strokeColor};box-shadow:0 2px 6px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;">${svg}</div>`,
+    className: '',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    tooltipAnchor: [0, -18],
+  })
 }
 
 const mapEl = ref<HTMLElement | null>(null)
@@ -66,26 +88,22 @@ function initMap() {
     maxZoom: 19,
   }).addTo(leafletMap)
 
-  for (const pt of HAZARD_POINTS) {
-    const radius = 5 + (pt.ccri - 2.5) * 2.2
-    const circle = L.circleMarker([pt.lat, pt.lon], {
-      radius,
-      fillColor: TYPE_COLOR[pt.type],
-      color: '#fff',
-      weight: 1.5,
-      opacity: 0.9,
-      fillOpacity: 0.78,
-    }).addTo(leafletMap)
+  for (const pt of hazardPoints.value) {
+    const alertColor = TYPE_COLOR[pt.type]
+    const strokeColor = ccriColor(pt.ccri)
+    const icon = hazardDivIcon(pt.type_name ?? '', alertColor, strokeColor)
+    const marker = L.marker([pt.lat, pt.lon], { icon }).addTo(leafletMap)
 
-    circle.bindTooltip(
+    const hazardLine = pt.type_name ? `${pt.type_name} · GDACS <span style="color:${alertColor}">${pt.alertlevel ?? ''}</span>` : `${pt.type} risk`
+    marker.bindTooltip(
       `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.6;">
         <strong style="font-size:12px;color:#1b1e23;">${pt.name}</strong><br>
-        CCRI <strong>${pt.ccri}</strong> &nbsp;·&nbsp; <span style="color:${TYPE_COLOR[pt.type]};text-transform:uppercase;font-size:10px;">${pt.type} risk</span>
+        CCRI <strong style="color:${strokeColor}">${pt.ccri.toFixed(1)}/10</strong> &nbsp;·&nbsp; <span style="font-size:10px;">${hazardLine}</span>
       </div>`,
       { className: 'cedar-map-tooltip', sticky: false },
     )
 
-    circle.on('click', () => {
+    marker.on('click', () => {
       const country = countries.value.find((c) => c.iso3 === pt.iso3)
       if (country) {
         selectCountry(country)
@@ -98,11 +116,23 @@ function initMap() {
 }
 
 onMounted(async () => {
-  try {
-    const res = await getCountries()
-    countries.value = res.countries.sort((a, b) => a.name.localeCompare(b.name))
-  } catch {
-    // backend offline
+  const [countriesRes, riskRes] = await Promise.allSettled([getCountries(), getClimateRisk()])
+  if (countriesRes.status === 'fulfilled') {
+    countries.value = countriesRes.value.countries.sort((a, b) => a.name.localeCompare(b.name))
+  }
+  if (riskRes.status === 'fulfilled') {
+    hazardPoints.value = riskRes.value.underestimated_alerts
+      .filter((a) => a.lat != null && a.lon != null)
+      .map((a) => ({
+        iso3: a.iso3,
+        name: a.country,
+        lat: a.lat!,
+        lon: a.lon!,
+        ccri: a.ccri,
+        type: a.alertlevel === 'Red' ? 'high' : a.alertlevel === 'Orange' ? 'medium' : 'low',
+        alertlevel: a.alertlevel,
+        type_name: a.type_name,
+      }))
   }
   await nextTick()
   initMap()
@@ -388,18 +418,27 @@ const themeLabel = computed(
         <div ref="mapEl" style="width:100%;height:100%;"></div>
         <!-- Legend -->
         <div class="map-legend">
-          <div class="map-legend-title">CCRI Hazard Risk</div>
-          <div v-for="(color, type) in TYPE_COLOR" :key="type" class="map-legend-row">
-            <span class="map-legend-dot" :style="'background:' + color"></span>
-            <span style="text-transform:capitalize;">{{ type }}</span>
-          </div>
+          <div class="map-legend-title">Fill — GDACS Alert</div>
+          <div class="map-legend-row"><span class="map-legend-dot" style="background:#2f6b4f"></span><span>Green (underestimated)</span></div>
+          <div class="map-legend-row"><span class="map-legend-dot" style="background:#e67e22"></span><span>Orange (underestimated)</span></div>
+          <div class="map-legend-row"><span class="map-legend-dot" style="background:#c0392b"></span><span>Red</span></div>
+          <div class="map-legend-title" style="margin-top:10px;">Border — CCRI (0–10)</div>
+          <div class="map-legend-row"><span class="map-legend-dot" style="background:#fff;border:3px solid #c0392b;box-sizing:border-box;"></span><span>≥ 7 Extremely High</span></div>
+          <div class="map-legend-row"><span class="map-legend-dot" style="background:#fff;border:3px solid #e6a817;box-sizing:border-box;"></span><span>4–7 High</span></div>
+          <div class="map-legend-row"><span class="map-legend-dot" style="background:#fff;border:3px solid #2f6b4f;box-sizing:border-box;"></span><span>&lt; 4 Medium/Low</span></div>
+          <div class="map-legend-title" style="margin-top:10px;">Hazard Type</div>
+          <div class="map-legend-row"><span class="map-legend-icon">〰</span><span>Earthquake</span></div>
+          <div class="map-legend-row"><span class="map-legend-icon">🌊</span><span>Flood</span></div>
+          <div class="map-legend-row"><span class="map-legend-icon">🌀</span><span>Cyclone</span></div>
+          <div class="map-legend-row"><span class="map-legend-icon">☀</span><span>Drought</span></div>
+          <div class="map-legend-row"><span class="map-legend-icon">🌋</span><span>Volcano</span></div>
           <div style="margin-top:8px;color:#9a9f97;font-size:9px;line-height:1.5;">
-            Bubble size ∝ CCRI score<br>Click point to select
+            GDACS alert in tooltip · Click to select
           </div>
         </div>
         <!-- Subtitle pill -->
         <div class="map-subtitle">
-          Potential overestimated hazards vs CCRI · {{ HAZARD_POINTS.length }} countries · mock data
+          Underestimated GDACS alerts (Green/Orange) in CCRI > 7 countries · {{ hazardPoints.length }} alerts live
         </div>
       </div>
 
@@ -1005,6 +1044,13 @@ export default {
   height: 9px;
   border-radius: 50%;
   flex: none;
+}
+.map-legend-icon {
+  width: 16px;
+  font-size: 12px;
+  flex: none;
+  text-align: center;
+  line-height: 1;
 }
 
 .map-subtitle {
