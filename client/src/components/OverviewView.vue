@@ -53,6 +53,15 @@ const collapsedPoly = ref(false)
 const collapsedGaps = ref(false)
 const collapsedDrill = ref(false)
 
+const compareIso = ref('')
+const compareSearch = ref('')
+const compareDropdownOpen = ref(false)
+const brief2 = ref<BriefResponse | null>(null)
+const polycrisis2 = ref<PolycrisisResponse | null>(null)
+const loadingBrief2 = ref(false)
+const loadingPoly2 = ref(false)
+const errorBrief2 = ref<string | null>(null)
+
 onMounted(async () => {
   try {
     const res = await getCountries()
@@ -239,6 +248,85 @@ const unavailableIndicators = computed(() =>
 const themeLabel = computed(
   () => THEMES.find((t) => t.key === selectedTheme.value)?.label ?? selectedTheme.value,
 )
+
+const filteredCompareCountries = computed(() => {
+  const q = compareSearch.value.toLowerCase().trim()
+  if (!q) return countries.value
+  return countries.value.filter(
+    (c) => c.name.toLowerCase().includes(q) || c.iso3.toLowerCase().includes(q),
+  )
+})
+
+const compareName = computed(
+  () => countries.value.find((c) => c.iso3 === compareIso.value)?.name ?? '',
+)
+
+const isComparing = computed(() => !!compareIso.value)
+
+function selectCompare(c: Country) {
+  compareIso.value = c.iso3
+  compareSearch.value = ''
+  compareDropdownOpen.value = false
+}
+
+function clearCompare() {
+  compareIso.value = ''
+  brief2.value = null
+  polycrisis2.value = null
+}
+
+async function fetchBrief2() {
+  if (!compareIso.value) return
+  loadingBrief2.value = true
+  errorBrief2.value = null
+  brief2.value = null
+  try {
+    brief2.value = await getBrief(compareIso.value, selectedTheme.value)
+  } catch (e) {
+    errorBrief2.value = e instanceof Error ? e.message : 'Failed to load'
+  } finally {
+    loadingBrief2.value = false
+  }
+}
+
+async function fetchPolycrisis2() {
+  if (!compareIso.value) return
+  loadingPoly2.value = true
+  polycrisis2.value = null
+  try {
+    polycrisis2.value = await getPolycrisis(compareIso.value)
+  } catch {
+    // silent
+  } finally {
+    loadingPoly2.value = false
+  }
+}
+
+watch([compareIso, selectedTheme], () => {
+  if (compareIso.value) fetchBrief2()
+})
+
+watch(compareIso, () => {
+  if (compareIso.value) fetchPolycrisis2()
+})
+
+const compareRows = computed(() => {
+  if (!brief.value && !brief2.value) return []
+  const map1 = new Map((brief.value?.indicators ?? []).map((i) => [i.code, i]))
+  const map2 = new Map((brief2.value?.indicators ?? []).map((i) => [i.code, i]))
+  const codes = [...new Set([...map1.keys(), ...map2.keys()])]
+  return codes.map((code) => {
+    const a = map1.get(code) ?? null
+    const b = map2.get(code) ?? null
+    return {
+      code,
+      name: (a?.name ?? b?.name ?? code) as string,
+      unit: (a?.unit ?? b?.unit ?? '') as string,
+      a: a ? { ...a, lo: latestObs(a.obs), sp: spark(a.obs) } : null,
+      b: b ? { ...b, lo: latestObs(b.obs), sp: spark(b.obs) } : null,
+    }
+  })
+})
 </script>
 
 <template>
@@ -315,6 +403,85 @@ const themeLabel = computed(
         </div>
       </div>
 
+      <!-- Compare selector -->
+      <div
+        v-if="selectedIso && !isComparing"
+        class="selector-wrap"
+        v-click-outside="() => (compareDropdownOpen = false)"
+      >
+        <button
+          class="selector-btn selector-btn--compare"
+          :class="{ 'selector-btn--active': compareDropdownOpen }"
+          @click="compareDropdownOpen = !compareDropdownOpen"
+        >
+          <svg width="11" height="11" viewBox="0 0 12 12" style="flex: none; color: #9a9f97">
+            <path
+              d="M2 6h8M6 2v8"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+            />
+          </svg>
+          <span style="color: #a7aaa2">Compare with…</span>
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 10 10"
+            style="flex: none; margin-left: auto; color: #9a9f97"
+          >
+            <path
+              d="M2.5 3.5l2.5 3 2.5-3"
+              stroke="currentColor"
+              stroke-width="1.2"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <div v-if="compareDropdownOpen" class="selector-dropdown">
+          <div style="padding: 8px 10px; border-bottom: 1px solid #ece9e1">
+            <input v-model="compareSearch" placeholder="Search…" class="search-input" autofocus />
+          </div>
+          <div class="dropdown-list">
+            <button
+              v-for="c in filteredCompareCountries"
+              :key="c.iso3"
+              class="dropdown-item"
+              :class="{ 'dropdown-item--active': c.iso3 === compareIso }"
+              @click="selectCompare(c)"
+            >
+              <span
+                style="
+                  font-family: 'IBM Plex Mono', monospace;
+                  font-size: 10px;
+                  color: #9a9f97;
+                  flex: none;
+                  width: 30px;
+                "
+                >{{ c.iso3 }}</span
+              >
+              {{ c.name }}
+            </button>
+            <div
+              v-if="filteredCompareCountries.length === 0"
+              style="padding: 12px; font-size: 13px; color: #a7aaa2"
+            >
+              No matches
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compare active tag -->
+      <div v-if="isComparing" class="compare-tag">
+        <span
+          style="width: 7px; height: 7px; border-radius: 50%; background: #9db1c2; flex: none"
+        ></span>
+        {{ compareName }}
+        <button @click="clearCompare" class="compare-clear-btn" title="Remove comparison">×</button>
+      </div>
+
       <!-- Theme tabs -->
       <div class="theme-tabs">
         <button
@@ -347,6 +514,194 @@ const themeLabel = computed(
         <div class="empty-desc">
           Choose a country above to see grounded indicators, SDG progress, and polycrisis risk — all
           sourced from live World Bank data with zero LLM calls.
+        </div>
+      </div>
+
+      <!-- Comparison view -->
+      <div v-else-if="isComparing" class="compare-body">
+        <!-- Country summary header -->
+        <div class="compare-summary">
+          <div class="compare-summary-card compare-summary-card--a">
+            <div class="compare-summary-name">{{ selectedCountryName }}</div>
+            <div
+              v-if="polycrisis"
+              class="compare-poly-band"
+              :style="'color:' + BAND_COLOR[polycrisis.band]"
+            >
+              {{ BAND_LABEL[polycrisis.band] }}
+            </div>
+            <div
+              v-else-if="loadingPoly"
+              style="font-size: 11px; color: #bfc2b9; font-family: 'IBM Plex Mono', monospace"
+            >
+              Loading…
+            </div>
+          </div>
+          <div class="compare-vs-label">vs</div>
+          <div class="compare-summary-card compare-summary-card--b">
+            <div class="compare-summary-name">{{ compareName }}</div>
+            <div
+              v-if="polycrisis2"
+              class="compare-poly-band"
+              :style="'color:' + BAND_COLOR[polycrisis2.band]"
+            >
+              {{ BAND_LABEL[polycrisis2.band] }}
+            </div>
+            <div
+              v-else-if="loadingPoly2"
+              style="font-size: 11px; color: #bfc2b9; font-family: 'IBM Plex Mono', monospace"
+            >
+              Loading…
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading -->
+        <div v-if="loadingBrief || loadingBrief2" class="loading-state">
+          <div class="loading-dots"><span></span><span></span><span></span></div>
+          <div
+            style="
+              font-family: 'IBM Plex Mono', monospace;
+              font-size: 11px;
+              color: #9a9f97;
+              letter-spacing: 0.05em;
+            "
+          >
+            Loading comparison…
+          </div>
+        </div>
+
+        <!-- Comparison table -->
+        <div v-else-if="compareRows.length" class="compare-table-wrap">
+          <div class="compare-table-header">
+            <div class="ctcol ctcol--label">{{ themeLabel }}</div>
+            <div class="ctcol ctcol--heading ctcol--heading-a">{{ selectedCountryName }}</div>
+            <div class="ctcol ctcol--heading ctcol--heading-b">{{ compareName }}</div>
+          </div>
+          <div v-for="row in compareRows" :key="row.code" class="compare-row">
+            <!-- Indicator name -->
+            <div class="ctcol ctcol--name-cell">
+              <div class="compare-ind-name">{{ row.name }}</div>
+              <div
+                style="
+                  font-family: 'IBM Plex Mono', monospace;
+                  font-size: 9px;
+                  color: #bfc2b9;
+                  margin-top: 2px;
+                "
+              >
+                {{ row.code }}
+              </div>
+            </div>
+            <!-- Country A -->
+            <div class="ctcol ctcol--data">
+              <template v-if="row.a?.available && row.a.lo">
+                <div class="compare-cell-value">
+                  {{ row.a.lo.value.toLocaleString('en-US', { maximumFractionDigits: 1 }) }}
+                  <span class="compare-cell-unit">{{ row.unit }}</span>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-top: 4px;
+                    gap: 8px;
+                  "
+                >
+                  <span
+                    style="
+                      font-family: 'IBM Plex Mono', monospace;
+                      font-size: 9.5px;
+                      color: #a7aaa2;
+                    "
+                    >{{ row.a.lo.year }}</span
+                  >
+                  <svg
+                    v-if="row.a.sp"
+                    viewBox="0 0 100 26"
+                    style="width: 68px; height: 19px; flex: none"
+                  >
+                    <path :d="row.a.sp.area" style="fill: #eef2f5; stroke: none" />
+                    <path
+                      :d="row.a.sp.line"
+                      style="
+                        fill: none;
+                        stroke: #2c4a63;
+                        stroke-width: 1.4px;
+                        stroke-linejoin: round;
+                        stroke-linecap: round;
+                      "
+                    />
+                    <circle :cx="row.a.sp.dotX" :cy="row.a.sp.dotY" r="2" style="fill: #2c4a63" />
+                  </svg>
+                </div>
+                <span
+                  v-if="row.a.verification?.confidence_tier"
+                  :style="
+                    tierStyle(row.a.verification.confidence_tier) +
+                    'display:inline-block;padding:2px 5px;border-radius:2px;font-family:IBM Plex Mono,monospace;font-size:9px;margin-top:6px'
+                  "
+                  >{{ tierLabel(row.a.verification.confidence_tier) }} confidence</span
+                >
+              </template>
+              <span v-else style="font-size: 11px; color: #bfc2b9">No data</span>
+            </div>
+            <!-- Country B -->
+            <div class="ctcol ctcol--data">
+              <template v-if="row.b?.available && row.b.lo">
+                <div class="compare-cell-value">
+                  {{ row.b.lo.value.toLocaleString('en-US', { maximumFractionDigits: 1 }) }}
+                  <span class="compare-cell-unit">{{ row.unit }}</span>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-top: 4px;
+                    gap: 8px;
+                  "
+                >
+                  <span
+                    style="
+                      font-family: 'IBM Plex Mono', monospace;
+                      font-size: 9.5px;
+                      color: #a7aaa2;
+                    "
+                    >{{ row.b.lo.year }}</span
+                  >
+                  <svg
+                    v-if="row.b.sp"
+                    viewBox="0 0 100 26"
+                    style="width: 68px; height: 19px; flex: none"
+                  >
+                    <path :d="row.b.sp.area" style="fill: #eef2f5; stroke: none" />
+                    <path
+                      :d="row.b.sp.line"
+                      style="
+                        fill: none;
+                        stroke: #9db1c2;
+                        stroke-width: 1.4px;
+                        stroke-linejoin: round;
+                        stroke-linecap: round;
+                      "
+                    />
+                    <circle :cx="row.b.sp.dotX" :cy="row.b.sp.dotY" r="2" style="fill: #9db1c2" />
+                  </svg>
+                </div>
+                <span
+                  v-if="row.b.verification?.confidence_tier"
+                  :style="
+                    tierStyle(row.b.verification.confidence_tier) +
+                    'display:inline-block;padding:2px 5px;border-radius:2px;font-family:IBM Plex Mono,monospace;font-size:9px;margin-top:6px'
+                  "
+                  >{{ tierLabel(row.b.verification.confidence_tier) }} confidence</span
+                >
+              </template>
+              <span v-else style="font-size: 11px; color: #bfc2b9">No data</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1397,5 +1752,161 @@ export default {
 .prov-link:hover {
   opacity: 1;
   text-decoration: underline;
+}
+
+/* ── Comparison mode ─────────────────────────────── */
+.selector-btn--compare {
+  min-width: 160px;
+  font-style: italic;
+}
+
+.compare-tag {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px 6px 12px;
+  background: #edf0f3;
+  border: 1px solid #c4d0da;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #2c4a63;
+  font-weight: 500;
+}
+.compare-clear-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 17px;
+  color: #9db1c2;
+  line-height: 1;
+  padding: 0 2px;
+  margin-left: 2px;
+}
+.compare-clear-btn:hover {
+  color: #2c4a63;
+}
+
+.compare-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.compare-summary {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 24px;
+  max-width: 860px;
+}
+.compare-summary-card {
+  flex: 1;
+  background: #fff;
+  border: 1px solid #e3e1da;
+  border-radius: 5px;
+  padding: 14px 16px;
+}
+.compare-summary-card--a {
+  border-top: 3px solid #2c4a63;
+}
+.compare-summary-card--b {
+  border-top: 3px solid #9db1c2;
+}
+.compare-summary-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1b1e23;
+  margin-bottom: 5px;
+}
+.compare-poly-band {
+  font-size: 11.5px;
+  font-weight: 500;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.compare-vs-label {
+  align-self: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: #bfc2b9;
+  letter-spacing: 0.05em;
+  flex: none;
+}
+
+.compare-table-wrap {
+  background: #fff;
+  border: 1px solid #e3e1da;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.compare-table-header {
+  display: grid;
+  grid-template-columns: 200px 1fr 1fr;
+  gap: 16px;
+  padding: 10px 16px;
+  background: #f7f6f3;
+  border-bottom: 2px solid #e3e1da;
+  align-items: center;
+}
+.ctcol--label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8a6516;
+}
+.ctcol--heading {
+  font-size: 13px;
+  font-weight: 600;
+}
+.ctcol--heading-a {
+  color: #2c4a63;
+}
+.ctcol--heading-b {
+  color: #5a7a93;
+}
+
+.compare-row {
+  display: grid;
+  grid-template-columns: 200px 1fr 1fr;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0ede5;
+}
+.compare-row:last-child {
+  border-bottom: none;
+}
+.compare-row:hover {
+  background: #faf9f6;
+}
+
+.ctcol--name-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.ctcol--data {
+  min-width: 0;
+}
+.compare-ind-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #33373d;
+  line-height: 1.3;
+}
+.compare-cell-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 19px;
+  font-weight: 500;
+  color: #1b1e23;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  line-height: 1;
+}
+.compare-cell-unit {
+  font-size: 10px;
+  font-weight: 400;
+  color: #9a9f97;
 }
 </style>
