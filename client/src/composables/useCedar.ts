@@ -315,6 +315,37 @@ function enrichKpis(kpis: KPI[]): KPI[] {
   })
 }
 
+const COUNTRY_CODES: Record<string, string> = {
+  kenya: 'KEN', bangladesh: 'BGD', rwanda: 'RWA', nigeria: 'NGA',
+  ghana: 'GHA', ethiopia: 'ETH', uganda: 'UGA', tanzania: 'TZA',
+  india: 'IND', pakistan: 'PAK', cambodia: 'KHM', mali: 'MLI',
+  senegal: 'SEN', mozambique: 'MOZ', zambia: 'ZMB', malawi: 'MWI',
+  cameroon: 'CMR', burkina: 'BFA', niger: 'NER', chad: 'TCD',
+}
+
+const THEME_KEYWORDS: Array<[RegExp, string]> = [
+  [/maternal|obstetric|mmeig/, 'health-system'],
+  [/child|under.?5|infant|stunting|immuniz|dpt|imrt/, 'child-survival'],
+  [/poverty|gdp|economic|income|unemploy|wages|ppp/, 'economy-poverty'],
+  [/education|school|literacy|completion|enrolment/, 'education'],
+  [/water|sanitation|wash|drinking|latrine/, 'wash'],
+  [/energy|electric|renewable|climate|co2|carbon|emission/, 'energy-climate'],
+  [/health|life expectancy|hospital|mortality/, 'health-system'],
+]
+
+function detectApiParams(text: string): { country: string; theme: string } | null {
+  const t = text.toLowerCase()
+  let country: string | undefined
+  for (const [name, code] of Object.entries(COUNTRY_CODES)) {
+    if (t.includes(name)) { country = code; break }
+  }
+  let theme: string | undefined
+  for (const [pattern, th] of THEME_KEYWORDS) {
+    if (pattern.test(t)) { theme = th; break }
+  }
+  return country && theme ? { country, theme } : null
+}
+
 function matchScenario(text: string): Scenario | null {
   const t = (text || '').toLowerCase()
   if (/kenya|maternal|mortality/.test(t)) return SCENARIOS.kenya ?? null
@@ -412,16 +443,31 @@ const citesRef = ref<HTMLElement | null>(null)
 
 let thinkingTimer: ReturnType<typeof setTimeout> | null = null
 
-function ask(text: string) {
+async function ask(text: string) {
   const v = (text || '').trim()
   if (!v) return
-  const sc = matchScenario(v)
+
   state.messages = [...state.messages, buildUserMessage(v)]
   state.input = ''
   state.thinking = true
   state.view = 'chat'
   state.panelOpen = false
   if (thinkingTimer) clearTimeout(thinkingTimer)
+
+  let sc: Scenario | null = null
+  const params = detectApiParams(v)
+
+  if (params) {
+    try {
+      const res = await fetch(`/api/brief?country=${params.country}&theme=${params.theme}`)
+      if (res.ok) sc = (await res.json()) as Scenario
+    } catch {
+      /* API not running — fall through to mock */
+    }
+  }
+
+  if (!sc) sc = matchScenario(v)
+
   thinkingTimer = setTimeout(() => {
     const a = buildAssistantMessage(sc)
     state.messages = [...state.messages, a]
@@ -432,7 +478,7 @@ function ask(text: string) {
     nextTick(() => {
       if (scrollRef.value) scrollRef.value.scrollTop = scrollRef.value.scrollHeight
     })
-  }, 1150)
+  }, 350)
 }
 
 function loadConv(key: string) {

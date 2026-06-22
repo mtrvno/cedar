@@ -248,8 +248,12 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"error": "Not found"}, 404)
 
 
+class ReuseServer(HTTPServer):
+    allow_reuse_address = True
+
+
 if __name__ == "__main__":
-    server = HTTPServer(("0.0.0.0", PORT), Handler)
+    server = ReuseServer(("0.0.0.0", PORT), Handler)
     print(f"CEDAR API  →  http://localhost:{PORT}")
     print(f"  GET /api/themes")
     print(f"  GET /api/brief?country=KEN&theme=child-survival[&offline=true]")
