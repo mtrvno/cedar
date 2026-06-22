@@ -56,7 +56,9 @@ server — it is passed per request via the `X-OpenAI-Key` header (or an `OPENAI
 indicator code (e.g. `SH.DYN.MORT`); `{theme}` ∈ `child-survival, economy-poverty, education, health-system, wash, energy-climate`.
 Common query param `offline` (bool) forces the bundled cache. LLM endpoints require header `X-OpenAI-Key`
 (or `OPENAI_API_KEY` env) **and** `mode=copilot`. All responses are JSON. Error shape: `{"detail": "..."}`
-with status 400 (bad input), 403 (LLM disabled), 404 (no data), 502 (LLM upstream error).
+with status 400 (bad input), 403 (LLM disabled), 404 (no data for `/series` and `/drilldown`), 502 (LLM upstream error).
+Note: `/brief`, `/polycrisis`, `/blindspots`, `/project` never 500 on missing data — they return **200** and flag the
+gap (`available:false`, `status:"missing"`, or `projectable:false`). Treating absent data as a result, not an error, is intentional.
 
 ---
 
@@ -127,7 +129,19 @@ with status 400 (bad input), 403 (LLM disabled), 404 (no data), 502 (LLM upstrea
             "llm_calls":0, "cedar_llm_cost_usd":0.0, "naive_single_big_model_cost_usd":0.097,
             "cost_reduction_vs_naive":"100%", "runs_with_zero_llm":true } }
 ```
-Indicators with no data appear as `{ "code":…, "name":…, "available": false }`.
+**Data availability.** Any indicator that is missing **or returns an all-null series** (e.g. Afghanistan
+has no recent poverty data in WDI) is reported as `{ "code":…, "name":…, "available": false }` — with no
+`obs`/`verification`/`claims`. The endpoint still returns **200**; the front-end should branch on
+`available` and render "no data" for those. If *every* indicator in a theme is unavailable you simply get
+an `indicators` array where all entries are `available:false` (still 200). Example — `GET /brief/AFG?theme=economy-poverty`:
+```json
+{ "country":"AFG", "theme":"economy-poverty", "label":"Economy & poverty (SDG 1, 8)",
+  "generated_at":"…",
+  "indicators":[ { "code":"SI.POV.DDAY", "name":"Poverty rate ($3.00/day, 2021 PPP)", "available":false },
+                 { "code":"NY.GDP.PCAP.CD", "name":"GDP per capita", "available":false },
+                 { "code":"SL.UEM.TOTL.ZS", "name":"Unemployment rate", "available":false } ],
+  "cost": { "...": "cost report" } }
+```
 
 ### GET `/drilldown/{country}`
 **Input:** path `country`; query `dimension` (default `wealth`), `offline?`. 404 if the country has no wealth-disaggregated data. **Output:**
