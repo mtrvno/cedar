@@ -1,10 +1,116 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import { getCountries, getBrief, getPolycrisis, getBlindspots, getDrilldown } from '@/api/cedar'
 import type { Country, BriefResponse, BriefIndicator, PolycrisisResponse, BlindspotsResponse, DrilldownResponse } from '@/types/api'
 import { useEvidenceLedger } from '@/composables/useEvidenceLedger'
 
 const { setLedger } = useEvidenceLedger()
+
+// ponytail: mock data — will be replaced by /api/hazard-points when ready
+interface HazardPoint {
+  iso3: string; name: string; lat: number; lon: number; ccri: number; type: 'high' | 'medium' | 'low'
+}
+const HAZARD_POINTS: HazardPoint[] = [
+  { iso3: 'AFG', name: 'Afghanistan',   lat: 33.9,  lon: 67.7,  ccri: 6.8, type: 'high'   },
+  { iso3: 'SOM', name: 'Somalia',        lat: 5.2,   lon: 46.2,  ccri: 7.2, type: 'high'   },
+  { iso3: 'TCD', name: 'Chad',           lat: 15.5,  lon: 18.7,  ccri: 6.3, type: 'high'   },
+  { iso3: 'NER', name: 'Niger',          lat: 17.6,  lon: 8.1,   ccri: 6.1, type: 'high'   },
+  { iso3: 'MLI', name: 'Mali',           lat: 17.6,  lon: -4.0,  ccri: 5.8, type: 'high'   },
+  { iso3: 'BFA', name: 'Burkina Faso',   lat: 12.4,  lon: -1.6,  ccri: 5.6, type: 'high'   },
+  { iso3: 'SDN', name: 'Sudan',          lat: 12.9,  lon: 30.2,  ccri: 5.9, type: 'high'   },
+  { iso3: 'HTI', name: 'Haiti',          lat: 18.9,  lon: -72.3, ccri: 5.4, type: 'high'   },
+  { iso3: 'NGA', name: 'Nigeria',        lat: 9.1,   lon: 8.7,   ccri: 5.2, type: 'high'   },
+  { iso3: 'MOZ', name: 'Mozambique',     lat: -17.3, lon: 35.5,  ccri: 4.9, type: 'high'   },
+  { iso3: 'KEN', name: 'Kenya',          lat: -0.02, lon: 37.9,  ccri: 4.8, type: 'high'   },
+  { iso3: 'MWI', name: 'Malawi',         lat: -13.3, lon: 34.3,  ccri: 4.7, type: 'high'   },
+  { iso3: 'ETH', name: 'Ethiopia',       lat: 9.1,   lon: 40.5,  ccri: 5.5, type: 'high'   },
+  { iso3: 'PAK', name: 'Pakistan',       lat: 30.4,  lon: 69.3,  ccri: 4.3, type: 'high'   },
+  { iso3: 'CMR', name: 'Cameroon',       lat: 3.8,   lon: 11.5,  ccri: 4.2, type: 'medium' },
+  { iso3: 'BGD', name: 'Bangladesh',     lat: 23.7,  lon: 90.4,  ccri: 4.1, type: 'medium' },
+  { iso3: 'ZMB', name: 'Zambia',         lat: -13.1, lon: 27.8,  ccri: 4.1, type: 'medium' },
+  { iso3: 'UGA', name: 'Uganda',         lat: 1.4,   lon: 32.3,  ccri: 4.0, type: 'medium' },
+  { iso3: 'MMR', name: 'Myanmar',        lat: 21.9,  lon: 95.9,  ccri: 3.9, type: 'medium' },
+  { iso3: 'IND', name: 'India',          lat: 20.6,  lon: 79.0,  ccri: 3.8, type: 'medium' },
+  { iso3: 'TZA', name: 'Tanzania',       lat: -6.4,  lon: 35.0,  ccri: 3.7, type: 'medium' },
+  { iso3: 'SEN', name: 'Senegal',        lat: 14.5,  lon: -14.5, ccri: 3.5, type: 'medium' },
+  { iso3: 'RWA', name: 'Rwanda',         lat: -1.9,  lon: 29.9,  ccri: 3.6, type: 'medium' },
+  { iso3: 'GHA', name: 'Ghana',          lat: 7.9,   lon: -1.0,  ccri: 3.2, type: 'medium' },
+  { iso3: 'KHM', name: 'Cambodia',       lat: 12.6,  lon: 104.9, ccri: 3.0, type: 'low'    },
+]
+
+const TYPE_COLOR: Record<string, string> = {
+  high: '#c0392b',
+  medium: '#e67e22',
+  low: '#2f6b4f',
+}
+
+const mapEl = ref<HTMLElement | null>(null)
+let leafletMap: L.Map | null = null
+
+function initMap() {
+  if (!mapEl.value || leafletMap) return
+  leafletMap = L.map(mapEl.value, {
+    center: [10, 20],
+    zoom: 2,
+    minZoom: 1,
+    maxZoom: 8,
+    zoomControl: true,
+    attributionControl: true,
+  })
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19,
+  }).addTo(leafletMap)
+
+  for (const pt of HAZARD_POINTS) {
+    const radius = 5 + (pt.ccri - 2.5) * 2.2
+    const circle = L.circleMarker([pt.lat, pt.lon], {
+      radius,
+      fillColor: TYPE_COLOR[pt.type],
+      color: '#fff',
+      weight: 1.5,
+      opacity: 0.9,
+      fillOpacity: 0.78,
+    }).addTo(leafletMap)
+
+    circle.bindTooltip(
+      `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.6;">
+        <strong style="font-size:12px;color:#1b1e23;">${pt.name}</strong><br>
+        CCRI <strong>${pt.ccri}</strong> &nbsp;·&nbsp; <span style="color:${TYPE_COLOR[pt.type]};text-transform:uppercase;font-size:10px;">${pt.type} risk</span>
+      </div>`,
+      { className: 'cedar-map-tooltip', sticky: false },
+    )
+
+    circle.on('click', () => {
+      const country = countries.value.find((c) => c.iso3 === pt.iso3)
+      if (country) {
+        selectCountry(country)
+      } else {
+        selectedIso.value = pt.iso3
+        dropdownOpen.value = false
+      }
+    })
+  }
+}
+
+onMounted(async () => {
+  try {
+    const res = await getCountries()
+    countries.value = res.countries.sort((a, b) => a.name.localeCompare(b.name))
+  } catch {
+    // backend offline
+  }
+  await nextTick()
+  initMap()
+})
+
+onUnmounted(() => {
+  if (leafletMap) { leafletMap.remove(); leafletMap = null }
+})
 
 const THEMES = [
   { key: 'child-survival', label: 'Child Survival' },
@@ -45,15 +151,6 @@ const loadingDrill = ref(false)
 const collapsedPoly = ref(false)
 const collapsedGaps = ref(false)
 const collapsedDrill = ref(false)
-
-onMounted(async () => {
-  try {
-    const res = await getCountries()
-    countries.value = res.countries.sort((a, b) => a.name.localeCompare(b.name))
-  } catch {
-    // backend offline
-  }
-})
 
 const filteredCountries = computed(() => {
   const q = countrySearch.value.toLowerCase().trim()
@@ -269,8 +366,8 @@ const themeLabel = computed(
         </div>
       </div>
 
-      <!-- Theme tabs -->
-      <div class="theme-tabs">
+      <!-- Theme tabs: only when country selected -->
+      <div v-if="selectedIso" class="theme-tabs">
         <button
           v-for="th in THEMES"
           :key="th.key"
@@ -286,22 +383,28 @@ const themeLabel = computed(
     <!-- Content -->
     <div class="overview-body">
 
-      <!-- Empty state -->
-      <div v-if="!selectedIso" class="empty-state">
-        <div class="empty-icon">
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="14" stroke="#ddd9cf" stroke-width="1.5" />
-            <path d="M8 16c1.5-6 14.5-6 16 0M8 16c1.5 6 14.5 6 16 0M16 2v28M2 16h28" stroke="#ddd9cf" stroke-width="1.2" />
-          </svg>
+      <!-- Hazard map (shown until country selected) -->
+      <div v-show="!selectedIso" class="map-container">
+        <div ref="mapEl" style="width:100%;height:100%;"></div>
+        <!-- Legend -->
+        <div class="map-legend">
+          <div class="map-legend-title">CCRI Hazard Risk</div>
+          <div v-for="(color, type) in TYPE_COLOR" :key="type" class="map-legend-row">
+            <span class="map-legend-dot" :style="'background:' + color"></span>
+            <span style="text-transform:capitalize;">{{ type }}</span>
+          </div>
+          <div style="margin-top:8px;color:#9a9f97;font-size:9px;line-height:1.5;">
+            Bubble size ∝ CCRI score<br>Click point to select
+          </div>
         </div>
-        <div class="empty-title">Select a country</div>
-        <div class="empty-desc">
-          Choose a country above to see grounded indicators, SDG progress, and polycrisis risk — all sourced from live World Bank data with zero LLM calls.
+        <!-- Subtitle pill -->
+        <div class="map-subtitle">
+          Potential overestimated hazards vs CCRI · {{ HAZARD_POINTS.length }} countries · mock data
         </div>
       </div>
 
       <!-- Split layout: country selected -->
-      <div v-else class="content-layout">
+      <div v-if="selectedIso" class="content-layout">
 
         <!-- Main col: brief + KPI cards -->
         <div class="main-col">
@@ -616,7 +719,7 @@ export default {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  z-index: 50;
+  z-index: 1001;
   background: #fff;
   border: 1px solid #ddd9cf;
   border-radius: 4px;
@@ -862,28 +965,64 @@ export default {
   border-top: 1px solid #f0ece4;
 }
 
-/* Empty / loading / error */
-.empty-state {
-  max-width: 440px;
-  margin: 10vh auto 0;
-  text-align: center;
-  padding: 0 20px;
+/* Hazard map */
+.map-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
 }
-.empty-icon {
-  margin-bottom: 20px;
-}
-.empty-title {
+
+.map-legend {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 500;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e3e1da;
+  border-radius: 4px;
+  padding: 10px 13px;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #a7aaa2;
-  margin-bottom: 10px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
 }
-.empty-desc {
-  font-size: 14px;
-  line-height: 1.65;
-  color: #6a6f68;
+.map-legend-title {
+  text-transform: uppercase;
+  color: #33373d;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.map-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #5a6068;
+  margin-bottom: 5px;
+}
+.map-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.map-subtitle {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e3e1da;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: #8a8f87;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .loading-state {
@@ -1086,4 +1225,17 @@ export default {
   text-decoration: underline;
 }
 
+</style>
+
+<style>
+.cedar-map-tooltip {
+  background: #fff !important;
+  border: 1px solid #e3e1da !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,.1) !important;
+  padding: 8px 11px !important;
+}
+.cedar-map-tooltip::before {
+  display: none !important;
+}
 </style>
