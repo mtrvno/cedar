@@ -48,7 +48,10 @@ server — it is passed per request via the `X-OpenAI-Key` header (or an `OPENAI
 | GET | `/polycrisis/{country}` | — | cross-SDG composite risk read |
 | GET | `/blindspots/{country}` | — | blind-spot radar (missing/stale data) |
 | GET | `/project/{country}/{code}` | — | time-to-SDG-target projection |
-| GET | `/interventions/{theme}` | — | effective interventions by evidence strength |
+| GET | `/interventions` | — | interventions by evidence strength, **all themes** |
+| GET | `/interventions/{theme}` | — | interventions by evidence strength for one theme |
+| GET | `/evidence-chain` | — | the 7-step pipeline definition (static) |
+| GET | `/evidence-chain/{country}` | — | the chain with live per-step status for a run |
 | POST | `/copilot/summary` | copilot + key | guardrailed executive summary |
 | POST | `/copilot/chat` | copilot + key | agentic, tool-grounded chat |
 
@@ -188,13 +191,55 @@ an `indicators` array where all entries are `available:false` (still 200). Examp
 If the indicator has no target or no data: `{ "projectable": false, "reason": "no target" | "no data" }`. If the trend moves away from the target: `{ "diverging": true, "reach_year": null, "years_late": null }`. If already met: `{ "met": true, "reach_year": <latest_year>, "years_late": 0 }`.
 
 ### GET `/interventions/{theme}`
-**Input:** path `theme`. **Output:**
+**Input:** path `theme` (one of the six theme keys — **required**; call `/interventions` for all themes at once). **Output:**
 ```json
 { "theme":"economy-poverty", "counts": { "High":1, "Moderate":4, "Limited":1 },
   "interventions": [ { "name":"Cash transfers & social protection", "evidence_strength":"High",
       "rationale":"Robust evidence for reducing poverty and vulnerability.",
       "source":"World Bank", "source_url":"https://www.worldbank.org" } ],
   "note":"Illustrative evidence synthesis from published reviews …; distinct from the live indicator data." }
+```
+`evidence_strength` ∈ `High` | `Moderate` | `Limited`. Returns 400 with `{themes:[…]}` for an unknown theme.
+
+### GET `/interventions`
+**Input:** none. **Output:** every theme's interventions in one payload (same per-theme shape as above):
+```json
+{ "themes": {
+    "child-survival":  { "theme":"child-survival",  "counts":{…}, "interventions":[…], "note":"…" },
+    "economy-poverty": { "theme":"economy-poverty", "counts":{…}, "interventions":[…], "note":"…" }
+} }
+```
+
+### GET `/evidence-chain`
+**Input:** none. **Output:** the static 7-step pipeline definition (for rendering the chain UI):
+```json
+{ "steps": [
+    { "id":"discover", "step":"Discover", "agent":"Agent 1", "description":"Resolve indicator & country codes and metadata for the question." },
+    { "id":"retrieve", "step":"Retrieve", "agent":"Agent 1", "description":"Fetch authoritative series; stamp provenance on every datapoint." },
+    { "id":"verify",   "step":"Verify",   "agent":"Agent 2", "description":"Check coverage, recency & data gaps; assign confidence; raise caveats." },
+    { "id":"analyse",  "step":"Analyse",  "agent":"Agent 3", "description":"Compute trend, gap-to-target and projection deterministically (no LLM)." },
+    { "id":"narrate",  "step":"Narrate",  "agent":"Agent 4", "description":"Render the verified claims to prose; every figure carries a citation." },
+    { "id":"review",   "step":"Review",   "agent":"Agent 5", "description":"Refuse to ship any number that lacks a supporting datapoint." },
+    { "id":"output",   "step":"Output",   "agent":"—",       "description":"Emit the brief + evidence ledger + provenance graph + cost report." }
+  ],
+  "note":"Every CEDAR output moves through these steps; nothing downstream uses a value an earlier step did not verify." }
+```
+
+### GET `/evidence-chain/{country}`
+**Input:** path `country`; query `theme` (default `child-survival`), `offline?`. **Output:** the same 7 steps,
+each annotated with a live `status` and a `detail` derived from an actual brief run — ideal for animating the stepper:
+```json
+{ "country":"KEN", "theme":"child-survival", "review_passed": true,
+  "steps": [
+    { "id":"discover", "step":"Discover", "agent":"Agent 1", "description":"…", "status":"done", "detail":"4 indicators" },
+    { "id":"retrieve", "step":"Retrieve", "agent":"Agent 1", "description":"…", "status":"done", "detail":"36 datapoints" },
+    { "id":"verify",   "step":"Verify",   "agent":"Agent 2", "description":"…", "status":"done", "detail":"1 caveat(s)" },
+    { "id":"analyse",  "step":"Analyse",  "agent":"Agent 3", "description":"…", "status":"done", "detail":"10 claims" },
+    { "id":"narrate",  "step":"Narrate",  "agent":"Agent 4", "description":"…", "status":"done", "detail":"10 cited" },
+    { "id":"review",   "step":"Review",   "agent":"Agent 5", "description":"…", "status":"done", "detail":"passed" },
+    { "id":"output",   "step":"Output",   "agent":"—",       "description":"…", "status":"done", "detail":"ready" }
+  ],
+  "cost": { "...": "cost report" } }
 ```
 
 ### POST `/copilot/summary`  *(mode = copilot)*
@@ -252,7 +297,10 @@ curl localhost:8000/brief/KEN?theme=child-survival
 curl localhost:8000/polycrisis/KEN
 curl localhost:8000/blindspots/NGA
 curl localhost:8000/project/KEN/SH.DYN.MORT      # -> reach_year 2037, years_late 7
+curl localhost:8000/interventions                # all themes
 curl localhost:8000/interventions/economy-poverty
+curl localhost:8000/evidence-chain               # static 7-step definition
+curl localhost:8000/evidence-chain/KEN?theme=child-survival   # steps with live status
 ```
 
 ## Response shape notes

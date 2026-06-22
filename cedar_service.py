@@ -224,6 +224,53 @@ def interventions(theme):
             "note": "Illustrative evidence synthesis from published reviews by the cited bodies; "
                     "distinct from the live indicator data and not a statistical estimate."}
 
+def interventions_all():
+    return {"themes": {t: interventions(t) for t in INTERVENTIONS}}
+
+# ----------------------------------------------------------------------------- evidence chain
+EVIDENCE_CHAIN = [
+    {"id": "discover", "step": "Discover", "agent": "Agent 1",
+     "description": "Resolve indicator & country codes and metadata for the question."},
+    {"id": "retrieve", "step": "Retrieve", "agent": "Agent 1",
+     "description": "Fetch authoritative series; stamp provenance on every datapoint."},
+    {"id": "verify", "step": "Verify", "agent": "Agent 2",
+     "description": "Check coverage, recency & data gaps; assign confidence; raise caveats."},
+    {"id": "analyse", "step": "Analyse", "agent": "Agent 3",
+     "description": "Compute trend, gap-to-target and projection deterministically (no LLM)."},
+    {"id": "narrate", "step": "Narrate", "agent": "Agent 4",
+     "description": "Render the verified claims to prose; every figure carries a citation."},
+    {"id": "review", "step": "Review", "agent": "Agent 5",
+     "description": "Refuse to ship any number that lacks a supporting datapoint."},
+    {"id": "output", "step": "Output", "agent": "—",
+     "description": "Emit the brief + evidence ledger + provenance graph + cost report."},
+]
+
+def evidence_chain():
+    """The canonical 7-step pipeline definition (static)."""
+    return {"steps": EVIDENCE_CHAIN,
+            "note": "Every CEDAR output moves through these steps; nothing downstream uses a value an earlier step did not verify."}
+
+def evidence_chain_run(country, theme="child-survival", offline=False):
+    """The chain with live per-step status computed from an actual brief run (for the UI stepper)."""
+    b = brief(country, theme, offline)
+    if "error" in b:
+        return b
+    avail = [i for i in b["indicators"] if i.get("available")]
+    datapoints = sum(len([v for v in i["obs"].values() if v is not None]) for i in avail)
+    caveats = sum(len(i["verification"]["caveats"]) for i in avail)
+    claims = sum(len(i["claims"]) for i in avail)
+    review_ok = all(c.get("datapoints") for i in avail for c in i["claims"])
+    detail = {"discover": f"{len(b['indicators'])} indicators",
+              "retrieve": f"{datapoints} datapoints",
+              "verify": (f"{caveats} caveat(s)" if caveats else "clean"),
+              "analyse": f"{claims} claims",
+              "narrate": f"{claims} cited",
+              "review": "passed" if review_ok else "blocked",
+              "output": "ready"}
+    steps = [{**s, "status": "done", "detail": detail[s["id"]]} for s in EVIDENCE_CHAIN]
+    return {"country": country, "theme": theme, "steps": steps,
+            "review_passed": review_ok, "cost": b["cost"]}
+
 # ----------------------------------------------------------------------------- optional LLM (gated by mode in api.py)
 CHAT_TOOLS = [
  {"type": "function", "function": {"name": "get_indicator",
