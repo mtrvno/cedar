@@ -6,7 +6,47 @@
 
 CEDAR turns a plain-language policy question into a **decision-ready evidence brief where every number is traceable** back to an authoritative API query, through a visible 7-stage evidence chain. Its analytic core runs with **no LLM and no paid API key**, so it works on a zero budget — the direct answer to the challenge's digital-divide concern.
 
-## Quick start (no dependencies)
+## Development setup
+
+**Requirements:** Python 3.8+ · Node.js 22+
+
+```bash
+# 1. Install client dependencies (Python needs none — stdlib only)
+make install
+
+# 2. Start both the API server and the Vue dev client
+make dev
+```
+
+This launches:
+- **API server** at `http://localhost:8000` — wraps `cedar.py` as a JSON REST API
+- **Vue client** at `http://localhost:5173` — the interactive evidence UI
+
+Ctrl+C stops both processes.
+
+### Manual start (without make)
+
+```bash
+# Terminal 1 — API server
+python3 server.py
+
+# Terminal 2 — Vue client
+cd client && npm run dev
+```
+
+### API endpoints
+
+```
+GET /api/themes                                        — list all available themes
+GET /api/brief?country=KEN&theme=child-survival        — evidence brief as JSON
+GET /api/brief?country=KEN&theme=child-survival&offline=true  — use bundled cache ($0.00)
+GET /api/polycrisis?country=KEN                        — cross-SDG composite risk read
+GET /api/health                                        — health check
+```
+
+The client auto-detects country + theme from natural-language queries (e.g. "maternal mortality in Kenya") and calls the live API, falling back to built-in demo scenarios when the server is not running.
+
+## Quick start (CLI only, no dependencies)
 ```bash
 python3 cedar.py --country KEN --theme child-survival --offline  # a themed SDG brief, $0.00
 python3 cedar.py --country KEN --theme energy-climate --offline  # another SDG theme
