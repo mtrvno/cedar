@@ -13,6 +13,140 @@ import { useEvidenceLedger } from '@/composables/useEvidenceLedger'
 
 const { setLedger } = useEvidenceLedger()
 
+interface HazardPoint {
+  iso3: string; name: string; lat: number; lon: number; ccri: number; type: 'high' | 'medium' | 'low'
+  alertlevel?: string; type_name?: string
+}
+const hazardPoints = ref<HazardPoint[]>([])
+
+const TYPE_COLOR: Record<string, string> = {
+  high: '#c0392b',
+  medium: '#e67e22',
+  low: '#2f6b4f',
+}
+
+function ccriColor(ccri: number): string {
+  if (ccri >= 7) return '#c0392b'
+  if (ccri >= 4) return '#e6a817'
+  return '#2f6b4f'
+}
+
+// SVG inner paths (24×24 viewBox, white stroke on transparent)
+const HAZARD_PATHS: Record<string, string> = {
+  Earthquake:
+    '<polyline points="2,12 6,6 9,16 12,4 15,14 18,8 22,12" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  Flood:
+    '<path d="M3 10 Q6 6 9 10 Q12 14 15 10 Q18 6 21 10" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+    '<path d="M3 16 Q6 12 9 16 Q12 20 15 16 Q18 12 21 16" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>',
+  'Tropical cyclone':
+    '<path d="M12 12 m-7 0 a7 7 0 1 0 14 0" stroke="white" stroke-width="2" fill="none"/>' +
+    '<path d="M12 5 Q17 7 19 12 Q17 17 12 19 Q7 17 5 12 Q7 7 12 5" stroke="white" stroke-width="1.5" fill="none"/>' +
+    '<circle cx="12" cy="12" r="2" fill="white"/>',
+  Drought:
+    '<circle cx="12" cy="12" r="4" stroke="white" stroke-width="2" fill="none"/>' +
+    '<line x1="12" y1="3" x2="12" y2="6" stroke="white" stroke-width="2" stroke-linecap="round"/>' +
+    '<line x1="12" y1="18" x2="12" y2="21" stroke="white" stroke-width="2" stroke-linecap="round"/>' +
+    '<line x1="3" y1="12" x2="6" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/>' +
+    '<line x1="18" y1="12" x2="21" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/>' +
+    '<line x1="5.6" y1="5.6" x2="7.8" y2="7.8" stroke="white" stroke-width="2" stroke-linecap="round"/>' +
+    '<line x1="16.2" y1="16.2" x2="18.4" y2="18.4" stroke="white" stroke-width="2" stroke-linecap="round"/>',
+  Volcano:
+    '<path d="M12 3 L20 21 H4 Z" stroke="white" stroke-width="2" fill="none" stroke-linejoin="round"/>' +
+    '<path d="M9 12 L12 8 L15 12" stroke="white" stroke-width="1.5" fill="none" stroke-linejoin="round"/>',
+  Wildfire:
+    '<path d="M12 21 C8 21 5 18 5 14 C5 10 8 8 10 6 C10 9 12 10 12 10 C12 10 14 7 13 4 C16 6 19 10 19 14 C19 18 16 21 12 21 Z" stroke="white" stroke-width="2" fill="none"/>',
+}
+const HAZARD_PATHS_DEFAULT =
+  '<path d="M12 3 L21 20 H3 Z" stroke="white" stroke-width="2" fill="none" stroke-linejoin="round"/>' +
+  '<line x1="12" y1="10" x2="12" y2="14" stroke="white" stroke-width="2" stroke-linecap="round"/>' +
+  '<circle cx="12" cy="17.5" r="1" fill="white"/>'
+
+function hazardDivIcon(typeName: string, fillColor: string, strokeColor: string): L.DivIcon {
+  const paths = HAZARD_PATHS[typeName] ?? HAZARD_PATHS_DEFAULT
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">${paths}</svg>`
+  return L.divIcon({
+    html: `<div style="width:32px;height:32px;border-radius:50%;background:${fillColor};border:3px solid ${strokeColor};box-shadow:0 2px 6px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;">${svg}</div>`,
+    className: '',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    tooltipAnchor: [0, -18],
+  })
+}
+
+const mapEl = ref<HTMLElement | null>(null)
+let leafletMap: L.Map | null = null
+
+function initMap() {
+  if (!mapEl.value || leafletMap) return
+  leafletMap = L.map(mapEl.value, {
+    center: [10, 20],
+    zoom: 2,
+    minZoom: 1,
+    maxZoom: 8,
+    zoomControl: true,
+    attributionControl: true,
+  })
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19,
+  }).addTo(leafletMap)
+
+  for (const pt of hazardPoints.value) {
+    const alertColor = TYPE_COLOR[pt.type]
+    const strokeColor = ccriColor(pt.ccri)
+    const icon = hazardDivIcon(pt.type_name ?? '', alertColor, strokeColor)
+    const marker = L.marker([pt.lat, pt.lon], { icon }).addTo(leafletMap)
+
+    const hazardLine = pt.type_name ? `${pt.type_name} · GDACS <span style="color:${alertColor}">${pt.alertlevel ?? ''}</span>` : `${pt.type} risk`
+    marker.bindTooltip(
+      `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.6;">
+        <strong style="font-size:12px;color:#1b1e23;">${pt.name}</strong><br>
+        CCRI <strong style="color:${strokeColor}">${pt.ccri.toFixed(1)}/10</strong> &nbsp;·&nbsp; <span style="font-size:10px;">${hazardLine}</span>
+      </div>`,
+      { className: 'cedar-map-tooltip', sticky: false },
+    )
+
+    marker.on('click', () => {
+      const country = countries.value.find((c) => c.iso3 === pt.iso3)
+      if (country) {
+        selectCountry(country)
+      } else {
+        selectedIso.value = pt.iso3
+        dropdownOpen.value = false
+      }
+    })
+  }
+}
+
+onMounted(async () => {
+  const [countriesRes, riskRes] = await Promise.allSettled([getCountries(), getClimateRisk()])
+  if (countriesRes.status === 'fulfilled') {
+    countries.value = countriesRes.value.countries.sort((a, b) => a.name.localeCompare(b.name))
+  }
+  if (riskRes.status === 'fulfilled') {
+    hazardPoints.value = riskRes.value.underestimated_alerts
+      .filter((a) => a.lat != null && a.lon != null)
+      .map((a) => ({
+        iso3: a.iso3,
+        name: a.country,
+        lat: a.lat!,
+        lon: a.lon!,
+        ccri: a.ccri,
+        type: a.alertlevel === 'Red' ? 'high' : a.alertlevel === 'Orange' ? 'medium' : 'low',
+        alertlevel: a.alertlevel,
+        type_name: a.type_name,
+      }))
+  }
+  await nextTick()
+  initMap()
+})
+
+onUnmounted(() => {
+  if (leafletMap) { leafletMap.remove(); leafletMap = null }
+})
+
 const THEMES = [
   { key: 'child-survival', label: 'Child Survival', color: '#E2B341' },
   { key: 'economy-poverty', label: 'Economy & Poverty', color: '#9E1B43' },
@@ -52,24 +186,6 @@ const loadingDrill = ref(false)
 const collapsedPoly = ref(false)
 const collapsedGaps = ref(false)
 const collapsedDrill = ref(false)
-
-const compareIso = ref('')
-const compareSearch = ref('')
-const compareDropdownOpen = ref(false)
-const brief2 = ref<BriefResponse | null>(null)
-const polycrisis2 = ref<PolycrisisResponse | null>(null)
-const loadingBrief2 = ref(false)
-const loadingPoly2 = ref(false)
-const errorBrief2 = ref<string | null>(null)
-
-onMounted(async () => {
-  try {
-    const res = await getCountries()
-    countries.value = res.countries.sort((a, b) => a.name.localeCompare(b.name))
-  } catch {
-    // backend offline
-  }
-})
 
 const filteredCountries = computed(() => {
   const q = countrySearch.value.toLowerCase().trim()
@@ -473,17 +589,8 @@ const compareRows = computed(() => {
         </div>
       </div>
 
-      <!-- Compare active tag -->
-      <div v-if="isComparing" class="compare-tag">
-        <span
-          style="width: 7px; height: 7px; border-radius: 50%; background: #9db1c2; flex: none"
-        ></span>
-        {{ compareName }}
-        <button @click="clearCompare" class="compare-clear-btn" title="Remove comparison">×</button>
-      </div>
-
-      <!-- Theme tabs -->
-      <div class="theme-tabs">
+      <!-- Theme tabs: only when country selected -->
+      <div v-if="selectedIso" class="theme-tabs">
         <button
           v-for="th in THEMES"
           :key="th.key"
@@ -499,215 +606,39 @@ const compareRows = computed(() => {
 
     <!-- Content -->
     <div class="overview-body">
-      <!-- Empty state -->
-      <div v-if="!selectedIso" class="empty-state">
-        <div class="empty-icon">
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="14" stroke="#ddd9cf" stroke-width="1.5" />
-            <path
-              d="M8 16c1.5-6 14.5-6 16 0M8 16c1.5 6 14.5 6 16 0M16 2v28M2 16h28"
-              stroke="#ddd9cf"
-              stroke-width="1.2"
-            />
-          </svg>
-        </div>
-        <div class="empty-title">Select a country</div>
-        <div class="empty-desc">
-          Choose a country above to see grounded indicators, SDG progress, and polycrisis risk — all
-          sourced from live World Bank data with zero LLM calls.
-        </div>
-      </div>
 
-      <!-- Comparison view -->
-      <div v-else-if="isComparing" class="compare-body">
-        <!-- Country summary header -->
-        <div class="compare-summary">
-          <div class="compare-summary-card compare-summary-card--a">
-            <div class="compare-summary-name">{{ selectedCountryName }}</div>
-            <div
-              v-if="polycrisis"
-              class="compare-poly-band"
-              :style="'color:' + BAND_COLOR[polycrisis.band]"
-            >
-              {{ BAND_LABEL[polycrisis.band] }}
-            </div>
-            <div
-              v-else-if="loadingPoly"
-              style="font-size: 11px; color: #bfc2b9; font-family: 'IBM Plex Mono', monospace"
-            >
-              Loading…
-            </div>
-          </div>
-          <div class="compare-vs-label">vs</div>
-          <div class="compare-summary-card compare-summary-card--b">
-            <div class="compare-summary-name">{{ compareName }}</div>
-            <div
-              v-if="polycrisis2"
-              class="compare-poly-band"
-              :style="'color:' + BAND_COLOR[polycrisis2.band]"
-            >
-              {{ BAND_LABEL[polycrisis2.band] }}
-            </div>
-            <div
-              v-else-if="loadingPoly2"
-              style="font-size: 11px; color: #bfc2b9; font-family: 'IBM Plex Mono', monospace"
-            >
-              Loading…
-            </div>
+      <!-- Hazard map (shown until country selected) -->
+      <div v-show="!selectedIso" class="map-container">
+        <div ref="mapEl" style="width:100%;height:100%;"></div>
+        <!-- Legend -->
+        <div class="map-legend">
+          <div class="map-legend-title">Fill — GDACS Alert</div>
+          <div class="map-legend-row"><span class="map-legend-dot" style="background:#2f6b4f"></span><span>Green (underestimated)</span></div>
+          <div class="map-legend-row"><span class="map-legend-dot" style="background:#e67e22"></span><span>Orange (underestimated)</span></div>
+          <div class="map-legend-row"><span class="map-legend-dot" style="background:#c0392b"></span><span>Red</span></div>
+          <div class="map-legend-title" style="margin-top:10px;">Border — CCRI (0–10)</div>
+          <div class="map-legend-row"><span class="map-legend-dot" style="background:#fff;border:3px solid #c0392b;box-sizing:border-box;"></span><span>≥ 7 Extremely High</span></div>
+          <div class="map-legend-row"><span class="map-legend-dot" style="background:#fff;border:3px solid #e6a817;box-sizing:border-box;"></span><span>4–7 High</span></div>
+          <div class="map-legend-row"><span class="map-legend-dot" style="background:#fff;border:3px solid #2f6b4f;box-sizing:border-box;"></span><span>&lt; 4 Medium/Low</span></div>
+          <div class="map-legend-title" style="margin-top:10px;">Hazard Type</div>
+          <div class="map-legend-row"><span class="map-legend-icon">〰</span><span>Earthquake</span></div>
+          <div class="map-legend-row"><span class="map-legend-icon">🌊</span><span>Flood</span></div>
+          <div class="map-legend-row"><span class="map-legend-icon">🌀</span><span>Cyclone</span></div>
+          <div class="map-legend-row"><span class="map-legend-icon">☀</span><span>Drought</span></div>
+          <div class="map-legend-row"><span class="map-legend-icon">🌋</span><span>Volcano</span></div>
+          <div style="margin-top:8px;color:#9a9f97;font-size:9px;line-height:1.5;">
+            GDACS alert in tooltip · Click to select
           </div>
         </div>
-
-        <!-- Loading -->
-        <div v-if="loadingBrief || loadingBrief2" class="loading-state">
-          <div class="loading-dots"><span></span><span></span><span></span></div>
-          <div
-            style="
-              font-family: 'IBM Plex Mono', monospace;
-              font-size: 11px;
-              color: #9a9f97;
-              letter-spacing: 0.05em;
-            "
-          >
-            Loading comparison…
-          </div>
-        </div>
-
-        <!-- Comparison table -->
-        <div v-else-if="compareRows.length" class="compare-table-wrap">
-          <div class="compare-table-header">
-            <div class="ctcol ctcol--label">{{ themeLabel }}</div>
-            <div class="ctcol ctcol--heading ctcol--heading-a">{{ selectedCountryName }}</div>
-            <div class="ctcol ctcol--heading ctcol--heading-b">{{ compareName }}</div>
-          </div>
-          <div v-for="row in compareRows" :key="row.code" class="compare-row">
-            <!-- Indicator name -->
-            <div class="ctcol ctcol--name-cell">
-              <div class="compare-ind-name">{{ row.name }}</div>
-              <div
-                style="
-                  font-family: 'IBM Plex Mono', monospace;
-                  font-size: 9px;
-                  color: #bfc2b9;
-                  margin-top: 2px;
-                "
-              >
-                {{ row.code }}
-              </div>
-            </div>
-            <!-- Country A -->
-            <div class="ctcol ctcol--data">
-              <template v-if="row.a?.available && row.a.lo">
-                <div class="compare-cell-value">
-                  {{ row.a.lo.value.toLocaleString('en-US', { maximumFractionDigits: 1 }) }}
-                  <span class="compare-cell-unit">{{ row.unit }}</span>
-                </div>
-                <div
-                  style="
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    margin-top: 4px;
-                    gap: 8px;
-                  "
-                >
-                  <span
-                    style="
-                      font-family: 'IBM Plex Mono', monospace;
-                      font-size: 9.5px;
-                      color: #a7aaa2;
-                    "
-                    >{{ row.a.lo.year }}</span
-                  >
-                  <svg
-                    v-if="row.a.sp"
-                    viewBox="0 0 100 26"
-                    style="width: 68px; height: 19px; flex: none"
-                  >
-                    <path :d="row.a.sp.area" style="fill: #eef2f5; stroke: none" />
-                    <path
-                      :d="row.a.sp.line"
-                      style="
-                        fill: none;
-                        stroke: #2c4a63;
-                        stroke-width: 1.4px;
-                        stroke-linejoin: round;
-                        stroke-linecap: round;
-                      "
-                    />
-                    <circle :cx="row.a.sp.dotX" :cy="row.a.sp.dotY" r="2" style="fill: #2c4a63" />
-                  </svg>
-                </div>
-                <span
-                  v-if="row.a.verification?.confidence_tier"
-                  :style="
-                    tierStyle(row.a.verification.confidence_tier) +
-                    'display:inline-block;padding:2px 5px;border-radius:2px;font-family:IBM Plex Mono,monospace;font-size:9px;margin-top:6px'
-                  "
-                  >{{ tierLabel(row.a.verification.confidence_tier) }} confidence</span
-                >
-              </template>
-              <span v-else style="font-size: 11px; color: #bfc2b9">No data</span>
-            </div>
-            <!-- Country B -->
-            <div class="ctcol ctcol--data">
-              <template v-if="row.b?.available && row.b.lo">
-                <div class="compare-cell-value">
-                  {{ row.b.lo.value.toLocaleString('en-US', { maximumFractionDigits: 1 }) }}
-                  <span class="compare-cell-unit">{{ row.unit }}</span>
-                </div>
-                <div
-                  style="
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    margin-top: 4px;
-                    gap: 8px;
-                  "
-                >
-                  <span
-                    style="
-                      font-family: 'IBM Plex Mono', monospace;
-                      font-size: 9.5px;
-                      color: #a7aaa2;
-                    "
-                    >{{ row.b.lo.year }}</span
-                  >
-                  <svg
-                    v-if="row.b.sp"
-                    viewBox="0 0 100 26"
-                    style="width: 68px; height: 19px; flex: none"
-                  >
-                    <path :d="row.b.sp.area" style="fill: #eef2f5; stroke: none" />
-                    <path
-                      :d="row.b.sp.line"
-                      style="
-                        fill: none;
-                        stroke: #9db1c2;
-                        stroke-width: 1.4px;
-                        stroke-linejoin: round;
-                        stroke-linecap: round;
-                      "
-                    />
-                    <circle :cx="row.b.sp.dotX" :cy="row.b.sp.dotY" r="2" style="fill: #9db1c2" />
-                  </svg>
-                </div>
-                <span
-                  v-if="row.b.verification?.confidence_tier"
-                  :style="
-                    tierStyle(row.b.verification.confidence_tier) +
-                    'display:inline-block;padding:2px 5px;border-radius:2px;font-family:IBM Plex Mono,monospace;font-size:9px;margin-top:6px'
-                  "
-                  >{{ tierLabel(row.b.verification.confidence_tier) }} confidence</span
-                >
-              </template>
-              <span v-else style="font-size: 11px; color: #bfc2b9">No data</span>
-            </div>
-          </div>
+        <!-- Subtitle pill -->
+        <div class="map-subtitle">
+          Underestimated GDACS alerts (Green/Orange) in CCRI > 7 countries · {{ hazardPoints.length }} alerts live
         </div>
       </div>
 
       <!-- Split layout: country selected -->
-      <div v-else class="content-layout">
+      <div v-if="selectedIso" class="content-layout">
+
         <!-- Main col: brief + KPI cards -->
         <div class="main-col">
           <!-- Loading -->
@@ -1267,7 +1198,7 @@ export default {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  z-index: 50;
+  z-index: 1001;
   background: #fff;
   border: 1px solid #ddd9cf;
   border-radius: 4px;
@@ -1519,28 +1450,71 @@ export default {
   border-top: 1px solid #f0ece4;
 }
 
-/* Empty / loading / error */
-.empty-state {
-  max-width: 440px;
-  margin: 10vh auto 0;
-  text-align: center;
-  padding: 0 20px;
+/* Hazard map */
+.map-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
 }
-.empty-icon {
-  margin-bottom: 20px;
-}
-.empty-title {
+
+.map-legend {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 500;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e3e1da;
+  border-radius: 4px;
+  padding: 10px 13px;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #a7aaa2;
-  margin-bottom: 10px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
 }
-.empty-desc {
-  font-size: 14px;
-  line-height: 1.65;
-  color: #6a6f68;
+.map-legend-title {
+  text-transform: uppercase;
+  color: #33373d;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.map-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #5a6068;
+  margin-bottom: 5px;
+}
+.map-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+.map-legend-icon {
+  width: 16px;
+  font-size: 12px;
+  flex: none;
+  text-align: center;
+  line-height: 1;
+}
+
+.map-subtitle {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e3e1da;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: #8a8f87;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .loading-state {
@@ -1909,5 +1883,18 @@ export default {
   font-size: 10px;
   font-weight: 400;
   color: #9a9f97;
+}
+</style>
+
+<style>
+.cedar-map-tooltip {
+  background: #fff !important;
+  border: 1px solid #e3e1da !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,.1) !important;
+  padding: 8px 11px !important;
+}
+.cedar-map-tooltip::before {
+  display: none !important;
 }
 </style>

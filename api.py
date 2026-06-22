@@ -56,7 +56,8 @@ def root():
                           "/brief/{country}", "/drilldown/{country}", "/polycrisis/{country}",
                           "/blindspots/{country}", "/project/{country}/{code}",
                           "/interventions", "/interventions/{theme}", "/evidence-chain",
-                          "/evidence-chain/{country}", "/copilot/summary", "/copilot/chat"],
+                          "/evidence-chain/{country}", "/ccri", "/gdacs", "/climate-risk",
+                          "/copilot/summary", "/copilot/chat"],
             "openapi": "/openapi.json"}
 
 @app.get("/health", tags=["meta"])
@@ -145,6 +146,30 @@ def evidence_chain_run(country: str, theme: str = Query("child-survival"), offli
     if "error" in r:
         raise HTTPException(400, r["error"])
     return r
+
+# --------------------------------------------------------------------------- live disaster x child-risk (GDACS x CCRI)
+@app.get("/ccri", tags=["procedures"])
+def ccri(country: Optional[str] = Query(None, description="Optional ISO3; omit for the full table")):
+    """UNICEF Children's Climate & Environment Risk Index (grounded static dataset)."""
+    if country:
+        r = svc.ccri_country(country.upper())
+        if not r:
+            raise HTTPException(404, f"no CCRI score for '{country.upper()}'")
+        return r
+    return svc.ccri_all()
+
+@app.get("/gdacs", tags=["procedures"])
+def gdacs(offline: Optional[bool] = Query(None)):
+    """Current GDACS disaster alerts, each enriched with the affected country's CCRI."""
+    return svc.gdacs(_off(offline))
+
+@app.get("/climate-risk", tags=["procedures"])
+def climate_risk(levels: str = Query("Green,Orange", description="comma-separated GDACS alert levels to flag"),
+                 offline: Optional[bool] = Query(None)):
+    """GDACS x CCRI: surface 'underestimated' alerts (low/medium-priority hazards in extremely-high
+    child-risk countries), a global scope, and a ranked 'where to focus' list. Deterministic, $0."""
+    lv = tuple(s.strip().capitalize() for s in levels.split(",") if s.strip())
+    return svc.climate_risk(_off(offline), levels=lv or ("Green", "Orange"))
 
 # --------------------------------------------------------------------------- LLM copilot (gated by mode)
 class SummaryIn(BaseModel):

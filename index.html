@@ -779,8 +779,28 @@ const CHAT_TOOLS=[
    parameters:{type:"object",properties:{iso:{type:"string",description:"ISO3 country code e.g. KEN, NGA, IND"},code:{type:"string",description:"World Bank indicator code e.g. SH.DYN.MORT"}},required:["iso","code"]}}},
  {type:"function",function:{name:"compare_indicator",description:"Compare the latest value of one indicator across several countries.",
    parameters:{type:"object",properties:{isos:{type:"array",items:{type:"string"},description:"ISO3 codes"},code:{type:"string"}},required:["isos","code"]}}},
- {type:"function",function:{name:"list_indicators",description:"List the indicator codes CEDAR knows by name (the SDG themes).",parameters:{type:"object",properties:{},required:[]}}}
+ {type:"function",function:{name:"list_indicators",description:"List the indicator codes CEDAR knows by name (the SDG themes).",parameters:{type:"object",properties:{},required:[]}}},
+ {type:"function",function:{name:"get_interventions",description:"Effective interventions for a theme, graded by evidence strength (High/Moderate/Limited), with sources. Use for 'what works'.",
+   parameters:{type:"object",properties:{theme:{type:"string",enum:Object.keys(INTERVENTIONS)}},required:["theme"]}}},
+ {type:"function",function:{name:"build_chart",description:"Build a chart spec to attach a graph to the answer. 'line' for trends over time, 'bar' to compare latest values. You needn't restate the chart's numbers in prose.",
+   parameters:{type:"object",properties:{kind:{type:"string",enum:["line","bar"]},title:{type:"string"},
+     items:{type:"array",items:{type:"object",properties:{iso:{type:"string"},code:{type:"string"}},required:["iso","code"]}}},required:["items"]}}}
 ];
+async function _demoBuildChart(args){
+  const kind=args.kind||'line', fetched=[];
+  for(const it of (args.items||[])){ const iso=String(it.iso||'').toUpperCase(), code=it.code||'';
+    const d=await fetchInd(iso,code); const obs=(d&&d.obs)?d.obs:{};
+    if(Object.keys(obs).length) fetched.push({iso,code,name:(d.name||code),unit:(d.unit||(META[code]?META[code].u:'')),country:(DATA[iso]?DATA[iso].name:iso),obs,
+      query_url:`https://api.worldbank.org/v2/country/${iso}/indicator/${code}?format=json`}); }
+  if(!fetched.length) return {error:'no data for requested chart items'};
+  const sameCode=new Set(fetched.map(f=>f.code)).size===1, lab=f=>sameCode?f.country:`${f.country} · ${f.name}`;
+  const spec={type:kind,title:args.title||fetched[0].name,unit:fetched[0].unit,
+    sources:fetched.map(f=>({label:`${f.country} · ${f.name}`,query_url:f.query_url}))};
+  if(kind==='bar'){ spec.categories=fetched.map(lab); spec.series=[{label:'latest',data:fetched.map(f=>{const ys=Object.keys(f.obs).map(Number);return f.obs[Math.max(...ys)];})}]; }
+  else{ const years=[...new Set(fetched.flatMap(f=>Object.keys(f.obs).map(Number)))].sort((a,b)=>a-b);
+    spec.x=years; spec.series=fetched.map(f=>({label:lab(f),data:years.map(y=>f.obs[y]??null)})); }
+  return spec;
+}
 async function fetchInd(iso,code){
   if(META[code]){ const store=await ensureCountry(iso); const s=store[code]; if(s&&Object.keys(s.obs).length) return {name:s.n,unit:s.u,target:s.t,obs:s.obs,lin:s.lin}; }
   try{
@@ -798,8 +818,12 @@ function packInd(iso,code,d){
     sdg_target:(d.target??null),series:d.obs,source:d.lin||'World Bank WDI',
     query_url:`https://api.worldbank.org/v2/country/${iso}/indicator/${code}?format=json`};
 }
-async function execTool(name,args,sources){
+async function execTool(name,args,sources,charts){
   if(name==='list_indicators') return Object.keys(META).map(c=>({code:c,name:META[c].n,unit:META[c].u}));
+  if(name==='get_interventions'){ chatStats.tool++; const list=INTERVENTIONS[args.theme]||[], counts={High:0,Moderate:0,Limited:0}; list.forEach(i=>counts[i.s]++);
+    return {theme:args.theme,counts,interventions:list.map(i=>({name:i.n,evidence_strength:i.s,rationale:i.why,source:i.src}))}; }
+  if(name==='build_chart'){ chatStats.tool++; const spec=await _demoBuildChart(args); if(spec.error) return spec;
+    if(charts) charts.push(spec); return {ok:true,type:spec.type,title:spec.title,series:(spec.series||[]).length,note:'chart built and attached to the response'}; }
   if(name==='get_indicator'){ chatStats.tool++; const p=packInd(args.iso,args.code,await fetchInd(args.iso,args.code));
     if(!p.error){sources.push(p); chatStats.inds.add(p.code); chatStats.ctys.add(p.iso);} return p; }
   if(name==='compare_indicator'){ const out=[]; for(const iso of (args.isos||[])){ chatStats.tool++; const p=packInd(iso,args.code,await fetchInd(iso,args.code));
@@ -812,6 +836,8 @@ function toolSummary(name,result){
   if(name==='get_indicator'&&result.latest) return `${Object.keys(result.series||{}).length} values · ${result.latest.year}: ${result.latest.value}${result.unit?(' '+result.unit):''}`;
   if(name==='compare_indicator'&&result.results) return `${result.results.filter(x=>!x.error).length} countries`;
   if(name==='list_indicators') return `${result.length} indicators`;
+  if(name==='get_interventions'&&result.interventions) return `${result.interventions.length} interventions`;
+  if(name==='build_chart'&&result.ok) return `${result.type} chart · ${result.series} series`;
   return 'done';
 }
 function addMsg(role,text){ const log=document.getElementById('chatLog'); const el=document.createElement('div'); el.className='msg '+role; el.textContent=text; log.appendChild(el); log.scrollTop=log.scrollHeight; return el; }
@@ -952,10 +978,10 @@ async function streamOnce(messages,model,key,onContent){
 async function runAgent(userText){
   const key=document.getElementById('llmKey').value.trim(), model=document.getElementById('llmModel').value;
   const iso=CURRENT, nm=DATA[iso]?DATA[iso].name:iso;
-  const sys=`You are CEDAR's evidence assistant, helping a policy analyst explore ${nm} (${iso}). Rules: (1) NEVER state a statistic you did not obtain from a tool call; call get_indicator/compare_indicator to fetch data first. (2) For every figure, name the indicator and year. (3) If data is unavailable, say so plainly — never guess. (4) Be concise (≤120 words unless asked for a draft). (5) You may compute simple derived values (changes, ratios) from retrieved values and should show the inputs. You may use light markdown (bold, numbered or bullet lists). Known indicator codes: ${Object.keys(META).join(', ')}. Country→ISO3: ${Object.entries(DATA).map(([i,d])=>d.name+'='+i).join('; ')}. For any other country/indicator use its ISO3 / World Bank code.`;
+  const sys=`You are CEDAR's evidence assistant, helping a policy analyst explore ${nm} (${iso}). Rules: (1) NEVER state a statistic you did not obtain from a tool call; call get_indicator/compare_indicator to fetch data first. (2) For every figure, name the indicator and year. (3) If data is unavailable, say so plainly — never guess. (4) Be concise (≤120 words unless asked for a draft). (5) You may compute simple derived values (changes, ratios) from retrieved values and should show the inputs. You may use light markdown (bold, numbered or bullet lists). (6) For "what works"/intervention questions, call get_interventions and report each intervention with its evidence strength and source. (7) When a trend or comparison would be clearer as a graph, call build_chart ('line' for trends over time, 'bar' to compare latest values across countries) to attach it — you needn't restate every plotted number in prose. Known indicator codes: ${Object.keys(META).join(', ')}. Country→ISO3: ${Object.entries(DATA).map(([i,d])=>d.name+'='+i).join('; ')}. For any other country/indicator use its ISO3 / World Bank code.`;
   chatMsgs.push({role:'user',content:userText});
   let messages=[{role:'system',content:sys},...chatMsgs];
-  const sources=[]; let tokIn=0,tokOut=0,toolCount=0;
+  const sources=[],charts=[]; let tokIn=0,tokOut=0,toolCount=0;
   for(let iter=0; iter<5; iter++){
     let liveEl=null;
     const res=await streamOnce(messages,model,key,(c)=>{
@@ -972,7 +998,7 @@ async function runAgent(userText){
       for(const t of res.tcalls){
         let args={}; try{args=JSON.parse(t.args||'{}');}catch(e){}
         const note=addMsg('tool','↳ '+t.name+'('+Object.values(args).join(', ')+') …');
-        const result=await execTool(t.name,args,sources);
+        const result=await execTool(t.name,args,sources,charts);
         note.textContent='↳ '+t.name+'('+Object.values(args).join(', ')+') → '+toolSummary(t.name,result);
         const tmsg={role:'tool',tool_call_id:t.id,content:JSON.stringify(result)};
         messages.push(tmsg); chatMsgs.push(tmsg);
@@ -982,7 +1008,7 @@ async function runAgent(userText){
     const finalText=res.content||'';
     chatMsgs.push({role:'assistant',content:finalText});
     if(!liveEl) liveEl=addMsg('bot','');
-    finalizeAnswer(liveEl, finalText, sources, tokIn, tokOut, model, toolCount);
+    finalizeAnswer(liveEl, finalText, sources, tokIn, tokOut, model, toolCount, charts);
     chatTurns.push({q:userText,a:finalText});         // record for export
     sources.forEach(x=>chatAllSources.push(x));
     break;
@@ -1002,9 +1028,10 @@ function chainTraceHtml(sources,ung,toolCount,text){
   return `<details class="chaintrace"><summary>Evidence chain for this answer</summary>`+
     steps.map((s,i)=>`<div class="cstep"><span class="cn">${i+1}</span><b>${s[0]}</b> · ${s[1]}</div>`).join('')+`</details>`;
 }
-function finalizeAnswer(el,text,sources,tokIn,tokOut,model,toolCount){
+function finalizeAnswer(el,text,sources,tokIn,tokOut,model,toolCount,charts){
   const pr=LLM_PRICE[model]||[0.15,0.60], cost=(tokIn/1e6*pr[0]+tokOut/1e6*pr[1]);
-  const gstr=JSON.stringify(sources);
+  const chartNums=JSON.stringify((charts||[]).map(c=>c.series));
+  const gstr=JSON.stringify(sources)+chartNums;
   const ung=(text.match(/\d+(?:\.\d+)?/g)||[]).filter(x=>!gstr.includes(x));
   const uniq={}; sources.forEach(s=>{const k=s.iso+'|'+s.code; if(!uniq[k])uniq[k]=s;}); const list=Object.values(uniq);
   let html=mdToHtml(text);
@@ -1014,7 +1041,26 @@ function finalizeAnswer(el,text,sources,tokIn,tokOut,model,toolCount){
      const lv=s.latest?` (${s.latest.year}: ${s.latest.value})`:''; return `${s.country||''} · ${s.name||s.code}${lv} — <a href="${s.query_url}" target="_blank">re-run ↗</a>`;
    }).join('<br>')+'</div>'; }
   html+=`<div class="src" style="border-top:0;padding-top:2px">${model} · ${tokIn}+${tokOut} tok · ~$${cost.toFixed(4)}</div>`;
-  el.innerHTML=html; document.getElementById('chatLog').scrollTop=1e9;
+  el.innerHTML=html;
+  (charts||[]).forEach(spec=>drawChatChart(el,spec));
+  document.getElementById('chatLog').scrollTop=1e9;
+}
+function drawChatChart(el,spec){
+  if(typeof Chart==='undefined'||!spec||!spec.series) return;
+  const wrap=document.createElement('div'); wrap.style.cssText='margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px';
+  const cv=document.createElement('canvas'); cv.style.maxHeight='220px'; wrap.appendChild(cv);
+  const cap=document.createElement('div'); cap.className='src'; cap.style.borderTop='0';
+  cap.innerHTML='<b>'+(spec.title||'Chart')+'</b>'+(spec.unit?(' · '+spec.unit):'')+'<br>'+
+    (spec.sources||[]).map(s=>`<a href="${s.query_url}" target="_blank">${s.label} ↗</a>`).join(' · ');
+  wrap.appendChild(cap); el.appendChild(wrap);
+  const cols=['#1763a6','#2f7d5b','#c2733b','#9a6a16','#7a4fa3'];
+  if(spec.type==='bar'){
+    new Chart(cv,{type:'bar',data:{labels:spec.categories,datasets:[{label:(spec.series[0]||{}).label||'latest',data:(spec.series[0]||{}).data||[],backgroundColor:cols[0]}]},
+      options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+  }else{
+    new Chart(cv,{type:'line',data:{labels:spec.x,datasets:spec.series.map((s,i)=>({label:s.label,data:s.data,borderColor:cols[i%cols.length],backgroundColor:'transparent',borderWidth:2,pointRadius:0,tension:.2,spanGaps:true}))},
+      options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}},scales:{x:{ticks:{maxTicksLimit:8}},y:{beginAtZero:true}}}});
+  }
 }
 function indStat(store,code){
   const d=store[code]||{obs:{}}; const ys=Object.keys(d.obs).map(Number).sort((a,b)=>a-b);
