@@ -1,4 +1,6 @@
 import { reactive, computed, nextTick, ref } from 'vue'
+import { postCopilotChat } from '@/api/cedar'
+import { useMode } from '@/composables/useMode'
 import type {
   KPI,
   Citation,
@@ -435,6 +437,7 @@ const state = reactive({
   activeKey: null as string | null,
   convTitle: 'New query',
   highlightCite: null as number | null,
+  detectedCountry: null as string | null,
 })
 
 const scrollRef = ref<HTMLElement | null>(null)
@@ -447,6 +450,126 @@ async function ask(text: string) {
   const v = (text || '').trim()
   if (!v) return
 
+  const { state: modeState, openKeyModal } = useMode()
+
+  // Copilot mode: use real API
+  if (modeState.mode === 'copilot') {
+    if (!modeState.apiKey) {
+      openKeyModal()
+      return
+    }
+
+    const params = detectApiParams(v)
+    if (params) state.detectedCountry = params.country
+    const country = state.detectedCountry
+
+    if (!country) {
+      state.messages = [...state.messages, buildUserMessage(v)]
+      state.input = ''
+      const fallback: Message = {
+        role: 'assistant',
+        isAssistant: true,
+        isUser: false,
+        hasData: false,
+        contextLabel: '',
+        kpiCount: 0,
+        kpis: [],
+        citations: [],
+        sdgs: [],
+        actions: [],
+        tokens: { in: 0, out: 0 },
+        sources: [],
+        steps: [],
+        paragraphs: [
+          {
+            text: 'Please name a country in your question so I can ground my response in verified data — for example "maternal mortality in Kenya" or "electricity access in Bangladesh."',
+          },
+        ],
+      }
+      state.messages = [...state.messages, fallback]
+      return
+    }
+
+    state.messages = [...state.messages, buildUserMessage(v)]
+    state.input = ''
+    state.thinking = true
+    state.view = 'chat'
+    state.panelOpen = false
+
+    const chatHistory = state.messages
+      .filter((m) => m.role === 'user' || (m.role === 'assistant' && m.paragraphs?.length))
+      .map((m) => ({
+        role: m.role as 'user' | 'assistant',
+        content:
+          m.role === 'user'
+            ? (m.text ?? '')
+            : (m.paragraphs ?? []).map((p) => p.text).join(' '),
+      }))
+
+    try {
+      const res = await postCopilotChat(
+        { country, messages: chatHistory },
+        modeState.apiKey,
+      )
+
+      const assistantMsg: Message = {
+        role: 'assistant',
+        isAssistant: true,
+        isUser: false,
+        hasData: res.sources.length > 0,
+        contextLabel: res.sources[0]?.country ?? '',
+        paragraphs: [{ text: res.answer }],
+        citations: [],
+        kpis: [],
+        kpiCount: 0,
+        sdgs: [],
+        actions: [],
+        tokens: res.tokens,
+        sources: res.sources.map((s, i) => ({
+          n: i + 1,
+          host: (() => { try { return new URL(s.query_url).hostname } catch { return s.code } })(),
+        })),
+        steps: [],
+      }
+
+      state.messages = [...state.messages, assistantMsg]
+      state.thinking = false
+      state.panelOpen = assistantMsg.hasData ?? false
+      state.convTitle = res.sources[0]?.country ?? 'Copilot response'
+    } catch (e) {
+      state.thinking = false
+      const errMsg: Message = {
+        role: 'assistant',
+        isAssistant: true,
+        isUser: false,
+        hasData: false,
+        contextLabel: '',
+        kpiCount: 0,
+        kpis: [],
+        citations: [],
+        sdgs: [],
+        actions: [],
+        tokens: { in: 0, out: 0 },
+        sources: [],
+        steps: [],
+        paragraphs: [
+          {
+            text:
+              'Error: ' +
+              (e instanceof Error ? e.message : 'Could not reach the API. Make sure the server is running and your key is valid.'),
+          },
+        ],
+      }
+      state.messages = [...state.messages, errMsg]
+    }
+
+    nextTick(() => {
+      if (scrollRef.value) scrollRef.value.scrollTop = scrollRef.value.scrollHeight
+    })
+    return
+  }
+
+  // Fallback: mock scenarios (deterministic chat is now the OverviewView, but keep for BriefView flow)
   state.messages = [...state.messages, buildUserMessage(v)]
   state.input = ''
   state.thinking = true
@@ -454,19 +577,7 @@ async function ask(text: string) {
   state.panelOpen = false
   if (thinkingTimer) clearTimeout(thinkingTimer)
 
-  let sc: Scenario | null = null
-  const params = detectApiParams(v)
-
-  if (params) {
-    try {
-      const res = await fetch(`/api/brief?country=${params.country}&theme=${params.theme}`)
-      if (res.ok) sc = (await res.json()) as Scenario
-    } catch {
-      /* API not running — fall through to mock */
-    }
-  }
-
-  if (!sc) sc = matchScenario(v)
+  const sc = matchScenario(v)
 
   thinkingTimer = setTimeout(() => {
     const a = buildAssistantMessage(sc)
@@ -503,6 +614,7 @@ function newQuery() {
   state.convTitle = 'New query'
   state.input = ''
   state.highlightCite = null
+  state.detectedCountry = null
 }
 
 function clickCite(n: number) {

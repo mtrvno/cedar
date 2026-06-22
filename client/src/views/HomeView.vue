@@ -1,9 +1,14 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import ChatView from '@/components/ChatView.vue'
 import BriefView from '@/components/BriefView.vue'
 import DataPanel from '@/components/DataPanel.vue'
+import OverviewView from '@/components/OverviewView.vue'
+import ModeToggle from '@/components/ModeToggle.vue'
+import ApiKeyModal from '@/components/ApiKeyModal.vue'
 import { useCedar } from '@/composables/useCedar'
+import { useMode } from '@/composables/useMode'
 
 const {
   state,
@@ -17,6 +22,10 @@ const {
   togglePanel,
   openBrief,
 } = useCedar()
+
+const { isCopilot, isEvidence, syncMode } = useMode()
+
+onMounted(() => syncMode())
 </script>
 
 <template>
@@ -37,8 +46,9 @@ const {
           </svg>
         </button>
 
+        <!-- Title area (only in copilot/chat mode) -->
         <div
-          v-if="isChat && state.convTitle !== 'New query'"
+          v-if="isCopilot && isChat && state.convTitle !== 'New query'"
           style="
             font-size: 13.5px;
             font-weight: 500;
@@ -51,7 +61,7 @@ const {
           {{ state.convTitle }}
         </div>
         <div
-          v-if="!isChat"
+          v-else-if="isCopilot && !isChat"
           style="
             font-family: 'IBM Plex Mono', monospace;
             font-size: 11px;
@@ -63,62 +73,75 @@ const {
           Evidence Brief
         </div>
 
-        <div style="margin-left: auto; display: flex; align-items: center; gap: 8px">
-          <button v-if="showBriefBtn" @click="openBrief" class="header-btn">
-            <svg width="13" height="13" viewBox="0 0 14 14">
-              <rect
-                x="2.5"
-                y="1.5"
-                width="9"
-                height="11"
-                rx="1"
-                stroke="#6a6f63"
-                stroke-width="1.2"
-                fill="none"
-              />
-              <path
-                d="M4.5 5h5M4.5 7.5h5M4.5 10h3"
-                stroke="#6a6f63"
-                stroke-width="1.1"
-                stroke-linecap="round"
-              />
-            </svg>
-            Generate brief
-          </button>
-          <button
-            v-if="showPanelBtn"
-            @click="togglePanel"
-            :style="panelBtnStyle"
-            class="panel-toggle-btn"
-          >
-            <svg width="13" height="13" viewBox="0 0 14 14">
-              <rect
-                x="1"
-                y="1.5"
-                width="12"
-                height="11"
-                rx="1"
-                stroke="#2c4a63"
-                stroke-width="1.2"
-                fill="none"
-              />
-              <path d="M9 1.5v11" stroke="#2c4a63" stroke-width="1.2" />
-              <rect x="9" y="1.5" width="4" height="11" fill="#dce6ee" />
-            </svg>
-            {{ panelBtnLabel }}
-          </button>
+        <!-- Mode toggle — center -->
+        <ModeToggle style="margin: 0 auto" />
+
+        <!-- Right actions (copilot + chat only) -->
+        <div style="display: flex; align-items: center; gap: 8px">
+          <template v-if="isCopilot">
+            <button v-if="showBriefBtn" @click="openBrief" class="header-btn">
+              <svg width="13" height="13" viewBox="0 0 14 14">
+                <rect
+                  x="2.5"
+                  y="1.5"
+                  width="9"
+                  height="11"
+                  rx="1"
+                  stroke="#6a6f63"
+                  stroke-width="1.2"
+                  fill="none"
+                />
+                <path
+                  d="M4.5 5h5M4.5 7.5h5M4.5 10h3"
+                  stroke="#6a6f63"
+                  stroke-width="1.1"
+                  stroke-linecap="round"
+                />
+              </svg>
+              Brief
+            </button>
+            <button
+              v-if="showPanelBtn"
+              @click="togglePanel"
+              :style="panelBtnStyle"
+              class="panel-toggle-btn"
+            >
+              <svg width="13" height="13" viewBox="0 0 14 14">
+                <rect
+                  x="1"
+                  y="1.5"
+                  width="12"
+                  height="11"
+                  rx="1"
+                  stroke="#2c4a63"
+                  stroke-width="1.2"
+                  fill="none"
+                />
+                <path d="M9 1.5v11" stroke="#2c4a63" stroke-width="1.2" />
+                <rect x="9" y="1.5" width="4" height="11" fill="#dce6ee" />
+              </svg>
+              {{ panelBtnLabel }}
+            </button>
+          </template>
         </div>
       </header>
 
-      <!-- Main content -->
-      <ChatView
-        v-if="isChat"
-        style="display: flex; flex-direction: column; flex: 1; min-height: 0"
-      />
-      <BriefView v-else style="display: flex; flex-direction: column; flex: 1; min-height: 0" />
+      <!-- Evidence mode -->
+      <OverviewView v-if="isEvidence" style="flex: 1; min-height: 0" />
+
+      <!-- Copilot mode -->
+      <template v-else>
+        <ChatView
+          v-if="isChat"
+          style="display: flex; flex-direction: column; flex: 1; min-height: 0"
+        />
+        <BriefView v-else style="display: flex; flex-direction: column; flex: 1; min-height: 0" />
+      </template>
     </main>
 
-    <DataPanel v-if="panelShown" />
+    <DataPanel v-if="isCopilot && panelShown" />
+
+    <ApiKeyModal />
   </div>
 </template>
 
