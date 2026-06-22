@@ -58,7 +58,7 @@ def brief(country, theme, offline=False):
     inds = []
     for code in spec["indicators"]:
         s = retr.fetch(code, country)
-        if not s:
+        if not s or not any(v is not None for v in s["obs"].values()):
             inds.append({"code": code, "name": cedar.CATALOG[code]["name"], "available": False}); continue
         v = ver.assess(s)
         claims = an.analyse(s, comparator=(comparator if code == spec["headline"] else None))

@@ -326,6 +326,8 @@ class Analyst:
         obs = {y: v for y, v in series["obs"].items() if v is not None}
         code = series["indicator_code"]
         years = sorted(obs)
+        if not years:          # series exists but has no usable (non-null) values
+            return []
         first_y, last_y = years[0], years[-1]
         first_v, last_v = obs[first_y], obs[last_y]
         better = CATALOG[code]["better"]
@@ -511,7 +513,7 @@ def run(country, theme, offline=False, use_llm=False):
     for code in spec["indicators"]:
         print(f"  [discover] indicator {code} -> {CATALOG[code]['name']}")
         series = retr.fetch(code, country)
-        if not series:
+        if not series or not any(v is not None for v in series["obs"].values()):
             print(f"  [skip] no data for {code}/{country}")
             continue
         mode = series["provenance"]["retrieval_mode"]
