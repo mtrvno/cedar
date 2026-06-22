@@ -1,0 +1,246 @@
+"""
+CEDAR service layer — pure, framework-free functions that return JSON-ready dicts.
+Reuses the deterministic engine in cedar.py (Retriever / Verifier / Analyst), so the
+API and the CLI share one source of truth. No FastAPI here, so this module is unit-testable.
+"""
+import json
+import cedar
+
+CACHE = json.load(open(cedar.CACHE_PATH))
+
+# ----------------------------------------------------------------------------- helpers
+def _engine(offline):
+    meter = cedar.CostMeter()
+    return cedar.Retriever(meter, offline=offline), cedar.Verifier(), cedar.Analyst(CACHE), meter
+
+def _latest(obs):
+    pts = {int(y): v for y, v in obs.items() if v is not None}
+    if not pts:
+        return None, None
+    ly = max(pts); return ly, pts[ly]
+
+# ----------------------------------------------------------------------------- metadata
+def catalog():
+    return {
+        "themes": {k: {"label": v["label"], "indicators": v["indicators"],
+                       "headline": v["headline"], "comparator": v.get("comparator")}
+                   for k, v in cedar.THEMES.items()},
+        "indicators": {c: {"name": m["name"], "unit": m["unit"], "better": m["better"], "lineage": m["lineage"]}
+                       for c, m in cedar.CATALOG.items()},
+        "sdg_targets": CACHE.get("sdg_targets", {}),
+        "polycrisis_domains": [{"domain": d, "indicator": c} for d, c in cedar.POLYCRISIS_DOMAINS],
+        "source": CACHE.get("_meta", {}),
+    }
+
+def countries():
+    seen = {}
+    for s in CACHE["series"]:
+        seen.setdefault(s["ref_area"], s["ref_area_name"])
+    return [{"iso3": k, "name": v} for k, v in sorted(seen.items(), key=lambda kv: kv[1])]
+
+# ----------------------------------------------------------------------------- data
+def series(country, code, offline=False):
+    retr, *_ = _engine(offline)
+    s = retr.fetch(code, country)
+    if not s:
+        return None
+    return {"country": country, "indicator_code": code, "indicator_name": s["indicator_name"],
+            "unit": s["unit"], "ref_area_name": s["ref_area_name"], "obs": s["obs"],
+            "provenance": s["provenance"]}
+
+# ----------------------------------------------------------------------------- procedures (deterministic, $0)
+def brief(country, theme, offline=False):
+    if theme not in cedar.THEMES:
+        return {"error": f"unknown theme '{theme}'", "themes": list(cedar.THEMES)}
+    retr, ver, an, meter = _engine(offline)
+    spec = cedar.THEMES[theme]
+    comparator = retr.fetch(spec["headline"], spec["comparator"]) if spec.get("comparator") else None
+    inds = []
+    for code in spec["indicators"]:
+        s = retr.fetch(code, country)
+        if not s:
+            inds.append({"code": code, "name": cedar.CATALOG[code]["name"], "available": False}); continue
+        v = ver.assess(s)
+        claims = an.analyse(s, comparator=(comparator if code == spec["headline"] else None))
+        inds.append({"code": code, "name": cedar.CATALOG[code]["name"], "unit": cedar.CATALOG[code]["unit"],
+                     "available": True, "obs": s["obs"], "verification": v, "claims": claims,
+                     "provenance": s["provenance"]})
+    return {"country": country, "theme": theme, "label": spec["label"],
+            "generated_at": cedar.now_iso(), "indicators": inds, "cost": meter.report()}
+
+def drilldown(country, dimension="wealth", offline=False):
+    if dimension != "wealth":
+        return {"error": f"dimension '{dimension}' not available", "available": ["wealth"]}
+    retr, ver, an, meter = _engine(offline)
+    avail = CACHE.get("equity", {}).get("available", {})
+    if country not in avail:
+        return {"error": f"no wealth-disaggregated data for {country}", "available_countries": list(avail)}
+    yr = avail[country]; vals = []
+    for code, lab in zip(cedar.QUINTILE_CODES, cedar.QUINTILE_LABELS):
+        s = retr.fetch(code, country)
+        v = None
+        if s:
+            nn = [x for x in s["obs"].values() if x is not None]
+            v = nn[-1] if nn else None
+        vals.append({"code": code, "quintile": lab, "value": v,
+                     "query_url": s["provenance"]["query_url"] if s else None})
+    nat_s = retr.fetch("SH.STA.STNT.ZS", country)
+    nat = nat_s["obs"].get(yr, nat_s["obs"].get(str(yr))) if nat_s else None
+    q1, q5 = vals[0]["value"], vals[-1]["value"]
+    ratio = round(q1 / q5, 2) if (q1 and q5) else None
+    gap = round(q1 - q5, 1) if (q1 is not None and q5 is not None) else None
+    return {"country": country, "dimension": "wealth_quintile", "indicator": "SH.STA.STNT.ZS",
+            "year": yr, "national": nat, "quintiles": vals,
+            "ratio_poorest_to_richest": ratio, "gap_points": gap, "cost": meter.report()}
+
+def polycrisis(country, offline=False):
+    retr, ver, an, meter = _engine(offline)
+    targets = CACHE.get("sdg_targets", {})
+    rows = []
+    for domain, code in cedar.POLYCRISIS_DOMAINS:
+        s = retr.fetch(code, code if False else country)
+        if not s:
+            rows.append({"domain": domain, "indicator": code, "available": False}); continue
+        obs = {int(y): v for y, v in s["obs"].items() if v is not None}
+        if not obs:
+            rows.append({"domain": domain, "indicator": code, "available": False}); continue
+        ys = sorted(obs); first, last = obs[ys[0]], obs[ys[-1]]
+        tgt = targets.get(code, {}); better = cedar.CATALOG[code]["better"]
+        if tgt.get("target") is not None:
+            t, dirn = tgt["target"], tgt["direction"]
+            met = (last <= t) if dirn == "below" else (last >= t)
+            status = "on-track" if met else "off-track"; bench = t
+        else:
+            improving = (last < first and better == "lower") or (last > first and better == "higher")
+            status = "improving" if improving else "worsening"; bench = None
+        v = ver.assess(s)
+        rows.append({"domain": domain, "indicator": code, "name": cedar.CATALOG[code]["name"],
+                     "unit": cedar.CATALOG[code]["unit"], "available": True, "value": last,
+                     "year": ys[-1], "benchmark": bench, "status": status,
+                     "stressed": status in ("off-track", "worsening"),
+                     "confidence": v["confidence_tier"], "query_url": s["provenance"]["query_url"]})
+    scored = [r for r in rows if r.get("available")]
+    sN = sum(r["stressed"] for r in scored); n = len(scored)
+    band = "high" if sN >= 4 else ("elevated" if sN >= 2 else "lower")
+    return {"country": country, "domains": rows, "stressed": sN, "scored": n,
+            "band": band, "cost": meter.report()}
+
+def blindspots(country, offline=False, cutoff=2022):
+    retr, *_rest, meter = _engine(offline)
+    core = sorted({c for sp in cedar.THEMES.values() for c in sp["indicators"]})
+    rows = []
+    for code in core:
+        s = retr.fetch(code, country)
+        ly, _ = _latest(s["obs"]) if s else (None, None)
+        status = "missing" if ly is None else ("recent" if ly >= cutoff else "stale")
+        rows.append({"indicator": code, "name": cedar.CATALOG[code]["name"], "status": status, "latest": ly})
+    miss = sum(r["status"] == "missing" for r in rows); stale = sum(r["status"] == "stale" for r in rows)
+    rec = sum(r["status"] == "recent" for r in rows)
+    return {"country": country, "cutoff": cutoff, "total": len(rows),
+            "missing": miss, "stale": stale, "recent": rec, "gaps": miss + stale,
+            "indicators": rows, "cost": meter.report()}
+
+def project(country, code, offline=False):
+    """Time-to-SDG-target projection for one indicator."""
+    retr, *_ = _engine(offline)
+    s = retr.fetch(code, country)
+    if not s:
+        return {"error": "no data", "country": country, "indicator": code}
+    obs = {int(y): v for y, v in s["obs"].items() if v is not None}
+    tgt = CACHE.get("sdg_targets", {}).get(code, {})
+    if not obs or tgt.get("target") is None:
+        return {"country": country, "indicator": code, "projectable": False,
+                "reason": "no target" if tgt.get("target") is None else "no data"}
+    ys = sorted(obs); f0, l0 = ys[0], ys[-1]; v0, v1 = obs[f0], obs[l0]
+    t, dirn = tgt["target"], tgt["direction"]
+    met = (v1 <= t) if dirn == "below" else (v1 >= t)
+    out = {"country": country, "indicator": code, "latest": v1, "latest_year": l0,
+           "target": t, "direction": dirn, "met": met, "projectable": True}
+    if met:
+        out.update(reach_year=l0, years_late=0, note="target already met"); return out
+    slope = (v1 - v0) / (l0 - f0) if l0 > f0 else 0.0
+    toward = (slope < 0 and dirn == "below") or (slope > 0 and dirn == "above")
+    if not toward or abs(slope) < 1e-9:
+        out.update(reach_year=None, years_late=None, diverging=True,
+                   note="not moving toward target at current pace")
+    else:
+        reach = round(l0 + (t - v1) / slope)
+        out.update(reach_year=reach, years_late=max(0, reach - 2030), diverging=False,
+                   on_time=reach <= 2030, note=f"reaches target ~{reach}")
+    return out
+
+# ----------------------------------------------------------------------------- interventions (curated, cited synthesis)
+EVID_SRC = {"WHO": "https://www.who.int", "Cochrane": "https://www.cochrane.org",
+            "J-PAL": "https://www.povertyactionlab.org", "World Bank": "https://www.worldbank.org",
+            "ILO": "https://www.ilo.org", "UNICEF": "https://data.unicef.org",
+            "UNESCO GEM": "https://www.unesco.org/gem-report", "IEA": "https://www.iea.org",
+            "WFP": "https://www.wfp.org", "3ie": "https://www.3ieimpact.org"}
+INTERVENTIONS = {
+ "child-survival": [
+  ("Childhood immunisation programmes", "High", "Among the most cost-effective ways to prevent child deaths.", "WHO"),
+  ("Skilled birth attendance & antenatal care", "High", "Reduces neonatal and maternal mortality.", "WHO"),
+  ("Insecticide-treated nets & malaria control", "High", "Large reductions in child mortality in endemic settings.", "Cochrane"),
+  ("Oral rehydration & zinc for diarrhoea", "High", "Cheap, proven reduction in diarrhoeal deaths.", "UNICEF"),
+  ("Exclusive breastfeeding promotion", "Moderate", "Improves infant survival; effect varies by setting.", "WHO"),
+  ("Conditional cash transfers", "Moderate", "Improve care-seeking & nutrition; context-dependent.", "J-PAL")],
+ "economy-poverty": [
+  ("Cash transfers & social protection", "High", "Robust evidence for reducing poverty and vulnerability.", "World Bank"),
+  ("Skills training + apprenticeships", "Moderate", "Best when demand-led and employer-linked (youth).", "ILO"),
+  ("Active labour-market programmes", "Moderate", "Job-search & matching help; effects modest on average.", "J-PAL"),
+  ("Wage / hiring subsidies", "Moderate", "Can boost youth hiring; risk of displacement.", "ILO"),
+  ("Entrepreneurship grants", "Moderate", "Help microenterprises; mixed on sustained jobs.", "J-PAL"),
+  ("Digital inclusion / connectivity", "Limited", "Promising but thin causal evidence for jobs so far.", "World Bank")],
+ "education": [
+  ("Structured pedagogy & teacher coaching", "High", "Consistent gains in learning outcomes.", "UNESCO GEM"),
+  ("Teaching at the right level", "High", "Strong, replicated learning gains.", "J-PAL"),
+  ("School feeding", "Moderate", "Improves attendance & nutrition; learning effects vary.", "WFP"),
+  ("Cash transfers for enrolment", "Moderate", "Raise enrolment & attendance.", "World Bank"),
+  ("Reducing class size", "Limited", "Costly; inconsistent effects on learning.", "3ie")],
+ "health-system": [
+  ("Emergency obstetric care", "High", "Core to cutting maternal deaths.", "WHO"),
+  ("Skilled birth attendance", "High", "Reduces maternal & neonatal mortality.", "WHO"),
+  ("Community health workers", "Moderate", "Extend coverage; quality & support are key.", "WHO"),
+  ("Health-financing / UHC reforms", "Moderate", "Improve access; design-dependent.", "World Bank")],
+ "wash": [
+  ("Improved water supply", "High", "Reduces diarrhoeal disease.", "Cochrane"),
+  ("Handwashing / hygiene promotion", "High", "Effective at cutting diarrhoea.", "Cochrane"),
+  ("Sanitation (community-led total sanitation)", "Moderate", "Reduces open defecation; effects vary.", "3ie"),
+  ("Household water treatment", "Moderate", "Works with sustained use.", "Cochrane")],
+ "energy-climate": [
+  ("Grid extension / electrification", "High", "Direct gains in access where affordable.", "World Bank"),
+  ("Off-grid solar & mini-grids", "Moderate", "Reach remote areas; financing is the constraint.", "IEA"),
+  ("Clean cooking programmes", "Moderate", "Health & climate gains; adoption is the challenge.", "WHO"),
+  ("Energy-efficiency standards", "Moderate", "Cost-effective emissions cuts.", "IEA")],
+}
+def interventions(theme):
+    if theme not in INTERVENTIONS:
+        return {"error": f"unknown theme '{theme}'", "themes": list(INTERVENTIONS)}
+    items = [{"name": n, "evidence_strength": s, "rationale": w, "source": src, "source_url": EVID_SRC.get(src, "")}
+             for n, s, w, src in INTERVENTIONS[theme]]
+    counts = {"High": 0, "Moderate": 0, "Limited": 0}
+    for i in items:
+        counts[i["evidence_strength"]] += 1
+    return {"theme": theme, "counts": counts, "interventions": items,
+            "note": "Illustrative evidence synthesis from published reviews by the cited bodies; "
+                    "distinct from the live indicator data and not a statistical estimate."}
+
+# ----------------------------------------------------------------------------- optional LLM (gated by mode in api.py)
+def llm_summary(claims_text, api_key, model="gpt-4o-mini", base_url="https://api.openai.com/v1"):
+    """Guardrailed executive summary. Returns dict; never lets the model invent a number."""
+    import urllib.request
+    system = ("You are an evidence editor for a UN agency. Rewrite the verified findings into a concise "
+              "2-3 sentence executive summary for a policymaker. Use ONLY the facts and numbers given; "
+              "never introduce a new number, country, year or claim; never speculate.")
+    body = json.dumps({"model": model, "temperature": 0,
+                       "messages": [{"role": "system", "content": system},
+                                    {"role": "user", "content": claims_text}]}).encode()
+    req = urllib.request.Request(base_url.rstrip("/") + "/chat/completions", data=body,
+                                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=40) as r:
+        data = json.loads(r.read().decode())
+    text = data["choices"][0]["message"]["content"].strip()
+    usage = data.get("usage", {})
+    invented = [n for n in cedar._nums(text) if n not in claims_text]
+    return {"summary": None if invented else text, "blocked": bool(invented),
+            "invented_numbers": invented, "model": model,
+            "tokens": {"in": usage.get("prompt_tokens", 0), "out": usage.get("completion_tokens", 0)}}
