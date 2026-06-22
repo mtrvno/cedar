@@ -20,7 +20,7 @@ Set CEDAR_OFFLINE=1 to force the bundled cache (no network); otherwise endpoints
 live World Bank API and transparently fall back to cache.
 """
 import os
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, HTTPException, Header, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -55,7 +55,8 @@ def root():
             "endpoints": ["/mode", "/catalog", "/countries", "/series/{country}/{code}",
                           "/brief/{country}", "/drilldown/{country}", "/polycrisis/{country}",
                           "/blindspots/{country}", "/project/{country}/{code}",
-                          "/interventions/{theme}", "/copilot/summary"]}
+                          "/interventions/{theme}", "/copilot/summary", "/copilot/chat"],
+            "openapi": "/openapi.json"}
 
 @app.get("/health", tags=["meta"])
 def health():
@@ -153,3 +154,25 @@ def copilot_summary(body: SummaryIn, x_openai_key: Optional[str] = Header(None, 
     except Exception as e:
         raise HTTPException(502, f"LLM call failed: {e.__class__.__name__}: {e}")
     return {"country": body.country.upper(), "theme": body.theme, "grounded_claims": claims, **out}
+
+
+class ChatIn(BaseModel):
+    country: str
+    messages: List[Dict[str, Any]]   # [{"role":"user","content":"..."}], history allowed
+    model: str = "gpt-4o-mini"
+
+@app.post("/copilot/chat", tags=["copilot"])
+def copilot_chat(body: ChatIn, x_openai_key: Optional[str] = Header(None, alias="X-OpenAI-Key")):
+    """Agentic, tool-grounded chat. The model calls World Bank tools to fetch any number it cites;
+    the answer is number-checked against retrieved data and returned with its sources (non-streaming)."""
+    if STATE["mode"] != "copilot":
+        raise HTTPException(403, "LLM is disabled in deterministic mode. POST /mode {\"mode\":\"copilot\"} to enable.")
+    key = x_openai_key or os.environ.get("OPENAI_API_KEY")
+    if not key:
+        raise HTTPException(400, "Provide an OpenAI key via the X-OpenAI-Key header (or OPENAI_API_KEY env).")
+    if not body.messages:
+        raise HTTPException(400, "messages must contain at least one {role, content}")
+    try:
+        return svc.llm_chat(body.messages, body.country.upper(), key, body.model, _off(None))
+    except Exception as e:
+        raise HTTPException(502, f"LLM call failed: {e.__class__.__name__}: {e}")

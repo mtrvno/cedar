@@ -66,6 +66,31 @@ server — it is passed per request via the `X-OpenAI-Key` header (or an `OPENAI
     -H "Content-Type: application/json" -H "X-OpenAI-Key: sk-..." \
     -d '{"country":"KEN","theme":"child-survival","model":"gpt-4o-mini"}'
   ```
+- `POST /copilot/chat` — **agentic, tool-grounded chat** (non-streaming). The model calls World Bank
+  tools to fetch any number it cites; the answer is number-checked and returned with its `sources`,
+  `grounded` flag, `unverified_numbers`, and `tokens`. Pass the conversation as `messages`.
+  ```bash
+  curl -X POST localhost:8000/copilot/chat \
+    -H "Content-Type: application/json" -H "X-OpenAI-Key: sk-..." \
+    -d '{"country":"KEN","messages":[{"role":"user","content":"Is Kenya on track for child survival, and what works?"}]}'
+  ```
+  Returns e.g. `{"answer":"…","grounded":true,"sources":[{"iso":"KEN","code":"SH.DYN.MORT","latest":{"year":2023,"value":39.6},...}],"tokens":{...}}`.
+
+## Typed clients for the front-end (TypeScript)
+FastAPI publishes a full OpenAPI schema at **`/openapi.json`**, so the web team gets typed clients for free:
+
+```bash
+# 1) start the API:  uvicorn api:app --port 8000
+# 2) generate types (pick one):
+npx openapi-typescript http://localhost:8000/openapi.json -o web/src/cedar-api.d.ts          # types only
+npx openapi-typescript-codegen --input http://localhost:8000/openapi.json --output web/src/cedar  # types + fetch client
+```
+Then in the app:
+```ts
+import type { paths } from "./cedar-api";
+type Brief = paths["/brief/{country}"]["get"]["responses"]["200"]["content"]["application/json"];
+```
+The interactive Swagger UI at **`/docs`** (and ReDoc at `/redoc`) also lets the team explore and try every endpoint.
 
 ## Examples
 ```bash

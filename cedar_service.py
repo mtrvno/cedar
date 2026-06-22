@@ -225,6 +225,91 @@ def interventions(theme):
                     "distinct from the live indicator data and not a statistical estimate."}
 
 # ----------------------------------------------------------------------------- optional LLM (gated by mode in api.py)
+CHAT_TOOLS = [
+ {"type": "function", "function": {"name": "get_indicator",
+   "description": "Authoritative time series for one indicator in one country (World Bank). Returns yearly values, latest, source, query URL.",
+   "parameters": {"type": "object", "properties": {
+       "iso": {"type": "string", "description": "ISO3 country code, e.g. KEN"},
+       "code": {"type": "string", "description": "World Bank indicator code, e.g. SH.DYN.MORT"}}, "required": ["iso", "code"]}}},
+ {"type": "function", "function": {"name": "compare_indicator",
+   "description": "Compare the latest value of one indicator across several countries.",
+   "parameters": {"type": "object", "properties": {
+       "isos": {"type": "array", "items": {"type": "string"}}, "code": {"type": "string"}}, "required": ["isos", "code"]}}},
+ {"type": "function", "function": {"name": "list_indicators",
+   "description": "List the indicator codes CEDAR knows by name.",
+   "parameters": {"type": "object", "properties": {}, "required": []}}},
+]
+
+def _chat_pack(iso, code, offline, sources):
+    s = series(iso, code, offline)
+    obs = {int(y): v for y, v in s["obs"].items() if v is not None} if s else {}
+    if not obs:
+        return {"iso": iso, "code": code, "error": "no data available"}
+    ys = sorted(obs)
+    p = {"country": s["ref_area_name"], "iso": iso, "code": code, "name": s["indicator_name"],
+         "unit": s["unit"], "latest": {"year": ys[-1], "value": obs[ys[-1]]},
+         "series": obs, "query_url": s["provenance"]["query_url"]}
+    sources.append(p); return p
+
+def _chat_exec(name, args, offline, sources):
+    if name == "list_indicators":
+        return [{"code": c, "name": cedar.CATALOG[c]["name"], "unit": cedar.CATALOG[c]["unit"]} for c in cedar.CATALOG]
+    if name == "get_indicator":
+        return _chat_pack(str(args.get("iso", "")).upper(), args.get("code", ""), offline, sources)
+    if name == "compare_indicator":
+        out = []
+        for iso in args.get("isos", []):
+            p = _chat_pack(str(iso).upper(), args.get("code", ""), offline, sources)
+            out.append({"iso": str(iso).upper(), "latest": p.get("latest"), "error": p.get("error")})
+        return {"code": args.get("code"), "results": out}
+    return {"error": "unknown tool"}
+
+def llm_chat(messages, country, api_key, model="gpt-4o-mini", offline=False, base_url="https://api.openai.com/v1"):
+    """Agentic, tool-grounded answer. The model must call tools to obtain any number; the result is
+    number-checked against retrieved data. Returns answer + sources + token usage (non-streaming)."""
+    import urllib.request
+    inds = ", ".join(cedar.CATALOG.keys())
+    cmap = "; ".join(f"{c['name']}={c['iso3']}" for c in countries())
+    sysmsg = {"role": "system", "content":
+        (f"You are CEDAR's evidence assistant, helping a policy analyst explore {country}. "
+         "NEVER state a statistic you did not obtain from a tool call; call get_indicator / "
+         "compare_indicator first. Name the indicator and year for every figure. If data is "
+         "unavailable, say so plainly. Be concise. You may use light markdown. "
+         f"Known indicator codes: {inds}. Country->ISO3: {cmap}. For other countries/indicators use ISO3 / WB codes.")}
+    msgs = [sysmsg] + [{"role": m["role"], "content": m.get("content", "")} for m in messages]
+    sources, tin, tout, final = [], 0, 0, ""
+    for _ in range(5):
+        body = json.dumps({"model": model, "temperature": 0, "messages": msgs,
+                           "tools": CHAT_TOOLS, "tool_choice": "auto"}).encode()
+        req = urllib.request.Request(base_url.rstrip("/") + "/chat/completions", data=body,
+                                     headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = json.loads(r.read().decode())
+        m = data["choices"][0]["message"]; u = data.get("usage", {})
+        tin += u.get("prompt_tokens", 0); tout += u.get("completion_tokens", 0)
+        tcs = m.get("tool_calls")
+        if tcs:
+            msgs.append(m)
+            for tc in tcs:
+                try:
+                    args = json.loads(tc["function"].get("arguments") or "{}")
+                except Exception:
+                    args = {}
+                res = _chat_exec(tc["function"]["name"], args, offline, sources)
+                msgs.append({"role": "tool", "tool_call_id": tc["id"], "content": json.dumps(res)})
+            continue
+        final = m.get("content") or ""; break
+    gstr = json.dumps(sources)
+    invented = [n for n in cedar._nums(final) if n not in gstr]
+    uniq = {}
+    for s in sources:
+        uniq[(s.get("iso"), s.get("code"))] = s
+    return {"answer": final, "grounded": not invented, "unverified_numbers": invented,
+            "sources": [{"country": s.get("country"), "iso": s.get("iso"), "code": s.get("code"),
+                         "name": s.get("name"), "latest": s.get("latest"), "query_url": s.get("query_url")}
+                        for s in uniq.values()],
+            "tokens": {"in": tin, "out": tout}, "model": model}
+
 def llm_summary(claims_text, api_key, model="gpt-4o-mini", base_url="https://api.openai.com/v1"):
     """Guardrailed executive summary. Returns dict; never lets the model invent a number."""
     import urllib.request
