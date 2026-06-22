@@ -1,5 +1,5 @@
 import { reactive, computed, nextTick, ref } from 'vue'
-import { postCopilotChat } from '@/api/cedar'
+import { postCopilotChat, getCountries } from '@/api/cedar'
 import { useMode } from '@/composables/useMode'
 import type {
   KPI,
@@ -324,6 +324,9 @@ const COUNTRY_CODES: Record<string, string> = {
   senegal: 'SEN', mozambique: 'MOZ', zambia: 'ZMB', malawi: 'MWI',
   cameroon: 'CMR', burkina: 'BFA', niger: 'NER', chad: 'TCD',
 }
+getCountries().then(({ countries }) => {
+  for (const { iso3, name } of countries) COUNTRY_CODES[name.toLowerCase()] = iso3
+}).catch(() => {})
 
 const THEME_KEYWORDS: Array<[RegExp, string]> = [
   [/maternal|obstetric|mmeig/, 'health-system'],
@@ -345,7 +348,7 @@ function detectApiParams(text: string): { country: string; theme: string } | nul
   for (const [pattern, th] of THEME_KEYWORDS) {
     if (pattern.test(t)) { theme = th; break }
   }
-  return country && theme ? { country, theme } : null
+  return country ? { country, theme: theme ?? '' } : null
 }
 
 function matchScenario(text: string): Scenario | null {

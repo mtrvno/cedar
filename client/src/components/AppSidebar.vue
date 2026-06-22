@@ -1,9 +1,38 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useCedar } from '@/composables/useCedar'
 import { useMode } from '@/composables/useMode'
+import { useEvidenceLedger } from '@/composables/useEvidenceLedger'
 
 const { state, historyGroups, tokenInfo, sources, hasData, newQuery, loadConv } = useCedar()
 const { isCopilot, isEvidence, hasKey, state: modeState, openKeyModal, clearApiKey } = useMode()
+const { countryName, theme, indicators, cost, retrievedAt } = useEvidenceLedger()
+
+const THEME_LABELS: Record<string, string> = {
+  'child-survival': 'Child Survival',
+  'economy-poverty': 'Economy & Poverty',
+  'education': 'Education',
+  'health-system': 'Health System',
+  'wash': 'Water & Sanitation',
+  'energy-climate': 'Energy & Climate',
+}
+
+const ledgerSources = computed(() =>
+  indicators.value
+    .filter((i) => i.available && i.provenance?.query_url)
+    .map((i) => ({
+      name: i.name,
+      code: i.code,
+      year: i.provenance?.retrieved_at as string | undefined,
+      served: i.provenance?.served as string | undefined,
+      url: i.provenance?.query_url as string,
+    }))
+)
+
+const apiCalls = computed(() => {
+  const c = cost.value as Record<string, unknown> | null
+  return c ? (c.api_calls as number | undefined) ?? ledgerSources.value.length : ledgerSources.value.length
+})
 </script>
 
 <template>
@@ -36,75 +65,90 @@ const { isCopilot, isEvidence, hasKey, state: modeState, openKeyModal, clearApiK
     <!-- Evidence mode sidebar -->
     <div
       v-if="isEvidence"
-      style="flex: 1; overflow-y: auto; padding: 16px 16px; animation: cedarFade 0.25s ease both"
+      style="flex: 1; overflow-y: auto; padding: 16px 14px; animation: cedarFade 0.25s ease both"
     >
-      <div class="mono-label" style="margin-bottom: 10px">Evidence mode</div>
-      <div style="font-size: 13px; line-height: 1.55; color: #5a6068; margin-bottom: 16px">
-        All figures are grounded in live World Bank data. Zero LLM calls. Select a country and theme
-        in the main panel.
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 8px">
-        <div
-          style="
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            background: #f0f7f3;
-            border: 1px solid #cfe0d4;
-            border-radius: 3px;
-          "
-        >
-          <span
-            style="width: 6px; height: 6px; border-radius: 50%; background: #2f6b4f; flex: none"
-          ></span>
-          <span style="font-size: 12px; color: #2f6b4f; font-weight: 500">$0 LLM cost</span>
+      <!-- No country selected yet -->
+      <template v-if="!countryName">
+        <div class="mono-label" style="margin-bottom: 10px">Evidence mode</div>
+        <div style="font-size: 12.5px; line-height: 1.55; color: #9a9f97">
+          Select a country and theme to see the evidence ledger.
         </div>
-        <div
-          style="
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            background: #fff;
-            border: 1px solid #e3e1da;
-            border-radius: 3px;
-          "
-        >
-          <span
-            style="
-              font-family: 'IBM Plex Mono', monospace;
-              font-size: 10px;
-              color: #2c4a63;
-              font-weight: 500;
-            "
-            >WB</span
+      </template>
+
+      <!-- Country loaded: show evidence ledger -->
+      <template v-else>
+        <!-- Query header -->
+        <div class="mono-label" style="margin-bottom: 6px">Evidence Ledger</div>
+        <div style="font-size: 13px; font-weight: 500; color: #1b1e23; margin-bottom: 2px">
+          {{ countryName }}
+        </div>
+        <div style="font-size: 11px; color: #9a9f97; margin-bottom: 14px; font-family: 'IBM Plex Mono', monospace">
+          {{ THEME_LABELS[theme] ?? theme }}
+          <span v-if="retrievedAt" style="margin-left: 8px; color: #bfc2b9">· {{ retrievedAt }}</span>
+        </div>
+
+        <!-- Cost pill -->
+        <div style="display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap">
+          <div class="ledger-pill ledger-pill--green">
+            <span style="width: 5px; height: 5px; border-radius: 50%; background: #2f6b4f; flex: none"></span>
+            $0 LLM cost
+          </div>
+          <div class="ledger-pill">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #2c4a63">{{ apiCalls }}</span>
+            API calls
+          </div>
+        </div>
+
+        <!-- Source list -->
+        <div class="mono-label" style="margin-bottom: 8px">
+          Sources · {{ ledgerSources.length }}
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px">
+          <a
+            v-for="s in ledgerSources"
+            :key="s.code"
+            :href="s.url"
+            target="_blank"
+            rel="noopener"
+            class="ledger-source"
           >
-          <span style="font-size: 12px; color: #5a6068">World Bank WDI</span>
-        </div>
-        <div
-          style="
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            background: #fff;
-            border: 1px solid #e3e1da;
-            border-radius: 3px;
-          "
-        >
-          <span
-            style="
-              font-family: 'IBM Plex Mono', monospace;
-              font-size: 10px;
-              color: #2c4a63;
-              font-weight: 500;
-            "
-            >SDG</span
+            <div style="display: flex; align-items: center; gap: 6px">
+              <span
+                class="ledger-served"
+                :class="'ledger-served--' + (s.served ?? 'live')"
+                :title="s.served ?? 'live'"
+              ></span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: #2c4a63; flex: none">
+                {{ s.code }}
+              </span>
+            </div>
+            <div style="font-size: 11.5px; color: #33373d; line-height: 1.3; margin-top: 3px">
+              {{ s.name }}
+            </div>
+            <div style="font-size: 10px; color: #bfc2b9; margin-top: 2px; display: flex; align-items: center; gap: 4px">
+              WB WDI
+              <svg width="8" height="8" viewBox="0 0 10 10" style="flex:none">
+                <path d="M3.5 6.5L6.5 3.5M4 3.5h2.5V6" stroke="#bfc2b9" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </a>
+
+          <!-- Unavailable indicators -->
+          <div
+            v-for="i in indicators.filter(x => !x.available)"
+            :key="i.code"
+            class="ledger-source ledger-source--missing"
           >
-          <span style="font-size: 12px; color: #5a6068">SDG target tracking</span>
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: #bfc2b9">
+              {{ i.code }}
+            </div>
+            <div style="font-size: 11.5px; color: #a7aaa2; line-height: 1.3; margin-top: 3px">
+              {{ i.name }}
+            </div>
+            <div style="font-size: 10px; color: #d4cfc6; margin-top: 2px">No data</div>
+          </div>
         </div>
-      </div>
+      </template>
     </div>
 
     <!-- Copilot: History (no active data) -->
@@ -546,4 +590,51 @@ const { isCopilot, isEvidence, hasKey, state: modeState, openKeyModal, clearApiK
   color: #2c4a63;
   border-color: #2c4a63;
 }
+
+/* Evidence ledger */
+.ledger-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: #fff;
+  border: 1px solid #e3e1da;
+  border-radius: 2px;
+  font-size: 11px;
+  color: #5a6068;
+}
+.ledger-pill--green {
+  background: #f0f7f3;
+  border-color: #cfe0d4;
+  color: #2f6b4f;
+  font-weight: 500;
+}
+
+.ledger-source {
+  display: block;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid #e3e1da;
+  border-radius: 3px;
+  text-decoration: none;
+  transition: border-color 0.12s;
+}
+.ledger-source:hover {
+  border-color: #2c4a63;
+}
+.ledger-source--missing {
+  background: #faf9f6;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.ledger-served {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex: none;
+}
+.ledger-served--live    { background: #2f6b4f; }
+.ledger-served--cache   { background: #e67e22; }
+.ledger-served--snapshot { background: #9a9f97; }
 </style>
