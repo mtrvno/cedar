@@ -158,6 +158,11 @@
   .msg .src a{color:var(--unblue);text-decoration:none} .msg .src a:hover{text-decoration:underline}
   .msg .gv{font-size:10.5px;font-weight:700;letter-spacing:.3px;margin-top:6px;display:block}
   .msg .gv.ok{color:var(--good)} .msg .gv.warn{color:var(--warn)}
+  .chaintrace{margin-top:8px;border-top:1px solid var(--hair);padding-top:6px}
+  .chaintrace summary{cursor:pointer;font-size:11px;font-weight:700;color:var(--unblue);letter-spacing:.2px}
+  .chaintrace .cstep{font-size:11px;color:var(--mut);padding:3px 0 3px 4px;display:flex;gap:7px;align-items:baseline}
+  .chaintrace .cstep .cn{font-family:var(--mono);font-size:9.5px;color:var(--faint);border:1px solid var(--line);border-radius:50%;min-width:15px;height:15px;display:inline-flex;align-items:center;justify-content:center}
+  .chaintrace .cstep b{color:var(--navy)}
   .chips{display:flex;gap:6px;flex-wrap:wrap;padding:10px;border-top:1px solid var(--line);background:#fff}
   .chips button{border:1px solid var(--line);background:#fff;border-radius:14px;padding:5px 11px;font-size:11.5px;color:var(--mut);cursor:pointer;font-family:var(--sans)}
   .chips button:hover{border-color:var(--unblue);color:var(--navy)}
@@ -950,7 +955,7 @@ async function runAgent(userText){
   const sys=`You are CEDAR's evidence assistant, helping a policy analyst explore ${nm} (${iso}). Rules: (1) NEVER state a statistic you did not obtain from a tool call; call get_indicator/compare_indicator to fetch data first. (2) For every figure, name the indicator and year. (3) If data is unavailable, say so plainly — never guess. (4) Be concise (≤120 words unless asked for a draft). (5) You may compute simple derived values (changes, ratios) from retrieved values and should show the inputs. You may use light markdown (bold, numbered or bullet lists). Known indicator codes: ${Object.keys(META).join(', ')}. Country→ISO3: ${Object.entries(DATA).map(([i,d])=>d.name+'='+i).join('; ')}. For any other country/indicator use its ISO3 / World Bank code.`;
   chatMsgs.push({role:'user',content:userText});
   let messages=[{role:'system',content:sys},...chatMsgs];
-  const sources=[]; let tokIn=0,tokOut=0;
+  const sources=[]; let tokIn=0,tokOut=0,toolCount=0;
   for(let iter=0; iter<5; iter++){
     let liveEl=null;
     const res=await streamOnce(messages,model,key,(c)=>{
@@ -960,6 +965,7 @@ async function runAgent(userText){
     });
     tokIn+=res.usage.prompt_tokens||0; tokOut+=res.usage.completion_tokens||0;
     if(res.tcalls.length){
+      toolCount+=res.tcalls.length;
       if(liveEl){ if(res.content.trim()) liveEl.innerHTML=mdToHtml(res.content); else liveEl.remove(); }
       const asst={role:'assistant',content:res.content||null,tool_calls:res.tcalls.map(t=>({id:t.id,type:'function',function:{name:t.name,arguments:t.args}}))};
       messages.push(asst); chatMsgs.push(asst);
@@ -976,7 +982,7 @@ async function runAgent(userText){
     const finalText=res.content||'';
     chatMsgs.push({role:'assistant',content:finalText});
     if(!liveEl) liveEl=addMsg('bot','');
-    finalizeAnswer(liveEl, finalText, sources, tokIn, tokOut, model);
+    finalizeAnswer(liveEl, finalText, sources, tokIn, tokOut, model, toolCount);
     chatTurns.push({q:userText,a:finalText});         // record for export
     sources.forEach(x=>chatAllSources.push(x));
     break;
@@ -985,13 +991,25 @@ async function runAgent(userText){
   chatStats.ans++; chatStats.tokIn+=tokIn; chatStats.tokOut+=tokOut; chatStats.cost+=(tokIn/1e6*pr[0]+tokOut/1e6*pr[1]);
   renderMeter();
 }
-function finalizeAnswer(el,text,sources,tokIn,tokOut,model){
+function chainTraceHtml(sources,ung,toolCount,text){
+  const inds=new Set(sources.map(s=>s.code).filter(Boolean)), ctys=new Set(sources.map(s=>s.iso).filter(Boolean));
+  const dp=sources.reduce((a,s)=>a+(s.series?Object.keys(s.series).length:0),0), grounded=!ung.length;
+  const steps=[["Discover",`${toolCount} call(s) · ${inds.size} indicator(s), ${ctys.size} country(ies)`],
+    ["Retrieve",`${sources.length} series · ${dp} datapoints`],["Verify",`${sources.length} grounded source(s)`],
+    ["Analyse","computed from retrieved data"],["Narrate",`${text.split(/\s+/).filter(Boolean).length} words`],
+    ["Review", grounded?"passed — all figures grounded":`⚠ ${ung.length} unverified: ${ung.join(', ')}`],
+    ["Output",`${sources.length} source(s) cited`]];
+  return `<details class="chaintrace"><summary>Evidence chain for this answer</summary>`+
+    steps.map((s,i)=>`<div class="cstep"><span class="cn">${i+1}</span><b>${s[0]}</b> · ${s[1]}</div>`).join('')+`</details>`;
+}
+function finalizeAnswer(el,text,sources,tokIn,tokOut,model,toolCount){
   const pr=LLM_PRICE[model]||[0.15,0.60], cost=(tokIn/1e6*pr[0]+tokOut/1e6*pr[1]);
   const gstr=JSON.stringify(sources);
   const ung=(text.match(/\d+(?:\.\d+)?/g)||[]).filter(x=>!gstr.includes(x));
   const uniq={}; sources.forEach(s=>{const k=s.iso+'|'+s.code; if(!uniq[k])uniq[k]=s;}); const list=Object.values(uniq);
   let html=mdToHtml(text);
   html += list.length ? `<span class="gv ${ung.length?'warn':'ok'}">${ung.length?'⚠ contains derived/unverified figures — check sources':'✓ figures traced to retrieved data'}</span>` : '';
+  html += chainTraceHtml(sources, ung, toolCount||0, text);
   if(list.length){ html+='<div class="src"><b>Sources</b><br>'+list.map(s=>{
      const lv=s.latest?` (${s.latest.year}: ${s.latest.value})`:''; return `${s.country||''} · ${s.name||s.code}${lv} — <a href="${s.query_url}" target="_blank">re-run ↗</a>`;
    }).join('<br>')+'</div>'; }

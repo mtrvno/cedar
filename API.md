@@ -264,16 +264,29 @@ If the model emits a figure not in the claims, it is withheld: `{ "summary": nul
   "messages":[ { "role":"user", "content":"Is Kenya on track for child survival, and what works?" } ],
   "model":"gpt-4o-mini" }
 ```
-`messages` is the conversation so far (`role` ∈ `user`|`assistant`, plus any prior turns). **Output:**
+`messages` is the conversation so far (`role` ∈ `user`|`assistant`, plus any prior turns). **Output** — note the
+**per-prompt `evidence_chain`** and the raw `tool_calls`, both reflecting what *this* answer actually did:
 ```json
 { "answer":"Kenya's under-5 mortality is 39.6 per 1,000 (2023), down from 53.1 (2010) but above the SDG target of 25 …",
   "grounded":true, "unverified_numbers":[],
   "sources":[ { "country":"Kenya", "iso":"KEN", "code":"SH.DYN.MORT", "name":"Under-5 mortality rate",
                 "latest":{ "year":2023, "value":39.6 },
                 "query_url":"https://api.worldbank.org/v2/country/KEN/indicator/SH.DYN.MORT?format=json" } ],
+  "tool_calls":[ { "name":"get_indicator", "args":{ "iso":"KEN","code":"SH.DYN.MORT" }, "detail":"14 values · 2023: 39.6" } ],
+  "evidence_chain":[
+    { "id":"discover", "step":"Discover", "agent":"Agent 1", "status":"done", "detail":"1 tool call(s) · 1 indicator(s), 1 country(ies)", "description":"…" },
+    { "id":"retrieve", "step":"Retrieve", "agent":"Agent 1", "status":"done", "detail":"1 series · 14 datapoints", "description":"…" },
+    { "id":"verify",   "step":"Verify",   "agent":"Agent 2", "status":"done", "detail":"1 grounded source(s)", "description":"…" },
+    { "id":"analyse",  "step":"Analyse",  "agent":"Agent 3", "status":"done", "detail":"computed from retrieved data", "description":"…" },
+    { "id":"narrate",  "step":"Narrate",  "agent":"Agent 4", "status":"done", "detail":"22 words", "description":"…" },
+    { "id":"review",   "step":"Review",   "agent":"Agent 5", "status":"done", "detail":"passed — all figures grounded", "description":"…" },
+    { "id":"output",   "step":"Output",   "agent":"—",       "status":"done", "detail":"1 source(s) cited", "description":"…" }
+  ],
   "tokens":{ "in":1320, "out":180 }, "model":"gpt-4o-mini" }
 ```
-`grounded` is `false` (and `unverified_numbers` non-empty) when the answer contains a figure not found in the tool-retrieved data. Returns 403 if not in copilot mode, 400 if no key/empty messages.
+- `evidence_chain` is computed **per prompt** from the agent's actual run (tool calls, datapoints fetched, grounding result), so the UI can render a chain specific to each answer (not the generic `/evidence-chain` definition).
+- When the answer contains a figure not found in the retrieved data, `grounded` is `false`, `unverified_numbers` lists them, and the `review` step has `status:"warn"` with a `detail` naming the flagged figures.
+- Returns 403 if not in copilot mode, 400 if no key/empty messages.
 
 ## Typed clients for the front-end (TypeScript)
 FastAPI publishes a full OpenAPI schema at **`/openapi.json`**, so the web team gets typed clients for free:
