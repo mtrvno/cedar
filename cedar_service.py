@@ -4,9 +4,14 @@ Reuses the deterministic engine in cedar.py (Retriever / Verifier / Analyst), so
 API and the CLI share one source of truth. No FastAPI here, so this module is unit-testable.
 """
 import json
+import os
+import urllib.request
+from collections import Counter
 import cedar
 
 CACHE = json.load(open(cedar.CACHE_PATH))
+CCRI = json.load(open(os.path.join(cedar.HERE, "data", "ccri.json"), encoding="utf-8"))
+_GDACS_SNAPSHOT_PATH = os.path.join(cedar.HERE, "data", "gdacs_snapshot.json")
 
 # ----------------------------------------------------------------------------- helpers
 def _engine(offline):
@@ -47,6 +52,176 @@ def series(country, code, offline=False):
     return {"country": country, "indicator_code": code, "indicator_name": s["indicator_name"],
             "unit": s["unit"], "ref_area_name": s["ref_area_name"], "obs": s["obs"],
             "provenance": s["provenance"]}
+
+# ----------------------------------------------------------------------------- live disaster x child-risk (GDACS x CCRI)
+# GDACS = Global Disaster Alert and Coordination System (UN/EC). Its alert COLOR (Green/Orange/Red)
+# reflects hazard magnitude, exposed population, and a GENERIC vulnerability proxy (INFORM/HDI) -
+# it is NOT weighted for child-specific vulnerability. UNICEF's CCRI is. So a Green/Orange alert
+# (graded low/medium priority) that lands on an "extremely high" CCRI country (score > 7) is an
+# "underestimated" signal: children are highly exposed/vulnerable even though the hazard triage is low.
+GDACS_URL = "https://www.gdacs.org/gdacsapi/api/events/geteventlist/EVENTS4APP"
+EVENT_TYPES = {"EQ": "Earthquake", "TC": "Tropical cyclone", "FL": "Flood", "DR": "Drought",
+               "VO": "Volcano", "WF": "Wildfire", "VW": "Severe weather"}
+HIGH_CCRI = CCRI.get("extremely_high_threshold", 7.0)
+# name -> ISO3 fallback for events GDACS leaves un-coded but names a single country
+_NAME2ISO = {v["name"].lower(): k for k, v in CCRI["countries"].items()}
+_NAME2ISO.update({"democratic republic of the congo": "COD", "dr congo": "COD", "tanzania": "TZA",
+                  "republic of korea": "KOR", "south korea": "KOR", "north korea": "PRK",
+                  "iran": "IRN", "syria": "SYR", "bolivia": "BOL", "venezuela": "VEN",
+                  "laos": "LAO", "moldova": "MDA", "russia": "RUS", "vietnam": "VNM"})
+
+def ccri_country(iso3):
+    """CCRI record for one ISO3 (or None)."""
+    c = CCRI["countries"].get((iso3 or "").upper())
+    return ({"iso3": iso3.upper(), **c} if c else None)
+
+def ccri_all():
+    """The full grounded CCRI table + metadata (deterministic, $0)."""
+    return CCRI
+
+def _gdacs_severity(p):
+    sd = p.get("severitydata")
+    if isinstance(sd, dict):
+        return sd.get("severity"), sd.get("severitytext")
+    return p.get("severity"), p.get("severitytext")
+
+def _normalize_gdacs(features):
+    out = []
+    for f in features:
+        p = f.get("properties", {}) or {}
+        g = f.get("geometry") or {}
+        iso = (p.get("iso3") or "").strip().upper()
+        if not iso:  # try a single-country name match
+            nm = (p.get("country") or "").strip().lower()
+            if "," not in nm:
+                iso = _NAME2ISO.get(nm, "")
+        sev, sevtext = _gdacs_severity(p)
+        url = p.get("url")
+        if isinstance(url, dict):
+            url = url.get("report") or url.get("details")
+        out.append({
+            "id": p.get("eventid"), "episode": p.get("episodeid"),
+            "type": p.get("eventtype"), "type_name": EVENT_TYPES.get(p.get("eventtype"), p.get("eventtype")),
+            "alertlevel": p.get("alertlevel"), "alertscore": p.get("alertscore"),
+            "country": p.get("country"), "iso3": iso, "name": p.get("name"),
+            "severity": sev, "severity_text": sevtext,
+            "from": p.get("fromdate"), "to": p.get("todate"),
+            "coordinates": (g.get("coordinates") if g else None), "url": url,
+        })
+    return out
+
+def _fetch_gdacs(offline):
+    """Returns (events, provenance). Live via urllib; bundled snapshot on offline/failure."""
+    if not offline:
+        try:
+            req = urllib.request.Request(GDACS_URL, headers={"User-Agent": "CEDAR/1.0"})
+            with urllib.request.urlopen(req, timeout=20) as r:
+                data = json.loads(r.read().decode("utf-8"))
+            feats = data.get("features", []) or []
+            return _normalize_gdacs(feats), {
+                "mode": "live", "source": GDACS_URL, "retrieved": cedar.now_iso(), "count": len(feats)}
+        except Exception as e:  # network blocked / GDACS down -> fall back
+            snap = json.load(open(_GDACS_SNAPSHOT_PATH, encoding="utf-8"))
+            return snap["events"], {"mode": "offline-snapshot", "source": snap.get("source"),
+                                    "retrieved": snap.get("retrieved"), "count": len(snap["events"]),
+                                    "note": "live GDACS fetch failed (%s); using bundled snapshot" % e.__class__.__name__}
+    snap = json.load(open(_GDACS_SNAPSHOT_PATH, encoding="utf-8"))
+    return snap["events"], {"mode": "offline-snapshot", "source": snap.get("source"),
+                            "retrieved": snap.get("retrieved"), "count": len(snap["events"]),
+                            "note": "offline mode; using bundled snapshot"}
+
+def gdacs(offline=False):
+    """All current GDACS alerts, each enriched with the affected country's CCRI (deterministic, $0)."""
+    events, prov = _fetch_gdacs(offline)
+    for e in events:
+        e["ccri"] = ccri_country(e.get("iso3"))
+    return {"generated_at": cedar.now_iso(), "provenance": prov, "n_events": len(events),
+            "events": events, "ccri_source": CCRI["source"]}
+
+def climate_risk(offline=False, levels=("Green", "Orange")):
+    """Join live GDACS alerts to UNICEF CCRI and surface 'underestimated' alerts: low/medium-priority
+    (Green/Orange) hazards striking 'extremely high' child-risk countries (CCRI > 7). Returns a global
+    scope, the flagged alerts, and a ranked 'where to focus' country list. Deterministic, cited, $0."""
+    g = gdacs(offline)
+    events = g["events"]
+    levels = tuple(levels)
+
+    by_level = Counter(e.get("alertlevel") for e in events if e.get("alertlevel"))
+    by_type = Counter(e.get("type_name") for e in events if e.get("type_name"))
+    coded = [e for e in events if e.get("ccri")]
+
+    flagged, focus = [], {}
+    for e in events:
+        cc = e.get("ccri")
+        if not cc or e.get("alertlevel") not in levels or cc["ccri"] <= HIGH_CCRI:
+            continue
+        item = {"id": e["id"], "type_name": e["type_name"], "alertlevel": e["alertlevel"],
+                "country": e["country"], "iso3": e["iso3"], "severity": e.get("severity"),
+                "severity_text": e.get("severity_text"), "from": e.get("from"), "url": e.get("url"),
+                "ccri": cc["ccri"], "exposure": cc["exposure"], "vulnerability": cc["vulnerability"],
+                "tier": cc["tier"],
+                "why": ("GDACS graded this %s (low/medium priority), but %s is an 'extremely high' child-risk "
+                        "country (CCRI %.1f/10; child-vulnerability %.1f/10) - children's exposure is likely "
+                        "underestimated by the hazard-only alert."
+                        % (e["alertlevel"], cc["name"], cc["ccri"], cc["vulnerability"]))}
+        flagged.append(item)
+        f = focus.setdefault(e["iso3"], {
+            "iso3": e["iso3"], "country": cc["name"], "ccri": cc["ccri"], "exposure": cc["exposure"],
+            "vulnerability": cc["vulnerability"], "tier": cc["tier"], "n_alerts": 0,
+            "alert_levels": set(), "hazards": set(), "max_severity": None, "alert_ids": []})
+        f["n_alerts"] += 1
+        f["alert_levels"].add(e["alertlevel"])
+        f["hazards"].add(e["type_name"])
+        f["alert_ids"].append(e["id"])
+        if e.get("severity") is not None:
+            f["max_severity"] = e["severity"] if f["max_severity"] is None else max(f["max_severity"], e["severity"])
+
+    focus_list = []
+    for f in focus.values():
+        f["alert_levels"] = sorted(f["alert_levels"])
+        f["hazards"] = sorted(f["hazards"])
+        focus_list.append(f)
+    # rank: highest child-risk first, then most flagged alerts, then any Orange ahead of Green
+    focus_list.sort(key=lambda x: (x["ccri"], x["n_alerts"], "Orange" in x["alert_levels"]), reverse=True)
+
+    n_flag = len(flagged)
+    headline = ("%d active GDACS alerts worldwide; %d are %s alerts striking 'extremely high' child-risk "
+                "countries (CCRI > %g) across %d countries - low-priority hazards where children may be "
+                "disproportionately affected." % (len(events), n_flag, "/".join(levels), HIGH_CCRI, len(focus_list)))
+    if not n_flag:
+        headline = ("%d active GDACS alerts worldwide; none are %s alerts in 'extremely high' child-risk "
+                    "countries right now." % (len(events), "/".join(levels)))
+
+    return {
+        "generated_at": cedar.now_iso(),
+        "provenance": g["provenance"],
+        "method": {
+            "definition": "underestimated = GDACS alertlevel in %s AND country CCRI > %g" % (list(levels), HIGH_CCRI),
+            "rationale": ("GDACS alert colour reflects hazard magnitude, exposed population and a generic "
+                          "vulnerability proxy - not child-specific vulnerability. UNICEF's CCRI captures "
+                          "children's exposure and vulnerability. Their intersection flags places where a "
+                          "hazard-only triage may under-serve children."),
+            "ccri_threshold": HIGH_CCRI,
+            "limitations": ("Alerts without an ISO3 country code (e.g. open-ocean or some multi-country events) "
+                            "cannot be joined to CCRI and are excluded from the flagged set. CCRI is a 2021 "
+                            "static index covering 163 countries; some small states are unscored."),
+        },
+        "global_scope": {
+            "total_alerts": len(events),
+            "by_alert_level": dict(by_level),
+            "by_hazard_type": dict(by_type),
+            "alerts_with_ccri": len(coded),
+            "flagged_alerts": n_flag,
+            "focus_countries": len(focus_list),
+        },
+        "headline": headline,
+        "underestimated_alerts": flagged,
+        "where_to_focus": focus_list,
+        "sources": [CCRI["source"],
+                    {"name": "GDACS - Global Disaster Alert and Coordination System (UN OCHA / European Commission)",
+                     "data": GDACS_URL, "site": "https://www.gdacs.org"}],
+        "disclaimer": "Not an official United Nations product.",
+    }
 
 # ----------------------------------------------------------------------------- procedures (deterministic, $0)
 def brief(country, theme, offline=False):
@@ -285,7 +460,46 @@ CHAT_TOOLS = [
  {"type": "function", "function": {"name": "list_indicators",
    "description": "List the indicator codes CEDAR knows by name.",
    "parameters": {"type": "object", "properties": {}, "required": []}}},
+ {"type": "function", "function": {"name": "get_interventions",
+   "description": "Effective interventions for a theme, graded by strength of published evidence (High/Moderate/Limited), with sources. Use to answer 'what works'.",
+   "parameters": {"type": "object", "properties": {
+       "theme": {"type": "string", "enum": list(INTERVENTIONS)}}, "required": ["theme"]}}},
+ {"type": "function", "function": {"name": "build_chart",
+   "description": "Build a chart spec (render-ready data) to complement the answer with a graph. Provide the indicator/country items to plot. Use a 'line' chart for trends over time and a 'bar' chart for comparing the latest value across countries/indicators.",
+   "parameters": {"type": "object", "properties": {
+       "kind": {"type": "string", "enum": ["line", "bar"], "description": "line = time series; bar = latest-value comparison"},
+       "title": {"type": "string"},
+       "items": {"type": "array", "description": "series to plot",
+                 "items": {"type": "object", "properties": {"iso": {"type": "string"}, "code": {"type": "string"}},
+                           "required": ["iso", "code"]}}},
+     "required": ["items"]}}},
 ]
+
+def _build_chart(args, offline):
+    kind = args.get("kind", "line"); title = args.get("title") or ""
+    fetched = []
+    for it in (args.get("items") or []):
+        iso = str(it.get("iso", "")).upper(); code = it.get("code", "")
+        s = series(iso, code, offline)
+        obs = {int(y): v for y, v in s["obs"].items() if v is not None} if s else {}
+        if obs:
+            fetched.append({"iso": iso, "code": code, "name": s["indicator_name"], "unit": s["unit"],
+                            "country": s["ref_area_name"], "obs": obs, "query_url": s["provenance"]["query_url"]})
+    if not fetched:
+        return {"error": "no data for requested chart items"}
+    same_code = len({f["code"] for f in fetched}) == 1
+    label = lambda f: (f["country"] if same_code else f"{f['country']} · {f['name']}")
+    spec = {"type": kind, "title": title or fetched[0]["name"], "unit": fetched[0]["unit"],
+            "sources": [{"label": f"{f['country']} · {f['name']}", "query_url": f["query_url"]} for f in fetched]}
+    if kind == "bar":
+        spec["categories"] = [label(f) for f in fetched]
+        spec["series"] = [{"label": "latest", "data": [f["obs"][max(f["obs"])] for f in fetched]}]
+        spec["years"] = [max(f["obs"]) for f in fetched]
+    else:
+        years = sorted({y for f in fetched for y in f["obs"]})
+        spec["x"] = years
+        spec["series"] = [{"label": label(f), "data": [f["obs"].get(y) for y in years]} for f in fetched]
+    return spec
 
 def _chat_pack(iso, code, offline, sources):
     s = series(iso, code, offline)
@@ -298,7 +512,7 @@ def _chat_pack(iso, code, offline, sources):
          "series": obs, "query_url": s["provenance"]["query_url"]}
     sources.append(p); return p
 
-def _chat_exec(name, args, offline, sources):
+def _chat_exec(name, args, offline, sources, charts):
     if name == "list_indicators":
         return [{"code": c, "name": cedar.CATALOG[c]["name"], "unit": cedar.CATALOG[c]["unit"]} for c in cedar.CATALOG]
     if name == "get_indicator":
@@ -309,6 +523,16 @@ def _chat_exec(name, args, offline, sources):
             p = _chat_pack(str(iso).upper(), args.get("code", ""), offline, sources)
             out.append({"iso": str(iso).upper(), "latest": p.get("latest"), "error": p.get("error")})
         return {"code": args.get("code"), "results": out}
+    if name == "get_interventions":
+        return interventions(args.get("theme", ""))
+    if name == "build_chart":
+        spec = _build_chart(args, offline)
+        if "error" in spec:
+            return spec
+        charts.append(spec)
+        # return a compact ack to the model (the full spec is attached to the response, not the prompt)
+        return {"ok": True, "type": spec["type"], "title": spec["title"],
+                "series": len(spec.get("series", [])), "note": "chart built and attached to the response"}
     return {"error": "unknown tool"}
 
 def _tool_detail(name, res):
@@ -321,6 +545,10 @@ def _tool_detail(name, res):
         return f"{len([x for x in res.get('results', []) if not x.get('error')])} countries"
     if name == "list_indicators":
         return f"{len(res)} indicators"
+    if name == "get_interventions" and isinstance(res, dict):
+        return f"{len(res.get('interventions', []))} interventions"
+    if name == "build_chart" and isinstance(res, dict):
+        return f"{res.get('type','?')} chart · {res.get('series',0)} series" if res.get("ok") else "no data"
     return "done"
 
 def _chat_chain(tool_log, sources, final, invented):
@@ -359,10 +587,12 @@ def llm_chat(messages, country, api_key, model="gpt-4o-mini", offline=False, bas
         (f"You are CEDAR's evidence assistant, helping a policy analyst explore {country}. "
          "NEVER state a statistic you did not obtain from a tool call; call get_indicator / "
          "compare_indicator first. Name the indicator and year for every figure. If data is "
-         "unavailable, say so plainly. Be concise. You may use light markdown. "
+         "unavailable, say so plainly. Call get_interventions when the user asks what works / what "
+         "to do. Call build_chart to attach a graph when a trend or comparison would help (you do not "
+         "need to restate the chart's numbers in prose). Be concise. You may use light markdown. "
          f"Known indicator codes: {inds}. Country->ISO3: {cmap}. For other countries/indicators use ISO3 / WB codes.")}
     msgs = [sysmsg] + [{"role": m["role"], "content": m.get("content", "")} for m in messages]
-    sources, tool_log, tin, tout, final = [], [], 0, 0, ""
+    sources, charts, tool_log, tin, tout, final = [], [], [], 0, 0, ""
     for _ in range(5):
         body = json.dumps({"model": model, "temperature": 0, "messages": msgs,
                            "tools": CHAT_TOOLS, "tool_choice": "auto"}).encode()
@@ -381,7 +611,7 @@ def llm_chat(messages, country, api_key, model="gpt-4o-mini", offline=False, bas
                 except Exception:
                     args = {}
                 name = tc["function"]["name"]
-                res = _chat_exec(name, args, offline, sources)
+                res = _chat_exec(name, args, offline, sources, charts)
                 tool_log.append({"name": name, "args": args, "detail": _tool_detail(name, res)})
                 msgs.append({"role": "tool", "tool_call_id": tc["id"], "content": json.dumps(res)})
             continue
@@ -395,7 +625,7 @@ def llm_chat(messages, country, api_key, model="gpt-4o-mini", offline=False, bas
             "sources": [{"country": s.get("country"), "iso": s.get("iso"), "code": s.get("code"),
                          "name": s.get("name"), "latest": s.get("latest"), "query_url": s.get("query_url")}
                         for s in uniq.values()],
-            "tool_calls": tool_log,
+            "tool_calls": tool_log, "charts": charts,
             "evidence_chain": _chat_chain(tool_log, sources, final, invented),
             "tokens": {"in": tin, "out": tout}, "model": model}
 

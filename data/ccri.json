@@ -1,0 +1,1167 @@
+{
+"indicator": "Children's Climate and Environment Risk Index (CCRI)",
+"scale": "0 (lowest risk) to 10 (highest risk)",
+"tiers": {
+"Extremely High": ">7.0",
+"High": "5.5-7.0",
+"Medium": "3.8-5.4",
+"Low": "2.1-3.7",
+"Very Low": "<=2.0"
+},
+"pillars": {
+"exposure": "Pillar 1 - Exposure to climate & environmental hazards, shocks and stresses",
+"vulnerability": "Pillar 2 - Child vulnerability (health, nutrition, education, WASH, poverty, social protection)"
+},
+"extremely_high_threshold": 7.0,
+"n_scored": 163,
+"n_extremely_high": 33,
+"source": {
+"name": "UNICEF Children's Climate and Environment Risk Index (CCRI), 2021",
+"report": "https://www.unicef.org/reports/climate-crisis-child-rights-crisis",
+"data": "https://services3.arcgis.com/7J7WB6yJX0pYke9q/arcgis/rest/services/Children%E2%80%99s_Climate_and_Environment_Risk_Index/FeatureServer/1"
+},
+"retrieved": "2026-06-22",
+"countries": {
+"AFG": {
+"name": "Afghanistan",
+"ccri": 7.6,
+"exposure": 7.3,
+"vulnerability": 7.9,
+"tier": "Extremely High"
+},
+"AGO": {
+"name": "Angola",
+"ccri": 7.9,
+"exposure": 6.5,
+"vulnerability": 8.9,
+"tier": "Extremely High"
+},
+"ALB": {
+"name": "Albania",
+"ccri": 4.8,
+"exposure": 6.5,
+"vulnerability": 2.5,
+"tier": "Medium"
+},
+"ARE": {
+"name": "United Arab Emirates",
+"ccri": 4.3,
+"exposure": 6.0,
+"vulnerability": 2.0,
+"tier": "Medium"
+},
+"ARG": {
+"name": "Argentina",
+"ccri": 4.1,
+"exposure": 5.6,
+"vulnerability": 2.2,
+"tier": "Medium"
+},
+"ARM": {
+"name": "Armenia",
+"ccri": 3.7,
+"exposure": 4.4,
+"vulnerability": 2.9,
+"tier": "Low"
+},
+"AUS": {
+"name": "Australia",
+"ccri": 3.6,
+"exposure": 5.4,
+"vulnerability": 1.2,
+"tier": "Low"
+},
+"AUT": {
+"name": "Austria",
+"ccri": 2.1,
+"exposure": 2.6,
+"vulnerability": 1.5,
+"tier": "Low"
+},
+"AZE": {
+"name": "Azerbaijan",
+"ccri": 3.8,
+"exposure": 4.1,
+"vulnerability": 3.4,
+"tier": "Medium"
+},
+"BDI": {
+"name": "Burundi",
+"ccri": 6.1,
+"exposure": 4.3,
+"vulnerability": 7.4,
+"tier": "High"
+},
+"BEL": {
+"name": "Belgium",
+"ccri": 2.5,
+"exposure": 3.8,
+"vulnerability": 0.9,
+"tier": "Low"
+},
+"BEN": {
+"name": "Benin",
+"ccri": 7.6,
+"exposure": 7.1,
+"vulnerability": 8.1,
+"tier": "Extremely High"
+},
+"BFA": {
+"name": "Burkina Faso",
+"ccri": 7.6,
+"exposure": 7.3,
+"vulnerability": 7.8,
+"tier": "Extremely High"
+},
+"BGD": {
+"name": "Bangladesh",
+"ccri": 7.6,
+"exposure": 9.1,
+"vulnerability": 5.1,
+"tier": "Extremely High"
+},
+"BGR": {
+"name": "Bulgaria",
+"ccri": 3.6,
+"exposure": 4.1,
+"vulnerability": 3.0,
+"tier": "Low"
+},
+"BHR": {
+"name": "Bahrain",
+"ccri": 3.1,
+"exposure": 3.9,
+"vulnerability": 2.3,
+"tier": "Low"
+},
+"BIH": {
+"name": "Bosnia and Herzegovina",
+"ccri": 3.0,
+"exposure": 3.8,
+"vulnerability": 2.2,
+"tier": "Low"
+},
+"BLR": {
+"name": "Belarus",
+"ccri": 3.2,
+"exposure": 4.7,
+"vulnerability": 1.3,
+"tier": "Low"
+},
+"BLZ": {
+"name": "Belize",
+"ccri": 3.8,
+"exposure": 4.9,
+"vulnerability": 2.6,
+"tier": "Medium"
+},
+"BOL": {
+"name": "Bolivia (Plurinational State of)",
+"ccri": 5.0,
+"exposure": 5.5,
+"vulnerability": 4.5,
+"tier": "Medium"
+},
+"BRA": {
+"name": "Brazil",
+"ccri": 5.3,
+"exposure": 7.3,
+"vulnerability": 2.4,
+"tier": "Medium"
+},
+"BRN": {
+"name": "Brunei Darussalam",
+"ccri": 2.4,
+"exposure": 2.9,
+"vulnerability": 1.8,
+"tier": "Low"
+},
+"BTN": {
+"name": "Bhutan",
+"ccri": 3.8,
+"exposure": 4.3,
+"vulnerability": 3.3,
+"tier": "Medium"
+},
+"BWA": {
+"name": "Botswana",
+"ccri": 4.8,
+"exposure": 4.5,
+"vulnerability": 5.0,
+"tier": "Medium"
+},
+"CAF": {
+"name": "Central African Republic",
+"ccri": 8.7,
+"exposure": 6.7,
+"vulnerability": 9.8,
+"tier": "Extremely High"
+},
+"CAN": {
+"name": "Canada",
+"ccri": 3.7,
+"exposure": 5.4,
+"vulnerability": 1.5,
+"tier": "Low"
+},
+"CHE": {
+"name": "Switzerland",
+"ccri": 2.4,
+"exposure": 3.3,
+"vulnerability": 1.3,
+"tier": "Low"
+},
+"CHL": {
+"name": "Chile",
+"ccri": 4.0,
+"exposure": 5.8,
+"vulnerability": 1.5,
+"tier": "Medium"
+},
+"CHN": {
+"name": "China",
+"ccri": 6.7,
+"exposure": 9.0,
+"vulnerability": 2.0,
+"tier": "High"
+},
+"CIV": {
+"name": "Cote d'Ivoire",
+"ccri": 7.5,
+"exposure": 7.2,
+"vulnerability": 7.7,
+"tier": "Extremely High"
+},
+"CMR": {
+"name": "Cameroon",
+"ccri": 7.9,
+"exposure": 7.8,
+"vulnerability": 7.9,
+"tier": "Extremely High"
+},
+"COD": {
+"name": "Democratic Republic of the Congo",
+"ccri": 8.0,
+"exposure": 7.2,
+"vulnerability": 8.6,
+"tier": "Extremely High"
+},
+"COG": {
+"name": "Congo",
+"ccri": 6.4,
+"exposure": 6.0,
+"vulnerability": 6.8,
+"tier": "High"
+},
+"COL": {
+"name": "Colombia",
+"ccri": 5.4,
+"exposure": 6.9,
+"vulnerability": 3.4,
+"tier": "Medium"
+},
+"CRI": {
+"name": "Costa Rica",
+"ccri": 2.9,
+"exposure": 3.5,
+"vulnerability": 2.2,
+"tier": "Low"
+},
+"CUB": {
+"name": "Cuba",
+"ccri": 4.7,
+"exposure": 6.4,
+"vulnerability": 2.4,
+"tier": "Medium"
+},
+"CYP": {
+"name": "Cyprus",
+"ccri": 2.5,
+"exposure": 3.5,
+"vulnerability": 1.4,
+"tier": "Low"
+},
+"CZE": {
+"name": "Czechia",
+"ccri": 2.4,
+"exposure": 3.2,
+"vulnerability": 1.6,
+"tier": "Low"
+},
+"DEU": {
+"name": "Germany",
+"ccri": 2.6,
+"exposure": 3.9,
+"vulnerability": 1.1,
+"tier": "Low"
+},
+"DJI": {
+"name": "Djibouti",
+"ccri": 5.8,
+"exposure": 4.3,
+"vulnerability": 6.9,
+"tier": "High"
+},
+"DNK": {
+"name": "Denmark",
+"ccri": 2.4,
+"exposure": 3.6,
+"vulnerability": 0.9,
+"tier": "Low"
+},
+"DOM": {
+"name": "Dominican Republic",
+"ccri": 5.2,
+"exposure": 6.4,
+"vulnerability": 3.7,
+"tier": "Medium"
+},
+"DZA": {
+"name": "Algeria",
+"ccri": 4.6,
+"exposure": 6.2,
+"vulnerability": 2.6,
+"tier": "Medium"
+},
+"ECU": {
+"name": "Ecuador",
+"ccri": 5.4,
+"exposure": 6.9,
+"vulnerability": 3.5,
+"tier": "Medium"
+},
+"EGY": {
+"name": "Egypt",
+"ccri": 5.6,
+"exposure": 7.3,
+"vulnerability": 3.0,
+"tier": "High"
+},
+"ERI": {
+"name": "Eritrea",
+"ccri": 7.1,
+"exposure": 5.5,
+"vulnerability": 8.3,
+"tier": "Extremely High"
+},
+"ESP": {
+"name": "Spain",
+"ccri": 3.7,
+"exposure": 5.3,
+"vulnerability": 1.7,
+"tier": "Low"
+},
+"EST": {
+"name": "Estonia",
+"ccri": 1.7,
+"exposure": 2.1,
+"vulnerability": 1.2,
+"tier": "Very Low"
+},
+"ETH": {
+"name": "Ethiopia",
+"ccri": 7.6,
+"exposure": 7.1,
+"vulnerability": 8.1,
+"tier": "Extremely High"
+},
+"FIN": {
+"name": "Finland",
+"ccri": 1.7,
+"exposure": 2.6,
+"vulnerability": 0.7,
+"tier": "Very Low"
+},
+"FRA": {
+"name": "France",
+"ccri": 4.1,
+"exposure": 6.1,
+"vulnerability": 1.2,
+"tier": "Medium"
+},
+"GAB": {
+"name": "Gabon",
+"ccri": 5.1,
+"exposure": 5.4,
+"vulnerability": 4.8,
+"tier": "Medium"
+},
+"GBR": {
+"name": "United Kingdom",
+"ccri": 3.8,
+"exposure": 5.6,
+"vulnerability": 1.3,
+"tier": "Medium"
+},
+"GEO": {
+"name": "Georgia",
+"ccri": 2.6,
+"exposure": 2.8,
+"vulnerability": 2.3,
+"tier": "Low"
+},
+"GHA": {
+"name": "Ghana",
+"ccri": 6.9,
+"exposure": 8.2,
+"vulnerability": 5.0,
+"tier": "High"
+},
+"GIN": {
+"name": "Guinea",
+"ccri": 8.4,
+"exposure": 7.7,
+"vulnerability": 8.9,
+"tier": "Extremely High"
+},
+"GMB": {
+"name": "Gambia",
+"ccri": 6.8,
+"exposure": 6.5,
+"vulnerability": 7.1,
+"tier": "High"
+},
+"GNB": {
+"name": "Guinea-Bissau",
+"ccri": 8.4,
+"exposure": 6.4,
+"vulnerability": 9.5,
+"tier": "Extremely High"
+},
+"GNQ": {
+"name": "Equatorial Guinea",
+"ccri": 7.5,
+"exposure": 5.1,
+"vulnerability": 8.9,
+"tier": "Extremely High"
+},
+"GRC": {
+"name": "Greece",
+"ccri": 3.3,
+"exposure": 4.7,
+"vulnerability": 1.7,
+"tier": "Low"
+},
+"GTM": {
+"name": "Guatemala",
+"ccri": 5.9,
+"exposure": 6.6,
+"vulnerability": 5.1,
+"tier": "High"
+},
+"GUY": {
+"name": "Guyana",
+"ccri": 4.8,
+"exposure": 6.0,
+"vulnerability": 3.3,
+"tier": "Medium"
+},
+"HND": {
+"name": "Honduras",
+"ccri": 5.5,
+"exposure": 6.5,
+"vulnerability": 4.3,
+"tier": "High"
+},
+"HRV": {
+"name": "Croatia",
+"ccri": 3.2,
+"exposure": 4.0,
+"vulnerability": 2.4,
+"tier": "Low"
+},
+"HTI": {
+"name": "Haiti",
+"ccri": 7.3,
+"exposure": 6.7,
+"vulnerability": 7.8,
+"tier": "Extremely High"
+},
+"HUN": {
+"name": "Hungary",
+"ccri": 3.2,
+"exposure": 4.4,
+"vulnerability": 1.8,
+"tier": "Low"
+},
+"IDN": {
+"name": "Indonesia",
+"ccri": 6.5,
+"exposure": 8.1,
+"vulnerability": 4.2,
+"tier": "High"
+},
+"IND": {
+"name": "India",
+"ccri": 7.4,
+"exposure": 9.0,
+"vulnerability": 4.6,
+"tier": "Extremely High"
+},
+"IRL": {
+"name": "Ireland",
+"ccri": 2.1,
+"exposure": 2.3,
+"vulnerability": 1.8,
+"tier": "Low"
+},
+"IRN": {
+"name": "Iran (Islamic Republic of)",
+"ccri": 5.3,
+"exposure": 7.3,
+"vulnerability": 2.3,
+"tier": "Medium"
+},
+"IRQ": {
+"name": "Iraq",
+"ccri": 5.4,
+"exposure": 7.0,
+"vulnerability": 3.1,
+"tier": "Medium"
+},
+"ISL": {
+"name": "Iceland",
+"ccri": 1.0,
+"exposure": 1.0,
+"vulnerability": 0.9,
+"tier": "Very Low"
+},
+"ISR": {
+"name": "Israel",
+"ccri": 3.7,
+"exposure": 5.3,
+"vulnerability": 1.6,
+"tier": "Low"
+},
+"ITA": {
+"name": "Italy",
+"ccri": 4.1,
+"exposure": 5.9,
+"vulnerability": 1.8,
+"tier": "Medium"
+},
+"JOR": {
+"name": "Jordan",
+"ccri": 4.5,
+"exposure": 5.5,
+"vulnerability": 3.4,
+"tier": "Medium"
+},
+"JPN": {
+"name": "Japan",
+"ccri": 4.5,
+"exposure": 6.3,
+"vulnerability": 2.1,
+"tier": "Medium"
+},
+"KAZ": {
+"name": "Kazakhstan",
+"ccri": 4.1,
+"exposure": 5.7,
+"vulnerability": 1.9,
+"tier": "Medium"
+},
+"KEN": {
+"name": "Kenya",
+"ccri": 6.3,
+"exposure": 6.2,
+"vulnerability": 6.4,
+"tier": "High"
+},
+"KGZ": {
+"name": "Kyrgyzstan",
+"ccri": 4.5,
+"exposure": 6.2,
+"vulnerability": 2.2,
+"tier": "Medium"
+},
+"KHM": {
+"name": "Cambodia",
+"ccri": 6.5,
+"exposure": 7.2,
+"vulnerability": 5.6,
+"tier": "High"
+},
+"KOR": {
+"name": "Republic of Korea",
+"ccri": 5.2,
+"exposure": 7.3,
+"vulnerability": 1.8,
+"tier": "Medium"
+},
+"KWT": {
+"name": "Kuwait",
+"ccri": 3.3,
+"exposure": 4.6,
+"vulnerability": 1.8,
+"tier": "Low"
+},
+"LAO": {
+"name": "Lao People's Democratic Republic",
+"ccri": 6.7,
+"exposure": 7.5,
+"vulnerability": 5.8,
+"tier": "High"
+},
+"LBN": {
+"name": "Lebanon",
+"ccri": 3.6,
+"exposure": 4.4,
+"vulnerability": 2.7,
+"tier": "Low"
+},
+"LBR": {
+"name": "Liberia",
+"ccri": 7.5,
+"exposure": 6.8,
+"vulnerability": 8.1,
+"tier": "Extremely High"
+},
+"LBY": {
+"name": "Libya",
+"ccri": 4.4,
+"exposure": 5.5,
+"vulnerability": 3.2,
+"tier": "Medium"
+},
+"LIE": {
+"name": "Liechtenstein",
+"ccri": 2.2,
+"exposure": 3.3,
+"vulnerability": 1.0,
+"tier": "Low"
+},
+"LKA": {
+"name": "Sri Lanka",
+"ccri": 5.4,
+"exposure": 7.0,
+"vulnerability": 3.3,
+"tier": "Medium"
+},
+"LSO": {
+"name": "Lesotho",
+"ccri": 5.4,
+"exposure": 4.0,
+"vulnerability": 6.6,
+"tier": "Medium"
+},
+"LTU": {
+"name": "Lithuania",
+"ccri": 2.4,
+"exposure": 2.6,
+"vulnerability": 2.1,
+"tier": "Low"
+},
+"LUX": {
+"name": "Luxembourg",
+"ccri": 1.5,
+"exposure": 1.1,
+"vulnerability": 1.8,
+"tier": "Very Low"
+},
+"LVA": {
+"name": "Latvia",
+"ccri": 2.6,
+"exposure": 3.3,
+"vulnerability": 1.9,
+"tier": "Low"
+},
+"MAR": {
+"name": "Morocco",
+"ccri": 5.4,
+"exposure": 7.0,
+"vulnerability": 3.3,
+"tier": "Medium"
+},
+"MDA": {
+"name": "Republic of Moldova",
+"ccri": 4.1,
+"exposure": 5.2,
+"vulnerability": 2.7,
+"tier": "Medium"
+},
+"MDG": {
+"name": "Madagascar",
+"ccri": 7.9,
+"exposure": 7.8,
+"vulnerability": 7.9,
+"tier": "Extremely High"
+},
+"MEX": {
+"name": "Mexico",
+"ccri": 5.9,
+"exposure": 7.7,
+"vulnerability": 3.1,
+"tier": "High"
+},
+"MKD": {
+"name": "North Macedonia",
+"ccri": 3.4,
+"exposure": 4.6,
+"vulnerability": 2.0,
+"tier": "Low"
+},
+"MLI": {
+"name": "Mali",
+"ccri": 7.3,
+"exposure": 7.0,
+"vulnerability": 7.5,
+"tier": "Extremely High"
+},
+"MLT": {
+"name": "Malta",
+"ccri": 2.1,
+"exposure": 2.9,
+"vulnerability": 1.2,
+"tier": "Low"
+},
+"MMR": {
+"name": "Myanmar",
+"ccri": 7.1,
+"exposure": 8.3,
+"vulnerability": 5.4,
+"tier": "Extremely High"
+},
+"MNE": {
+"name": "Montenegro",
+"ccri": 2.7,
+"exposure": 3.4,
+"vulnerability": 1.9,
+"tier": "Low"
+},
+"MNG": {
+"name": "Mongolia",
+"ccri": 4.2,
+"exposure": 5.2,
+"vulnerability": 3.1,
+"tier": "Medium"
+},
+"MOZ": {
+"name": "Mozambique",
+"ccri": 7.9,
+"exposure": 7.5,
+"vulnerability": 8.2,
+"tier": "Extremely High"
+},
+"MRT": {
+"name": "Mauritania",
+"ccri": 6.7,
+"exposure": 6.1,
+"vulnerability": 7.2,
+"tier": "High"
+},
+"MWI": {
+"name": "Malawi",
+"ccri": 6.7,
+"exposure": 5.7,
+"vulnerability": 7.5,
+"tier": "High"
+},
+"MYS": {
+"name": "Malaysia",
+"ccri": 5.4,
+"exposure": 7.2,
+"vulnerability": 2.8,
+"tier": "Medium"
+},
+"NAM": {
+"name": "Namibia",
+"ccri": 5.1,
+"exposure": 5.3,
+"vulnerability": 4.9,
+"tier": "Medium"
+},
+"NER": {
+"name": "Niger",
+"ccri": 8.2,
+"exposure": 7.3,
+"vulnerability": 8.9,
+"tier": "Extremely High"
+},
+"NGA": {
+"name": "Nigeria",
+"ccri": 8.5,
+"exposure": 8.8,
+"vulnerability": 8.1,
+"tier": "Extremely High"
+},
+"NIC": {
+"name": "Nicaragua",
+"ccri": 4.6,
+"exposure": 4.6,
+"vulnerability": 4.5,
+"tier": "Medium"
+},
+"NLD": {
+"name": "Netherlands",
+"ccri": 2.7,
+"exposure": 4.1,
+"vulnerability": 1.0,
+"tier": "Low"
+},
+"NOR": {
+"name": "Norway",
+"ccri": 2.1,
+"exposure": 3.3,
+"vulnerability": 0.8,
+"tier": "Low"
+},
+"NPL": {
+"name": "Nepal",
+"ccri": 6.1,
+"exposure": 7.5,
+"vulnerability": 4.2,
+"tier": "High"
+},
+"NZL": {
+"name": "New Zealand",
+"ccri": 1.6,
+"exposure": 2.4,
+"vulnerability": 0.8,
+"tier": "Very Low"
+},
+"OMN": {
+"name": "Oman",
+"ccri": 4.4,
+"exposure": 6.2,
+"vulnerability": 1.9,
+"tier": "Medium"
+},
+"PAK": {
+"name": "Pakistan",
+"ccri": 7.7,
+"exposure": 8.7,
+"vulnerability": 6.4,
+"tier": "Extremely High"
+},
+"PAN": {
+"name": "Panama",
+"ccri": 3.6,
+"exposure": 3.7,
+"vulnerability": 3.4,
+"tier": "Low"
+},
+"PER": {
+"name": "Peru",
+"ccri": 5.0,
+"exposure": 6.4,
+"vulnerability": 3.3,
+"tier": "Medium"
+},
+"PHL": {
+"name": "Philippines",
+"ccri": 7.1,
+"exposure": 8.9,
+"vulnerability": 4.0,
+"tier": "Extremely High"
+},
+"PNG": {
+"name": "Papua New Guinea",
+"ccri": 7.0,
+"exposure": 5.1,
+"vulnerability": 8.3,
+"tier": "High"
+},
+"POL": {
+"name": "Poland",
+"ccri": 3.5,
+"exposure": 5.0,
+"vulnerability": 1.7,
+"tier": "Low"
+},
+"PRK": {
+"name": "Democratic People's Republic of Korea",
+"ccri": 6.9,
+"exposure": 8.2,
+"vulnerability": 5.0,
+"tier": "High"
+},
+"PRT": {
+"name": "Portugal",
+"ccri": 3.0,
+"exposure": 4.4,
+"vulnerability": 1.4,
+"tier": "Low"
+},
+"PRY": {
+"name": "Paraguay",
+"ccri": 3.9,
+"exposure": 4.5,
+"vulnerability": 3.3,
+"tier": "Medium"
+},
+"PSE": {
+"name": "State of Palestine",
+"ccri": 3.8,
+"exposure": 5.1,
+"vulnerability": 2.3,
+"tier": "Medium"
+},
+"QAT": {
+"name": "Qatar",
+"ccri": 3.1,
+"exposure": 4.1,
+"vulnerability": 1.9,
+"tier": "Low"
+},
+"ROU": {
+"name": "Romania",
+"ccri": 4.1,
+"exposure": 5.4,
+"vulnerability": 2.5,
+"tier": "Medium"
+},
+"RUS": {
+"name": "Russian Federation",
+"ccri": 4.6,
+"exposure": 6.5,
+"vulnerability": 1.8,
+"tier": "Medium"
+},
+"RWA": {
+"name": "Rwanda",
+"ccri": 5.7,
+"exposure": 4.5,
+"vulnerability": 6.7,
+"tier": "High"
+},
+"SAU": {
+"name": "Saudi Arabia",
+"ccri": 4.7,
+"exposure": 6.8,
+"vulnerability": 1.7,
+"tier": "Medium"
+},
+"SDN": {
+"name": "Sudan",
+"ccri": 7.6,
+"exposure": 6.9,
+"vulnerability": 8.2,
+"tier": "Extremely High"
+},
+"SEN": {
+"name": "Senegal",
+"ccri": 7.5,
+"exposure": 7.9,
+"vulnerability": 7.1,
+"tier": "Extremely High"
+},
+"SLB": {
+"name": "Solomon Islands",
+"ccri": 5.2,
+"exposure": 4.1,
+"vulnerability": 6.1,
+"tier": "Medium"
+},
+"SLE": {
+"name": "Sierra Leone",
+"ccri": 7.4,
+"exposure": 6.9,
+"vulnerability": 7.9,
+"tier": "Extremely High"
+},
+"SLV": {
+"name": "El Salvador",
+"ccri": 5.1,
+"exposure": 6.3,
+"vulnerability": 3.5,
+"tier": "Medium"
+},
+"SOM": {
+"name": "Somalia",
+"ccri": 8.4,
+"exposure": 7.0,
+"vulnerability": 9.3,
+"tier": "Extremely High"
+},
+"SRB": {
+"name": "Serbia",
+"ccri": 3.9,
+"exposure": 5.2,
+"vulnerability": 2.2,
+"tier": "Medium"
+},
+"SSD": {
+"name": "South Sudan",
+"ccri": 8.2,
+"exposure": 6.8,
+"vulnerability": 9.2,
+"tier": "Extremely High"
+},
+"SUR": {
+"name": "Suriname",
+"ccri": 5.0,
+"exposure": 6.5,
+"vulnerability": 3.1,
+"tier": "Medium"
+},
+"SVK": {
+"name": "Slovakia",
+"ccri": 2.9,
+"exposure": 3.7,
+"vulnerability": 2.0,
+"tier": "Low"
+},
+"SVN": {
+"name": "Slovenia",
+"ccri": 2.3,
+"exposure": 3.0,
+"vulnerability": 1.5,
+"tier": "Low"
+},
+"SWE": {
+"name": "Sweden",
+"ccri": 1.8,
+"exposure": 2.8,
+"vulnerability": 0.7,
+"tier": "Very Low"
+},
+"SWZ": {
+"name": "Eswatini",
+"ccri": 5.2,
+"exposure": 3.4,
+"vulnerability": 6.6,
+"tier": "Medium"
+},
+"SYR": {
+"name": "Syrian Arab Republic",
+"ccri": 4.8,
+"exposure": 5.3,
+"vulnerability": 4.2,
+"tier": "Medium"
+},
+"TCD": {
+"name": "Chad",
+"ccri": 8.5,
+"exposure": 7.0,
+"vulnerability": 9.4,
+"tier": "Extremely High"
+},
+"TGO": {
+"name": "Togo",
+"ccri": 7.6,
+"exposure": 7.8,
+"vulnerability": 7.3,
+"tier": "Extremely High"
+},
+"THA": {
+"name": "Thailand",
+"ccri": 6.2,
+"exposure": 8.4,
+"vulnerability": 2.3,
+"tier": "High"
+},
+"TJK": {
+"name": "Tajikistan",
+"ccri": 5.4,
+"exposure": 6.7,
+"vulnerability": 3.6,
+"tier": "Medium"
+},
+"TKM": {
+"name": "Turkmenistan",
+"ccri": 4.6,
+"exposure": 6.5,
+"vulnerability": 2.0,
+"tier": "Medium"
+},
+"TUN": {
+"name": "Tunisia",
+"ccri": 3.6,
+"exposure": 4.5,
+"vulnerability": 2.5,
+"tier": "Low"
+},
+"TUR": {
+"name": "Turkey",
+"ccri": 4.4,
+"exposure": 5.8,
+"vulnerability": 2.7,
+"tier": "Medium"
+},
+"TZA": {
+"name": "United Republic of Tanzania",
+"ccri": 6.7,
+"exposure": 6.2,
+"vulnerability": 7.2,
+"tier": "High"
+},
+"UGA": {
+"name": "Uganda",
+"ccri": 6.8,
+"exposure": 6.3,
+"vulnerability": 7.3,
+"tier": "High"
+},
+"UKR": {
+"name": "Ukraine",
+"ccri": 3.8,
+"exposure": 5.3,
+"vulnerability": 2.0,
+"tier": "Medium"
+},
+"URY": {
+"name": "Uruguay",
+"ccri": 3.0,
+"exposure": 4.0,
+"vulnerability": 1.9,
+"tier": "Low"
+},
+"USA": {
+"name": "United States of America",
+"ccri": 5.0,
+"exposure": 7.3,
+"vulnerability": 1.3,
+"tier": "Medium"
+},
+"UZB": {
+"name": "Uzbekistan",
+"ccri": 5.4,
+"exposure": 7.5,
+"vulnerability": 2.2,
+"tier": "Medium"
+},
+"VEN": {
+"name": "Venezuela (Bolivarian Republic of)",
+"ccri": 5.5,
+"exposure": 6.8,
+"vulnerability": 3.9,
+"tier": "High"
+},
+"VNM": {
+"name": "Viet Nam",
+"ccri": 6.8,
+"exposure": 8.8,
+"vulnerability": 3.0,
+"tier": "High"
+},
+"YEM": {
+"name": "Yemen",
+"ccri": 7.4,
+"exposure": 7.0,
+"vulnerability": 7.8,
+"tier": "Extremely High"
+},
+"ZAF": {
+"name": "South Africa",
+"ccri": 5.2,
+"exposure": 5.7,
+"vulnerability": 4.7,
+"tier": "Medium"
+},
+"ZMB": {
+"name": "Zambia",
+"ccri": 6.6,
+"exposure": 5.3,
+"vulnerability": 7.6,
+"tier": "High"
+},
+"ZWE": {
+"name": "Zimbabwe",
+"ccri": 6.1,
+"exposure": 5.7,
+"vulnerability": 6.5,
+"tier": "High"
+}
+}
+}

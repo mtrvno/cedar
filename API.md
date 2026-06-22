@@ -52,6 +52,9 @@ server — it is passed per request via the `X-OpenAI-Key` header (or an `OPENAI
 | GET | `/interventions/{theme}` | — | interventions by evidence strength for one theme |
 | GET | `/evidence-chain` | — | the 7-step pipeline definition (static) |
 | GET | `/evidence-chain/{country}` | — | the chain with live per-step status for a run |
+| GET | `/ccri` | — | UNICEF Children's Climate Risk Index (full table or one ISO3) |
+| GET | `/gdacs` | — | current GDACS disaster alerts, each enriched with CCRI |
+| GET | `/climate-risk` | — | GDACS×CCRI: underestimated alerts + where-to-focus |
 | POST | `/copilot/summary` | copilot + key | guardrailed executive summary |
 | POST | `/copilot/chat` | copilot + key | agentic, tool-grounded chat |
 
@@ -242,6 +245,72 @@ each annotated with a live `status` and a `detail` derived from an actual brief 
   "cost": { "...": "cost report" } }
 ```
 
+### GET `/ccri`
+UNICEF **Children's Climate & Environment Risk Index** (CCRI, 2021) — a grounded static dataset of 163 scored
+countries, 0 (lowest risk) → 10 (highest). **Input:** optional query `country` (ISO3). With no `country`, returns the
+full table + metadata; with one, returns that country's record.
+```json
+// GET /ccri?country=CAF
+{ "iso3":"CAF", "name":"Central African Republic", "ccri":8.7, "exposure":6.7, "vulnerability":9.8, "tier":"Extremely High" }
+```
+```json
+// GET /ccri  (abridged)
+{ "indicator":"Children's Climate and Environment Risk Index (CCRI)", "scale":"0 (lowest risk) to 10 (highest risk)",
+  "extremely_high_threshold":7.0, "n_scored":163, "n_extremely_high":33,
+  "pillars":{ "exposure":"Pillar 1 - …hazards, shocks, stresses", "vulnerability":"Pillar 2 - child vulnerability…" },
+  "source":{ "name":"UNICEF CCRI, 2021", "report":"https://www.unicef.org/reports/climate-crisis-child-rights-crisis", "data":"…/FeatureServer/1" },
+  "countries":{ "CAF":{ "name":"Central African Republic", "ccri":8.7, "exposure":6.7, "vulnerability":9.8, "tier":"Extremely High" }, "…":{} } }
+```
+- `exposure` = Pillar 1 (climate/environmental hazards); `vulnerability` = Pillar 2 (child health, nutrition, education, WASH, poverty, social protection). `tier` ∈ `Extremely High (>7) · High · Medium · Low · Very Low`.
+
+### GET `/gdacs`
+Current **GDACS** disaster alerts (Global Disaster Alert and Coordination System, UN OCHA / European Commission),
+each enriched with the affected country's CCRI. **Input:** query `offline?`. Live by default (server fetches GDACS via
+HTTPS); falls back to a bundled snapshot if the network is unavailable — see `provenance.mode`.
+```json
+{ "generated_at":"2026-06-20T…Z",
+  "provenance":{ "mode":"live", "source":"https://www.gdacs.org/gdacsapi/api/events/geteventlist/EVENTS4APP", "retrieved":"…", "count":42 },
+  "n_events":42,
+  "events":[
+    { "id":1545522, "type":"EQ", "type_name":"Earthquake", "alertlevel":"Green", "alertscore":1,
+      "country":"Philippines", "iso3":"PHL", "severity":4.9, "severity_text":"Magnitude 4.9M…",
+      "from":"2026-06-11T00:00:43", "to":"2026-06-11T00:00:43", "coordinates":[125.6,7.1],
+      "url":"https://www.gdacs.org/report.aspx?eventtype=EQ&eventid=1545522",
+      "ccri":{ "iso3":"PHL", "name":"Philippines", "ccri":7.1, "exposure":8.9, "vulnerability":4.0, "tier":"Extremely High" } }
+  ],
+  "ccri_source":{ "name":"UNICEF CCRI, 2021", "…":"…" } }
+```
+- `ccri` is `null` for events GDACS leaves un-coded (open-ocean / some multi-country events) or for unscored small states.
+
+### GET `/climate-risk`
+The headline analytic: **join GDACS × CCRI to surface "underestimated" alerts** — hazards GDACS graded low/medium
+priority (Green/Orange) that strike *extremely high* child-risk countries (CCRI > 7), where a hazard-only triage may
+under-serve children. **Input:** query `levels` (comma-separated GDACS levels to flag, default `Green,Orange`), `offline?`.
+```json
+{ "generated_at":"2026-06-20T…Z",
+  "provenance":{ "mode":"live", "source":"…/EVENTS4APP", "retrieved":"…", "count":42 },
+  "method":{ "definition":"underestimated = GDACS alertlevel in ['Green','Orange'] AND country CCRI > 7.0",
+             "rationale":"GDACS alert colour reflects hazard magnitude, exposed population and a generic vulnerability proxy - not child-specific vulnerability…",
+             "ccri_threshold":7.0, "limitations":"alerts without an ISO3 code can't be joined; CCRI is a 2021 static index of 163 countries" },
+  "global_scope":{ "total_alerts":42, "by_alert_level":{ "Green":38, "Orange":3, "Red":1 },
+                   "by_hazard_type":{ "Earthquake":21, "Tropical cyclone":6, "Flood":9, "Drought":6 },
+                   "alerts_with_ccri":30, "flagged_alerts":7, "focus_countries":5 },
+  "headline":"42 active GDACS alerts worldwide; 7 are Green/Orange alerts striking 'extremely high' child-risk countries (CCRI > 7) across 5 countries…",
+  "underestimated_alerts":[
+    { "id":1545522, "type_name":"Earthquake", "alertlevel":"Green", "country":"Philippines", "iso3":"PHL",
+      "severity":4.9, "from":"…", "url":"…", "ccri":7.1, "exposure":8.9, "vulnerability":4.0, "tier":"Extremely High",
+      "why":"GDACS graded this Green (low/medium priority), but Philippines is an 'extremely high' child-risk country (CCRI 7.1/10; child-vulnerability 4.0/10) - children's exposure is likely underestimated…" }
+  ],
+  "where_to_focus":[
+    { "iso3":"PHL", "country":"Philippines", "ccri":7.1, "exposure":8.9, "vulnerability":4.0, "tier":"Extremely High",
+      "n_alerts":2, "alert_levels":["Green"], "hazards":["Earthquake"], "max_severity":5.1, "alert_ids":[1545522,1545514] }
+  ],
+  "sources":[ { "name":"UNICEF CCRI, 2021", "…":"…" }, { "name":"GDACS (UN OCHA / European Commission)", "site":"https://www.gdacs.org" } ],
+  "disclaimer":"Not an official United Nations product." }
+```
+- `where_to_focus` is ranked by child-risk (CCRI) first, then number of flagged alerts, then any Orange ahead of Green — a direct "which countries to prioritise" list.
+- Use `levels=Green` for the strictest "lowest-priority hazards only" read, or add `Red` to widen the lens.
+
 ### POST `/copilot/summary`  *(mode = copilot)*
 **Input:** header `X-OpenAI-Key`; JSON body `{ "country": "KEN", "theme": "child-survival", "model": "gpt-4o-mini" }` (`theme`,`model` optional).
 ```bash
@@ -273,6 +342,13 @@ If the model emits a figure not in the claims, it is withheld: `{ "summary": nul
                 "latest":{ "year":2023, "value":39.6 },
                 "query_url":"https://api.worldbank.org/v2/country/KEN/indicator/SH.DYN.MORT?format=json" } ],
   "tool_calls":[ { "name":"get_indicator", "args":{ "iso":"KEN","code":"SH.DYN.MORT" }, "detail":"14 values · 2023: 39.6" } ],
+  "charts":[
+    { "type":"line", "title":"Under-5 mortality", "unit":"per 1,000 live births",
+      "x":[2010, "…", 2023],
+      "series":[ { "label":"Kenya", "data":[53.1, "…", 39.6] } ],
+      "sources":[ { "label":"Kenya · Under-5 mortality rate",
+                    "query_url":"https://api.worldbank.org/v2/country/KEN/indicator/SH.DYN.MORT?format=json" } ] }
+  ],
   "evidence_chain":[
     { "id":"discover", "step":"Discover", "agent":"Agent 1", "status":"done", "detail":"1 tool call(s) · 1 indicator(s), 1 country(ies)", "description":"…" },
     { "id":"retrieve", "step":"Retrieve", "agent":"Agent 1", "status":"done", "detail":"1 series · 14 datapoints", "description":"…" },
@@ -285,8 +361,22 @@ If the model emits a figure not in the claims, it is withheld: `{ "summary": nul
   "tokens":{ "in":1320, "out":180 }, "model":"gpt-4o-mini" }
 ```
 - `evidence_chain` is computed **per prompt** from the agent's actual run (tool calls, datapoints fetched, grounding result), so the UI can render a chain specific to each answer (not the generic `/evidence-chain` definition).
+- `charts` is a (possibly empty) list of **render-ready chart specs** the agent chose to build to complement the prose; numbers come only from retrieved data (the guardrail also checks figures plotted here). Render directly with any chart library:
+  - `type:"line"` → `x` (array of years) + `series:[{label, data}]` where each `data` aligns to `x` (`null` = gap).
+  - `type:"bar"` → `categories` (array of labels) + `series:[{label:"latest", data}]` plus `years` (array aligned to `categories` — the year each latest value is from).
+  - Every spec carries `title`, `unit`, and `sources:[{label, query_url}]` so the chart stays cited and re-runnable.
 - When the answer contains a figure not found in the retrieved data, `grounded` is `false`, `unverified_numbers` lists them, and the `review` step has `status:"warn"` with a `detail` naming the flagged figures.
 - Returns 403 if not in copilot mode, 400 if no key/empty messages.
+
+**Agent tools** the model may call while answering (all grounded; the caller never invokes these directly):
+
+| Tool | Purpose |
+|------|---------|
+| `get_indicator` | one indicator time series for one country (World Bank) |
+| `compare_indicator` | latest value of one indicator across several countries |
+| `list_indicators` | the indicator codes CEDAR knows by name |
+| `get_interventions` | effective interventions for a theme, graded by evidence strength, with sources |
+| `build_chart` | builds a chart spec (returned in `charts`) to attach a graph to the answer |
 
 ## Typed clients for the front-end (TypeScript)
 FastAPI publishes a full OpenAPI schema at **`/openapi.json`**, so the web team gets typed clients for free:

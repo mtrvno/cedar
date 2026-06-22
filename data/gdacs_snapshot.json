@@ -1,0 +1,12 @@
+{
+  "source": "https://www.gdacs.org/gdacsapi/api/events/geteventlist/EVENTS4APP",
+  "retrieved": "2026-06-11",
+  "note": "Bundled sample of real GDACS events for offline/air-gapped use and tests. Live mode fetches the full current feed directly.",
+  "events": [
+    {"id": 1545522, "episode": 1711178, "type": "EQ", "type_name": "Earthquake", "alertlevel": "Green", "alertscore": 1, "country": "Philippines", "iso3": "PHL", "severity": 4.9, "severity_text": "Magnitude 4.9M, Depth:64.06km", "from": "2026-06-11T00:00:43", "to": "2026-06-11T00:00:43", "coordinates": null, "url": "https://www.gdacs.org/report.aspx?eventtype=EQ&eventid=1545522"},
+    {"id": 1545515, "episode": 1711172, "type": "EQ", "type_name": "Earthquake", "alertlevel": "Green", "alertscore": 1, "country": "Tonga", "iso3": "TON", "severity": 5.4, "severity_text": "Magnitude 5.4M, Depth:10km", "from": "2026-06-10T23:30:45", "to": "2026-06-10T23:30:45", "coordinates": null, "url": "https://www.gdacs.org/report.aspx?eventtype=EQ&eventid=1545515"},
+    {"id": 1545514, "episode": 1711168, "type": "EQ", "type_name": "Earthquake", "alertlevel": "Green", "alertscore": 1, "country": "Philippines", "iso3": "PHL", "severity": 5.1, "severity_text": "Magnitude 5.1M, Depth:35km", "from": "2026-06-10T23:26:26", "to": "2026-06-10T23:26:26", "coordinates": null, "url": "https://www.gdacs.org/report.aspx?eventtype=EQ&eventid=1545514"},
+    {"id": 1545487, "episode": 1711138, "type": "EQ", "type_name": "Earthquake", "alertlevel": "Green", "alertscore": 1, "country": "Argentina", "iso3": "ARG", "severity": 4.5, "severity_text": "Magnitude 4.5M, Depth:167km", "from": "2026-06-10T21:08:15", "to": "2026-06-10T21:08:15", "coordinates": null, "url": "https://www.gdacs.org/report.aspx?eventtype=EQ&eventid=1545487"},
+    {"id": 1001275, "episode": 11, "type": "TC", "type_name": "Tropical cyclone", "alertlevel": "Green", "alertscore": 1, "country": "Honduras, El Salvador, Nicaragua", "iso3": "HND", "severity": null, "severity_text": "Tropical storm", "from": "2026-06-09T12:00:00", "to": "2026-06-11T00:00:00", "coordinates": null, "url": "https://www.gdacs.org/report.aspx?eventtype=TC&eventid=1001275"}
+  ]
+}
