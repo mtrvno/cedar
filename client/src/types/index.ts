@@ -115,4 +115,5 @@ export interface TokenInfo {
   outStr: string
   totalStr: string
   inPct: number
+  costUsd: number | null
 }

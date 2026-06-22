@@ -815,12 +815,18 @@ const fmt = (n: number) => (n || 0).toLocaleString('en-US')
 const tokenInfo = computed<TokenInfo>(() => {
   const ld = lastDataMessage.value
   const tk = ld ? ld.tokens || { in: 0, out: 0 } : { in: 0, out: 0 }
-  const total = (tk.in || 0) + (tk.out || 0)
+  const inTokens = tk.in || 0
+  const outTokens = tk.out || 0
+  const total = inTokens + outTokens
+  const costUsd = total > 0
+    ? (inTokens / 1_000_000) * 0.15 + (outTokens / 1_000_000) * 0.60
+    : null
   return {
-    inStr: fmt(tk.in || 0),
-    outStr: fmt(tk.out || 0),
+    inStr: fmt(inTokens),
+    outStr: fmt(outTokens),
     totalStr: fmt(total),
-    inPct: total ? Math.round(((tk.in || 0) / total) * 100) : 0,
+    inPct: total ? Math.round((inTokens / total) * 100) : 0,
+    costUsd,
   }
 })
 

@@ -4,16 +4,16 @@ import { useCedar } from '@/composables/useCedar'
 import { useMode } from '@/composables/useMode'
 import { useEvidenceLedger } from '@/composables/useEvidenceLedger'
 
-const { state, historyGroups, tokenInfo, sources, hasData, newQuery, loadConv } = useCedar()
-const { isCopilot, isEvidence, hasKey, state: modeState, openKeyModal, clearApiKey } = useMode()
+const { state, historyGroups, tokenInfo, sources, hasData, newQuery } = useCedar()
+const { isCopilot, isEvidence, hasKey, state: openKeyModal, clearApiKey } = useMode()
 const { countryName, theme, indicators, cost, retrievedAt } = useEvidenceLedger()
 
 const THEME_LABELS: Record<string, string> = {
   'child-survival': 'Child Survival',
   'economy-poverty': 'Economy & Poverty',
-  'education': 'Education',
+  education: 'Education',
   'health-system': 'Health System',
-  'wash': 'Water & Sanitation',
+  wash: 'Water & Sanitation',
   'energy-climate': 'Energy & Climate',
 }
 
@@ -26,12 +26,14 @@ const ledgerSources = computed(() =>
       year: i.provenance?.retrieved_at as string | undefined,
       served: i.provenance?.served as string | undefined,
       url: i.provenance?.query_url as string,
-    }))
+    })),
 )
 
 const apiCalls = computed(() => {
   const c = cost.value as Record<string, unknown> | null
-  return c ? (c.api_calls as number | undefined) ?? ledgerSources.value.length : ledgerSources.value.length
+  return c
+    ? ((c.api_calls as number | undefined) ?? ledgerSources.value.length)
+    : ledgerSources.value.length
 })
 </script>
 
@@ -82,19 +84,32 @@ const apiCalls = computed(() => {
         <div style="font-size: 13px; font-weight: 500; color: #1b1e23; margin-bottom: 2px">
           {{ countryName }}
         </div>
-        <div style="font-size: 11px; color: #9a9f97; margin-bottom: 14px; font-family: 'IBM Plex Mono', monospace">
+        <div
+          style="
+            font-size: 11px;
+            color: #9a9f97;
+            margin-bottom: 14px;
+            font-family: 'IBM Plex Mono', monospace;
+          "
+        >
           {{ THEME_LABELS[theme] ?? theme }}
-          <span v-if="retrievedAt" style="margin-left: 8px; color: #bfc2b9">· {{ retrievedAt }}</span>
+          <span v-if="retrievedAt" style="margin-left: 8px; color: #bfc2b9"
+            >· {{ retrievedAt }}</span
+          >
         </div>
 
         <!-- Cost pill -->
         <div style="display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap">
           <div class="ledger-pill ledger-pill--green">
-            <span style="width: 5px; height: 5px; border-radius: 50%; background: #2f6b4f; flex: none"></span>
+            <span
+              style="width: 5px; height: 5px; border-radius: 50%; background: #2f6b4f; flex: none"
+            ></span>
             $0 LLM cost
           </div>
           <div class="ledger-pill">
-            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #2c4a63">{{ apiCalls }}</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #2c4a63">{{
+              apiCalls
+            }}</span>
             API calls
           </div>
         </div>
@@ -118,24 +133,47 @@ const apiCalls = computed(() => {
                 :class="'ledger-served--' + (s.served ?? 'live')"
                 :title="s.served ?? 'live'"
               ></span>
-              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: #2c4a63; flex: none">
+              <span
+                style="
+                  font-family: 'IBM Plex Mono', monospace;
+                  font-size: 9.5px;
+                  color: #2c4a63;
+                  flex: none;
+                "
+              >
                 {{ s.code }}
               </span>
             </div>
             <div style="font-size: 11.5px; color: #33373d; line-height: 1.3; margin-top: 3px">
               {{ s.name }}
             </div>
-            <div style="font-size: 10px; color: #bfc2b9; margin-top: 2px; display: flex; align-items: center; gap: 4px">
+            <div
+              style="
+                font-size: 10px;
+                color: #bfc2b9;
+                margin-top: 2px;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+              "
+            >
               WB WDI
-              <svg width="8" height="8" viewBox="0 0 10 10" style="flex:none">
-                <path d="M3.5 6.5L6.5 3.5M4 3.5h2.5V6" stroke="#bfc2b9" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <svg width="8" height="8" viewBox="0 0 10 10" style="flex: none">
+                <path
+                  d="M3.5 6.5L6.5 3.5M4 3.5h2.5V6"
+                  stroke="#bfc2b9"
+                  stroke-width="1"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
               </svg>
             </div>
           </a>
 
           <!-- Unavailable indicators -->
           <div
-            v-for="i in indicators.filter(x => !x.available)"
+            v-for="i in indicators.filter((x) => !x.available)"
             :key="i.code"
             class="ledger-source ledger-source--missing"
           >
@@ -222,7 +260,19 @@ const apiCalls = computed(() => {
             "
             >{{ tokenInfo.totalStr }}</span
           >
-          <span style="font-size: 10.5px; color: #9a9f97">total tokens</span>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px">
+            <span style="font-size: 10.5px; color: #9a9f97">total tokens</span>
+            <span
+              v-if="tokenInfo.costUsd !== null"
+              style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #2f6b4f"
+            >
+              ${{
+                tokenInfo.costUsd < 0.001
+                  ? tokenInfo.costUsd.toFixed(6)
+                  : tokenInfo.costUsd.toFixed(4)
+              }}
+            </span>
+          </div>
         </div>
         <div
           style="
@@ -634,7 +684,13 @@ const apiCalls = computed(() => {
   border-radius: 50%;
   flex: none;
 }
-.ledger-served--live    { background: #2f6b4f; }
-.ledger-served--cache   { background: #e67e22; }
-.ledger-served--snapshot { background: #9a9f97; }
+.ledger-served--live {
+  background: #2f6b4f;
+}
+.ledger-served--cache {
+  background: #e67e22;
+}
+.ledger-served--snapshot {
+  background: #9a9f97;
+}
 </style>
