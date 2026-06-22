@@ -372,11 +372,13 @@ class Analyst:
                     reach = round(last_y + (t - last_v) / slope); late = max(0, reach - 2030)
                     ptext = (f"At the {first_y}-{last_y} pace, the benchmark ({t:g}) is reached around {reach} - "
                              + ("on time for 2030." if reach <= 2030 else f"{late} year(s) late."))
+                    pverdict = "on-track" if reach <= 2030 else "off-track"
                 else:
                     ptext = f"At the recent pace, the value is not moving toward the benchmark ({t:g})."
+                    pverdict = "off-track"
                 claims.append({
                     "id": f"{code}.project", "text": ptext,
-                    "verdict": "off-track",
+                    "verdict": pverdict,
                     "datapoints": [f"{code}@{first_y}", f"{code}@{last_y}"],
                 })
 

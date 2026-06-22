@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue'
-import { getCountries, getBrief, getPolycrisis } from '@/api/cedar'
-import type { Country, BriefResponse, BriefIndicator, PolycrisisResponse } from '@/types/api'
+import { getCountries, getBrief, getPolycrisis, getBlindspots } from '@/api/cedar'
+import type { Country, BriefResponse, BriefIndicator, PolycrisisResponse, BlindspotsResponse } from '@/types/api'
 
 const THEMES = [
   { key: 'child-survival', label: 'Child Survival' },
@@ -31,8 +31,10 @@ const dropdownOpen = ref(false)
 
 const brief = ref<BriefResponse | null>(null)
 const polycrisis = ref<PolycrisisResponse | null>(null)
+const blindspots = ref<BlindspotsResponse | null>(null)
 const loadingBrief = ref(false)
 const loadingPoly = ref(false)
+const loadingBlind = ref(false)
 const errorBrief = ref<string | null>(null)
 const errorPoly = ref<string | null>(null)
 
@@ -91,10 +93,24 @@ async function fetchPolycrisis() {
   }
 }
 
+async function fetchBlindspots() {
+  if (!selectedIso.value) return
+  loadingBlind.value = true
+  blindspots.value = null
+  try {
+    blindspots.value = await getBlindspots(selectedIso.value)
+  } catch {
+    // non-critical, silent fail
+  } finally {
+    loadingBlind.value = false
+  }
+}
+
 watch([selectedIso, selectedTheme], () => {
   if (selectedIso.value) {
     fetchBrief()
     fetchPolycrisis()
+    fetchBlindspots()
   }
 })
 
@@ -130,12 +146,14 @@ function spark(obs: Record<string, number> | undefined) {
   }
 }
 
-function latestObs(ind: BriefIndicator): { year: string; value: number } | null {
-  if (!ind.obs) return null
-  const entries = Object.entries(ind.obs).sort((a, b) => parseInt(b[0]) - parseInt(a[0]))
+function latestObs(obs: Record<string, number> | undefined): { year: string; value: number } | null {
+  if (!obs) return null
+  const entries = Object.entries(obs)
+    .filter(([, v]) => v != null)
+    .sort((a, b) => parseInt(b[0]) - parseInt(a[0]))
   const top = entries[0]
   if (!top) return null
-  return { year: top[0], value: top[1] }
+  return { year: top[0], value: top[1] as number }
 }
 
 function tierStyle(t: string | undefined) {
@@ -151,13 +169,20 @@ function tierLabel(t: string | undefined) {
 
 function verdictIcon(v: string | undefined) {
   if (v === 'improving') return { symbol: '↑', color: '#2f6b4f' }
-  if (v === 'off-track') return { symbol: '↗', color: '#c0392b' }
+  if (v === 'off-track') return { symbol: '✗', color: '#c0392b' }
   if (v === 'on-track') return { symbol: '✓', color: '#2f6b4f' }
   return { symbol: '—', color: '#9a9f97' }
 }
 
-const availableIndicators = computed(() =>
-  (brief.value?.indicators ?? []).filter((i) => i.available),
+type RichIndicator = BriefIndicator & {
+  lo: { year: string; value: number } | null
+  sp: ReturnType<typeof spark>
+}
+
+const availableIndicators = computed<RichIndicator[]>(() =>
+  (brief.value?.indicators ?? [])
+    .filter((i) => i.available)
+    .map((i) => ({ ...i, lo: latestObs(i.obs), sp: spark(i.obs) }))
 )
 const unavailableIndicators = computed(() =>
   (brief.value?.indicators ?? []).filter((i) => !i.available),
@@ -289,20 +314,18 @@ const themeLabel = computed(
 
             <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:10px;">
               <div>
-                <div v-if="latestObs(ind)" class="kpi-value">
-                  {{ latestObs(ind)!.value.toLocaleString('en-US', { maximumFractionDigits: 1 }) }}
+                <div v-if="ind.lo" class="kpi-value">
+                  {{ ind.lo.value.toLocaleString('en-US', { maximumFractionDigits: 1 }) }}
                   <span class="kpi-unit">{{ ind.unit }}</span>
                 </div>
-                <div v-if="latestObs(ind)" class="kpi-year">{{ latestObs(ind)!.year }}</div>
+                <div v-if="ind.lo" class="kpi-year">{{ ind.lo.year }}</div>
               </div>
 
-              <template v-if="spark(ind.obs)">
-                <svg viewBox="0 0 100 26" style="width:100px;height:26px;display:block;flex:none;">
-                  <path :d="spark(ind.obs)!.area" style="fill:#eef2f5;stroke:none;" />
-                  <path :d="spark(ind.obs)!.line" style="fill:none;stroke:#2c4a63;stroke-width:1.4px;stroke-linejoin:round;stroke-linecap:round;" />
-                  <circle :cx="spark(ind.obs)!.dotX" :cy="spark(ind.obs)!.dotY" r="2" style="fill:#2c4a63;" />
-                </svg>
-              </template>
+              <svg v-if="ind.sp" viewBox="0 0 100 26" style="width:100px;height:26px;display:block;flex:none;">
+                <path :d="ind.sp.area" style="fill:#eef2f5;stroke:none;" />
+                <path :d="ind.sp.line" style="fill:none;stroke:#2c4a63;stroke-width:1.4px;stroke-linejoin:round;stroke-linecap:round;" />
+                <circle :cx="ind.sp.dotX" :cy="ind.sp.dotY" r="2" style="fill:#2c4a63;" />
+              </svg>
             </div>
 
             <!-- Claims row -->
@@ -327,6 +350,13 @@ const themeLabel = computed(
             <!-- Headline claim -->
             <div v-if="ind.claims && ind.claims[0]" class="kpi-claim">
               {{ ind.claims[0].text }}
+            </div>
+
+            <!-- Provenance link -->
+            <div v-if="ind.provenance?.query_url" style="margin-top:8px;">
+              <a :href="ind.provenance.query_url" target="_blank" rel="noopener" class="prov-link">
+                Source ↗
+              </a>
             </div>
           </div>
 
@@ -399,6 +429,39 @@ const themeLabel = computed(
           </div>
           <div style="height:60px;display:flex;align-items:center;justify-content:center;">
             <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#bfc2b9;">Loading…</span>
+          </div>
+        </div>
+
+        <!-- Data gaps / Blindspot radar -->
+        <div v-if="blindspots || loadingBlind" class="poly-section">
+          <div class="section-head">
+            <svg width="13" height="13" viewBox="0 0 14 14" style="flex:none;">
+              <circle cx="7" cy="7" r="5.5" stroke="#2c4a63" stroke-width="1.1" fill="none"/>
+              <path d="M7 4v3.5M7 9v.5" stroke="#2c4a63" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            <span class="section-label">Data Gaps</span>
+            <span v-if="blindspots" style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#9a9f97;">
+              {{ blindspots.gaps }} gap{{ blindspots.gaps !== 1 ? 's' : '' }} of {{ blindspots.total }}
+            </span>
+          </div>
+
+          <div v-if="loadingBlind" style="height:40px;display:flex;align-items:center;justify-content:center;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#bfc2b9;">Loading…</span>
+          </div>
+
+          <div v-else-if="blindspots" class="gap-grid">
+            <div
+              v-for="g in blindspots.indicators"
+              :key="g.indicator"
+              class="gap-card"
+              :class="'gap-card--' + g.status"
+            >
+              <div class="gap-name">{{ g.name }}</div>
+              <div class="gap-status" :class="'gap-status--' + g.status">
+                {{ g.status === 'recent' ? 'Current' : g.status === 'stale' ? 'Stale' : 'No data' }}
+                <span v-if="g.latest" style="color:#bfc2b9;margin-left:4px;">{{ g.latest }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -792,4 +855,53 @@ export default {
 .poly-domain--stressed {
   background: #fff8f7;
 }
+
+.prov-link {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: #2c4a63;
+  text-decoration: none;
+  opacity: 0.6;
+}
+.prov-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* Blindspots / data gaps */
+.gap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.gap-card {
+  background: #fff;
+  border: 1px solid #e3e1da;
+  border-left-width: 3px;
+  border-radius: 4px;
+  padding: 9px 12px;
+}
+.gap-card--recent { border-left-color: #2f6b4f; }
+.gap-card--stale  { border-left-color: #9a6a16; }
+.gap-card--missing { border-left-color: #c0392b; }
+
+.gap-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #33373d;
+  line-height: 1.3;
+}
+
+.gap-status {
+  margin-top: 5px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.gap-status--recent  { color: #2f6b4f; }
+.gap-status--stale   { color: #9a6a16; }
+.gap-status--missing { color: #c0392b; }
 </style>
