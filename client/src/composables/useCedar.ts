@@ -357,6 +357,19 @@ function matchScenario(text: string): Scenario | null {
   return null
 }
 
+function formatAnswer(text: string): Paragraph[] {
+  return text.split(/\n\n+/).filter(Boolean).map((block) => {
+    const html = block
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\[(.+?)\]\((.+?)\)/g, (_, t, url) => {
+        const safe = url.startsWith('http') ? url : '#'
+        return `<a href="${safe}" target="_blank" rel="noopener">${t}</a>`
+      })
+      .replace(/\n/g, '<br>')
+    return { text: html }
+  })
+}
+
 function buildUserMessage(text: string): Message {
   return { role: 'user', isUser: true, isAssistant: false, text }
 }
@@ -518,7 +531,7 @@ async function ask(text: string) {
         isUser: false,
         hasData: res.sources.length > 0,
         contextLabel: res.sources[0]?.country ?? '',
-        paragraphs: [{ text: res.answer }],
+        paragraphs: formatAnswer(res.answer),
         citations: [],
         kpis: [],
         kpiCount: 0,
