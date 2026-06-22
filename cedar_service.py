@@ -6,7 +6,7 @@ API and the CLI share one source of truth. No FastAPI here, so this module is un
 import json
 import cedar
 
-CACHE = json.load(open(cedar.CACHE_PATH))
+CACHE, _INDEX = cedar._load_cache()  # warm the singleton at import time
 
 # ----------------------------------------------------------------------------- helpers
 def _engine(offline):
