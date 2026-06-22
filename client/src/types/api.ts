@@ -121,11 +121,22 @@ export interface ChatRequest {
   model?: string
 }
 
+export interface EvidenceChainStep {
+  id: string
+  step: string
+  agent: string
+  description: string
+  status: string
+  detail: string
+}
+
 export interface ChatResponse {
   answer: string
   grounded: boolean
   unverified_numbers: string[]
   sources: ChatSource[]
+  tool_calls?: Array<{ name: string; args: Record<string, string>; detail: string }>
+  evidence_chain?: EvidenceChainStep[]
   tokens: { in: number; out: number }
   model: string
 }

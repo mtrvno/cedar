@@ -61,7 +61,7 @@ const briefDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month
             :key="i"
             style="font-size:17px;line-height:1.7;color:#2a2e34;margin:0 0 16px;text-wrap:pretty;"
           >
-            {{ para.text }}<sup v-if="para.cite" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#2c4a63;font-weight:500;vertical-align:super;margin-left:1px;">{{ para.cite }}</sup>
+            <span v-html="para.text"></span><sup v-if="para.cite" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#2c4a63;font-weight:500;vertical-align:super;margin-left:1px;">{{ para.cite }}</sup>
           </p>
         </div>
 

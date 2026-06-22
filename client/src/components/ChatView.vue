@@ -109,12 +109,12 @@ const { state, scrollRef, enrichedMessages, examples, togglePanel, ask, onInput,
 
           <button v-if="msg.hasData" @click="togglePanel" class="view-data-btn">
             <span style="width: 5px; height: 5px; border-radius: 50%; background: #2f6b4f"></span>
-            {{ msg.kpiCount }} VERIFIED INDICATORS · VIEW DATA
+            <template v-if="msg.kpiCount">{{ msg.kpiCount }} VERIFIED INDICATORS · </template>VIEW DATA
           </button>
 
           <!-- Chain of action -->
           <div
-            v-if="msg.hasData && msg.steps && msg.steps.length"
+            v-if="msg.steps && msg.steps.length"
             style="
               margin-top: 18px;
               border: 1px solid #e7e4dc;

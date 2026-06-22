@@ -1,5 +1,5 @@
 import { reactive, computed, nextTick, ref } from 'vue'
-import { postCopilotChat, getCountries } from '@/api/cedar'
+import { postCopilotChat, getCountries, getBrief } from '@/api/cedar'
 import { useMode } from '@/composables/useMode'
 import type {
   KPI,
@@ -328,6 +328,30 @@ getCountries().then(({ countries }) => {
   for (const { iso3, name } of countries) COUNTRY_CODES[name.toLowerCase()] = iso3
 }).catch(() => {})
 
+const THEME_SDGS: Record<string, SDG[]> = {
+  'child-survival': [
+    { n: 3, label: 'Good Health & Well-being', color: '#4C9F38', weight: 80 },
+    { n: 2, label: 'Zero Hunger', color: '#DDA63A', weight: 20 },
+  ],
+  'economy-poverty': [
+    { n: 1, label: 'No Poverty', color: '#E5243B', weight: 60 },
+    { n: 8, label: 'Decent Work & Growth', color: '#A21942', weight: 40 },
+  ],
+  'education': [
+    { n: 4, label: 'Quality Education', color: '#C5192D', weight: 100 },
+  ],
+  'health-system': [
+    { n: 3, label: 'Good Health & Well-being', color: '#4C9F38', weight: 100 },
+  ],
+  'wash': [
+    { n: 6, label: 'Clean Water & Sanitation', color: '#26BDE2', weight: 100 },
+  ],
+  'energy-climate': [
+    { n: 7, label: 'Affordable & Clean Energy', color: '#FDB713', weight: 70 },
+    { n: 13, label: 'Climate Action', color: '#3F7E44', weight: 30 },
+  ],
+}
+
 const THEME_KEYWORDS: Array<[RegExp, string]> = [
   [/maternal|obstetric|mmeig/, 'health-system'],
   [/child|under.?5|infant|stunting|immuniz|dpt|imrt/, 'child-survival'],
@@ -454,6 +478,7 @@ const state = reactive({
   convTitle: 'New query',
   highlightCite: null as number | null,
   detectedCountry: null as string | null,
+  detectedTheme: null as string | null,
 })
 
 const scrollRef = ref<HTMLElement | null>(null)
@@ -476,8 +501,12 @@ async function ask(text: string) {
     }
 
     const params = detectApiParams(v)
-    if (params) state.detectedCountry = params.country
+    if (params) {
+      state.detectedCountry = params.country
+      if (params.theme) state.detectedTheme = params.theme
+    }
     const country = state.detectedCountry
+    const theme = state.detectedTheme ?? 'child-survival'
 
     if (!country) {
       state.messages = [...state.messages, buildUserMessage(v)]
@@ -523,29 +552,83 @@ async function ask(text: string) {
       }))
 
     try {
-      const res = await postCopilotChat(
-        { country, messages: chatHistory },
-        modeState.apiKey,
-      )
+      const [chatResult, briefResult] = await Promise.allSettled([
+        postCopilotChat({ country, messages: chatHistory }, modeState.apiKey),
+        getBrief(country, theme),
+      ])
+
+      if (chatResult.status === 'rejected') throw chatResult.reason
+      const res = chatResult.value
+      const brief = briefResult.status === 'fulfilled' ? briefResult.value : null
+
+      // KPIs from brief obs (sorted years → sparkline values)
+      const kpis: KPI[] = brief
+        ? brief.indicators
+            .filter((i) => i.available && i.obs && Object.keys(i.obs).length > 0)
+            .map((i) => {
+              const entries = Object.entries(i.obs as Record<string, number>).sort(
+                ([a], [b]) => Number(a) - Number(b),
+              )
+              const values = entries.map(([, v]) => v)
+              const [latestYear, latestVal] = entries[entries.length - 1] ?? ['', 0]
+              const tier = i.verification?.confidence_tier ?? 'Low'
+              return {
+                indicator: i.name,
+                value: String(latestVal),
+                unit: i.unit ?? '',
+                year: latestYear,
+                confidence: (tier === 'Medium' ? 'Med' : tier) as 'High' | 'Med' | 'Low',
+                source: 'World Bank WDI',
+                values,
+              }
+            })
+        : []
+
+      // Actions from brief claims: off-track first (most actionable)
+      const allClaims = brief ? brief.indicators.flatMap((i) => i.claims ?? []) : []
+      const actions: ActionItem[] = [
+        ...allClaims.filter((c) => c.verdict === 'off-track'),
+        ...allClaims.filter((c) => c.verdict === 'improving'),
+        ...allClaims.filter((c) => !['off-track', 'improving'].includes(c.verdict)),
+      ]
+        .slice(0, 3)
+        .map((c) => ({ text: c.text, cites: [] }))
+
+      // Citations from chat sources
+      const citations: Citation[] = res.sources.map((s, i) => ({
+        n: i + 1,
+        text: `${s.name} — ${s.country} (${s.code}), ${s.latest.year}.`,
+        host: (() => { try { return new URL(s.query_url).hostname } catch { return s.code } })(),
+      }))
+
+      // Steps from evidence_chain (per-prompt, actual run)
+      const steps: Step[] = (res.evidence_chain ?? []).map((s, i, arr) => ({
+        label: s.step,
+        detail: s.detail,
+        idx: String(i + 1),
+        notLast: i < arr.length - 1,
+      }))
+
+      const sdgs: SDG[] = THEME_SDGS[theme] ?? []
 
       const assistantMsg: Message = {
         role: 'assistant',
         isAssistant: true,
         isUser: false,
-        hasData: res.sources.length > 0,
+        hasData: res.sources.length > 0 || kpis.length > 0,
         contextLabel: res.sources[0]?.country ?? '',
         paragraphs: formatAnswer(res.answer),
-        citations: [],
-        kpis: [],
-        kpiCount: 0,
-        sdgs: [],
-        actions: [],
+        citations,
+        kpis,
+        kpiCount: kpis.length,
+        sdgs,
+        actions,
         tokens: res.tokens,
         sources: res.sources.map((s, i) => ({
           n: i + 1,
           host: (() => { try { return new URL(s.query_url).hostname } catch { return s.code } })(),
         })),
-        steps: [],
+        steps,
       }
 
       state.messages = [...state.messages, assistantMsg]
@@ -631,6 +714,7 @@ function newQuery() {
   state.input = ''
   state.highlightCite = null
   state.detectedCountry = null
+  state.detectedTheme = null
 }
 
 function clickCite(n: number) {
